@@ -113,7 +113,7 @@ class WebGLFunctionNode extends FunctionNode {
 
     // Body statement iteration
     for (let i = 0; i < ast.body.body.length; ++i) {
-      this.astGeneric(ast.body.body[i], retArr);
+      this.astStatementWithHoisting(ast.body.body[i], retArr);
       retArr.push('\n');
     }
 
@@ -799,17 +799,51 @@ class WebGLFunctionNode extends FunctionNode {
     if (this.isState('loop-body')) {
       this.pushState('block-body'); // this prevents recursive removal of braces
       for (let i = 0; i < bNode.body.length; i++) {
-        this.astGeneric(bNode.body[i], retArr);
+        this.astStatementWithHoisting(bNode.body[i], retArr);
       }
       this.popState('block-body');
     } else {
       retArr.push('{\n');
       for (let i = 0; i < bNode.body.length; i++) {
-        this.astGeneric(bNode.body[i], retArr);
+        this.astStatementWithHoisting(bNode.body[i], retArr);
       }
       retArr.push('}\n');
     }
     return retArr;
+  }
+
+  /**
+   * @desc Emits one statement, flushing any indices that had to be hoisted out
+   * of it first. A texture read nested inside another texture read's argument
+   * list -- lookup[input[this.thread.x]] -- miscompiles on ANGLE's D3D11
+   * translation (#300): HLSL cannot pass samplers as function parameters, so
+   * ANGLE rewrites sampler-taking functions, and the nested call defeats the
+   * rewrite. Assigning the inner read to a variable first is exactly the shape
+   * that works everywhere, so that is the shape we generate.
+   *
+   * Only simple statements buffer. Control flow (for, if, while) is left
+   * alone: hoisting out of a loop condition would evaluate a per-iteration
+   * read once, and their block bodies come back through here anyway, where
+   * each inner statement gets its own buffering at the right scope.
+   * @param {Object} ast - the statement node
+   * @param {Array} retArr - return array string
+   */
+  astStatementWithHoisting(ast, retArr) {
+    switch (ast.type) {
+      case 'ExpressionStatement':
+      case 'VariableDeclaration':
+      case 'ReturnStatement': {
+        const previousHoist = this.hoistedIndexReads;
+        const hoisted = this.hoistedIndexReads = [];
+        const statement = [];
+        this.astGeneric(ast, statement);
+        this.hoistedIndexReads = previousHoist;
+        retArr.push(...hoisted, ...statement);
+        return retArr;
+      }
+      default:
+        return this.astGeneric(ast, retArr);
+    }
   }
 
   /**
@@ -1585,7 +1619,19 @@ class WebGLFunctionNode extends FunctionNode {
       default:
         this.astGeneric(property, result);
     }
-    return result.join('');
+    const markup = result.join('');
+    // A sampler read used directly as an index gets hoisted into a variable of
+    // its own -- see astStatementWithHoisting for why. Every sampler read
+    // gpu.js generates passes the texture and its size uniform side by side,
+    // which is what this looks for; anything else stays inline, so kernels
+    // without the pattern compile to the same string they always have.
+    if (this.hoistedIndexReads && /\b\w+\((user_|constants_)\w+, \1\w+Size/.test(markup)) {
+      const name = `hoisted_${this.hoistedIndexReads.length}_${utils.sanitizeName(this.name)}`;
+      const isInt = markup.startsWith('int(');
+      this.hoistedIndexReads.push(`${isInt ? 'int' : 'float'} ${name}=${markup};\n`);
+      return name;
+    }
+    return markup;
   }
 }
 

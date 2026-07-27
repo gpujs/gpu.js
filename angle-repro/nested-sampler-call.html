@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<!--
+  Repro: wrong sampler used when a call to a sampler-taking user function is
+  nested inside a call to the same function with a different sampler (WebGL 1,
+  ANGLE D3D11 backend).
+
+  Observed on Windows 11, Chrome 150 / Edge 150, renderer
+  "ANGLE (Microsoft, Microsoft Basic Render Driver Direct3D11 vs_5_0 ps_5_0, D3D11)".
+  Not reproducible on ANGLE Metal (macOS) or on SwiftShader, where every case
+  below prints its expected value.
+-->
+<meta charset="utf-8">
+<title>ANGLE D3D11 nested sampler call repro</title>
+<pre id="out"></pre>
+<script>
+'use strict';
+
+const CASES = [
+  // BROKEN on D3D11: prints 160 (texA's texel) instead of 40 — the outer
+  // readTex call samples texA, the sampler of the nested inner call, not the
+  // texB it was passed.
+  ['nested call to the SAME function ', 40, `void main() {
+    gl_FragColor = vec4(readTex(texB, readTex(texA, 0.5)), 0.0, 0.0, 1.0);
+  }`],
+  // fine everywhere: same data flow through a temporary
+  ['same data flow via a temporary   ', 40, `void main() {
+    float t = readTex(texA, 0.5);
+    gl_FragColor = vec4(readTex(texB, t), 0.0, 0.0, 1.0);
+  }`],
+  // fine everywhere: nested call to a DIFFERENT (identical) function
+  ['nested call, distinct function   ', 40, `void main() {
+    gl_FragColor = vec4(readTex(texB, readTexA(texA, 0.5)), 0.0, 0.0, 1.0);
+  }`],
+  // fine everywhere: the nested call is the texture2D builtin itself
+  ['nested texture2D builtin         ', 40, `void main() {
+    gl_FragColor = vec4(readTex(texB, texture2D(texA, vec2(0.5, 0.5)).r), 0.0, 0.0, 1.0);
+  }`],
+];
+
+const HELPERS = `precision highp float;
+uniform sampler2D texA;
+uniform sampler2D texB;
+float readTex(sampler2D tex, float x) {
+  return texture2D(tex, vec2(x, 0.5)).r;
+}
+float readTexA(sampler2D tex, float x) {
+  return texture2D(tex, vec2(x, 0.5)).r;
+}
+`;
+
+function makeTexture(gl, width, pixels) {
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(pixels));
+  return tex;
+}
+
+function run(body) {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 1;
+  const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true });
+
+  const vs = gl.createShader(gl.VERTEX_SHADER);
+  gl.shaderSource(vs, 'attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }');
+  gl.compileShader(vs);
+  const fs = gl.createShader(gl.FRAGMENT_SHADER);
+  gl.shaderSource(fs, HELPERS + body);
+  gl.compileShader(fs);
+  if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) return 'COMPILE FAIL: ' + gl.getShaderInfoLog(fs);
+  const program = gl.createProgram();
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return 'LINK FAIL: ' + gl.getProgramInfoLog(program);
+  gl.useProgram(program);
+
+  // texA: 1x1, red = 160 -> the inner read produces 160/255 = 0.627
+  gl.activeTexture(gl.TEXTURE0);
+  makeTexture(gl, 1, [160, 0, 0, 255]);
+  gl.uniform1i(gl.getUniformLocation(program, 'texA'), 0);
+  // texB: 4x1 ramp; sampling at x = 0.627 lands on texel 2, red = 40
+  gl.activeTexture(gl.TEXTURE1);
+  makeTexture(gl, 4, [10, 0, 0, 255, 20, 0, 0, 255, 40, 0, 0, 255, 80, 0, 0, 255]);
+  gl.uniform1i(gl.getUniformLocation(program, 'texB'), 1);
+
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const location = gl.getAttribLocation(program, 'p');
+  gl.enableVertexAttribArray(location);
+  gl.vertexAttribPointer(location, 2, gl.FLOAT, false, 0, 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  const out = new Uint8Array(4);
+  gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, out);
+  return out[0];
+}
+
+const gl = document.createElement('canvas').getContext('webgl');
+const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+const lines = ['renderer: ' + gl.getParameter(dbg ? dbg.UNMASKED_RENDERER_WEBGL : gl.RENDERER), ''];
+for (const [label, expected, body] of CASES) {
+  const got = run(body);
+  lines.push(`${got === expected ? 'ok  ' : 'BUG '} ${label} expected ${expected}, got ${got}`);
+}
+document.getElementById('out').textContent = lines.join('\n');
+</script>

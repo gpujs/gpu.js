@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.8
- * @date Mon Jul 27 2026 21:54:06 GMT+0800 (Singapore Standard Time)
+ * @date Mon Jul 27 2026 23:33:51 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -5341,7 +5341,7 @@
         }
         retArr.push(") {\n");
         for (let i = 0; i < ast.body.body.length; ++i) {
-          this.astGeneric(ast.body.body[i], retArr);
+          this.astStatementWithHoisting(ast.body.body[i], retArr);
           retArr.push("\n");
         }
         retArr.push("}\n");
@@ -5847,14 +5847,33 @@
       astBlockStatement(bNode, retArr) {
         if (this.isState("loop-body")) {
           this.pushState("block-body");
-          for (let i = 0; i < bNode.body.length; i++) this.astGeneric(bNode.body[i], retArr);
+          for (let i = 0; i < bNode.body.length; i++) this.astStatementWithHoisting(bNode.body[i], retArr);
           this.popState("block-body");
         } else {
           retArr.push("{\n");
-          for (let i = 0; i < bNode.body.length; i++) this.astGeneric(bNode.body[i], retArr);
+          for (let i = 0; i < bNode.body.length; i++) this.astStatementWithHoisting(bNode.body[i], retArr);
           retArr.push("}\n");
         }
         return retArr;
+      }
+      astStatementWithHoisting(ast, retArr) {
+        switch (ast.type) {
+         case "ExpressionStatement":
+         case "VariableDeclaration":
+         case "ReturnStatement":
+          {
+            const previousHoist = this.hoistedIndexReads;
+            const hoisted = this.hoistedIndexReads = [];
+            const statement = [];
+            this.astGeneric(ast, statement);
+            this.hoistedIndexReads = previousHoist;
+            retArr.push(...hoisted, ...statement);
+            return retArr;
+          }
+
+         default:
+          return this.astGeneric(ast, retArr);
+        }
       }
       astVariableDeclaration(varDecNode, retArr) {
         const declarations = varDecNode.declarations;
@@ -6446,7 +6465,14 @@
          default:
           this.astGeneric(property, result);
         }
-        return result.join("");
+        const markup = result.join("");
+        if (this.hoistedIndexReads && /\b\w+\((user_|constants_)\w+, \1\w+Size/.test(markup)) {
+          const name = `hoisted_${this.hoistedIndexReads.length}_${utils.sanitizeName(this.name)}`;
+          const isInt = markup.startsWith("int(");
+          this.hoistedIndexReads.push(`${isInt ? "int" : "float"} ${name}=${markup};\n`);
+          return name;
+        }
+        return markup;
       }
     };
     const matrixSizes = {
