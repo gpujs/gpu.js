@@ -630,7 +630,9 @@ const utils = {
     if (!flattened) {
       flattened = settings.flattened = {};
     }
-    const ast = acorn.parse(source);
+    // acorn 8 requires ecmaVersion and warns when it is absent; 2020 is the
+    // version it defaults to, so this pins current behaviour rather than changing it
+    const ast = acorn.parse(source, { ecmaVersion: 2020 });
     const functionDependencies = [];
     let indent = 0;
 
@@ -985,7 +987,7 @@ const utils = {
 
   getMinifySafeName: (fn) => {
     try {
-      const ast = acorn.parse(`const value = ${fn.toString()}`);
+      const ast = acorn.parse(`const value = ${fn.toString()}`, { ecmaVersion: 2020 });
       const { init } = ast.body[0].declarations[0];
       return init.body.name || init.body.body[0].argument.name;
     } catch (e) {

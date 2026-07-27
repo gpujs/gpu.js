@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="icon" href="data:,">
+  <title>GPU.JS : context lifetime probe</title>
+  <script src="../../dist/gpu-browser.js"></script>
+</head>
+<body>
+<pre id="out"></pre>
+<script>
+(async function () {
+  const results = window.__ctxProbe = { done: false, rounds: [], error: null };
+  const N = 40;
+  try {
+    for (let i = 0; i < N; i++) {
+      const gpu = new GPU({ mode: 'webgl' });
+      const kernel = gpu.createKernel(function (a) { return a[this.thread.x] * 2; }, { output: [4] });
+      const out = kernel([1, 2, 3, 4]);
+      const ok = out[3] === 8;
+      const lost = kernel.context.isContextLost ? kernel.context.isContextLost() : null;
+      await gpu.destroy();
+      results.rounds.push({ i: i, ok: ok, lostDuringUse: lost });
+      if (!ok) break;
+    }
+  } catch (e) {
+    results.error = (e && e.message) || String(e);
+  }
+  const bad = results.rounds.filter(r => !r.ok).length;
+  results.summary = results.rounds.length + ' rounds, ' + bad + ' produced wrong results, ' +
+    results.rounds.filter(r => r.lostDuringUse).length + ' had a lost context while in use';
+  document.getElementById('out').textContent = results.summary + (results.error ? '\nerror: ' + results.error : '');
+  results.done = true;
+})();
+</script>
+</body>
+</html>

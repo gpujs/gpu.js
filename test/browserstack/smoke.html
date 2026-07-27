@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GPU.JS : BrowserStack smoke test</title>
   <style>
@@ -23,7 +24,7 @@
 <div id="summary">running&hellip;</div>
 <ol id="results"></ol>
 <script>
-(function () {
+(async function () {
   'use strict';
 
   // The Selenium runner polls window.__gpujsResults until `done` flips to true.
@@ -50,7 +51,10 @@
     resultsEl.appendChild(li);
   }
 
-  function test(name, fn) {
+  // destroy() defers its context teardown to the next run loop on purpose, so
+  // it has to be awaited. Creating every GPU synchronously instead piles up
+  // WebGL contexts past the browser's ~16 limit and it starts evicting live ones.
+  async function test(name, fn) {
     let gpu = null;
     try {
       const made = fn(function track(instance) { gpu = instance; return instance; });
@@ -62,7 +66,7 @@
     } catch (e) {
       record(name, 'fail', (e && e.message) || String(e));
     } finally {
-      if (gpu) { try { gpu.destroy(); } catch (e) { /* teardown noise is not a failure */ } }
+      if (gpu) { try { await gpu.destroy(); } catch (e) { /* teardown noise is not a failure */ } }
     }
   }
 
@@ -99,23 +103,23 @@
     results.env.modes = modes;
 
     // ---- library-level checks -------------------------------------------
-    test('GPU global is constructable', function () {
+    await test('GPU global is constructable', function () {
       assert(typeof GPU === 'function', 'GPU is not a function');
       const gpu = new GPU({ mode: 'cpu' });
       assert(gpu instanceof GPU, 'new GPU() did not produce a GPU');
       gpu.destroy();
     });
 
-    test('a GPU-backed mode is available', function () {
+    await test('a GPU-backed mode is available', function () {
       assert(GPU.isGPUSupported, 'no WebGL/WebGL2 backend on this device');
     });
 
     // ---- per-mode checks -------------------------------------------------
-    modes.forEach(function (mode) {
+    for (const mode of modes) {
       const isGPUMode = mode !== 'cpu';
       const label = function (name) { return '[' + mode + '] ' + name; };
 
-      test(label('1D kernel adds two arrays'), function (track) {
+      await test(label('1D kernel adds two arrays'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         const kernel = gpu.createKernel(function (a, b) {
           return a[this.thread.x] + b[this.thread.x];
@@ -127,7 +131,7 @@
         });
       });
 
-      test(label('2D kernel multiplies 32x32 matrices'), function (track) {
+      await test(label('2D kernel multiplies 32x32 matrices'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         const size = 32;
         const a = [];
@@ -162,7 +166,7 @@
         });
       });
 
-      test(label('3D output'), function (track) {
+      await test(label('3D output'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         const kernel = gpu.createKernel(function () {
           return this.thread.z * 100 + this.thread.y * 10 + this.thread.x;
@@ -172,7 +176,7 @@
         assertClose(out[3][2][1], 321, 'out[3][2][1]');
       });
 
-      test(label('branching and loops'), function (track) {
+      await test(label('branching and loops'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         const kernel = gpu.createKernel(function () {
           let total = 0;
@@ -189,7 +193,7 @@
         assertClose(kernel()[0], 5, 'loop total');
       });
 
-      test(label('thread index divided by a literal'), function (track) {
+      await test(label('thread index divided by a literal'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         // `/` is fractional in JS; an integer divide here truncated to 0 and
         // rendered a flat image wherever fixIntegerDivisionAccuracy is off
@@ -202,7 +206,7 @@
         });
       });
 
-      test(label('graphical gradient'), function (track) {
+      await test(label('graphical gradient'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         const kernel = gpu.createKernel(function () {
           this.color(this.thread.x / 4, 0, 0, 1);
@@ -214,7 +218,7 @@
           'expected red to climb across x, got ' + JSON.stringify(reds));
       });
 
-      test(label('bitwise NOT'), function (track) {
+      await test(label('bitwise NOT'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         // the GLSL emulation used to ignore the sign of its input, so ~(-1)
         // gave -2 and ~~x never round-tripped
@@ -228,7 +232,7 @@
         });
       });
 
-      test(label('signed right shift'), function (track) {
+      await test(label('signed right shift'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         // emulated in GLSL for both webgl and webgl2; used to use an
         // approximate pow(2.0, n), so exact left operands shifted one too far
@@ -243,7 +247,7 @@
         });
       });
 
-      test(label('modulo in a comparison'), function (track) {
+      await test(label('modulo in a comparison'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         // used to fail to compile wherever fixIntegerDivisionAccuracy is off,
         // since `%` was typed Integer but lowers to a float-returning helper
@@ -259,7 +263,7 @@
         assertClose(kernel()[0], 20, 'even sum');
       });
 
-      test(label('modulo and division'), function (track) {
+      await test(label('modulo and division'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         const kernel = gpu.createKernel(function (a) {
           return (a[this.thread.x] % 3) + a[this.thread.x] / 2;
@@ -270,7 +274,7 @@
         });
       });
 
-      test(label('Math built-ins'), function (track) {
+      await test(label('Math built-ins'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         const kernel = gpu.createKernel(function () {
           const s = Math.sqrt(16.0);
@@ -285,7 +289,7 @@
         assertClose(kernel()[0], 24, 'math total');
       });
 
-      test(label('constants and custom functions'), function (track) {
+      await test(label('constants and custom functions'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         gpu.addFunction(function triple(x) {
           return x * 3;
@@ -298,7 +302,7 @@
         assert(out.length === 4, 'expected 4 results');
       });
 
-      test(label('Float32Array input'), function (track) {
+      await test(label('Float32Array input'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         const kernel = gpu.createKernel(function (a) {
           return a[this.thread.x] * 2;
@@ -309,7 +313,7 @@
         });
       });
 
-      test(label('flattened input() argument'), function (track) {
+      await test(label('flattened input() argument'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         const kernel = gpu.createKernel(function (a) {
           return a[this.thread.y][this.thread.x];
@@ -319,7 +323,7 @@
         assertClose(out[1][2], 6, 'out[1][2]');
       });
 
-      test(label('dynamic output resizing'), function (track) {
+      await test(label('dynamic output resizing'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         const kernel = gpu.createKernel(function (a) {
           return a[this.thread.x] + 1;
@@ -332,7 +336,7 @@
         assertClose(out[4], 6, 'resized index 4');
       });
 
-      test(label('texture pipeline round-trip'), function (track) {
+      await test(label('texture pipeline round-trip'), function (track) {
         if (!isGPUMode) return 'skip';
         const gpu = track(new GPU({ mode: mode }));
         const kernel = gpu.createKernel(function (a) {
@@ -347,7 +351,7 @@
         texture.delete();
       });
 
-      test(label('texture feeds a second kernel'), function (track) {
+      await test(label('texture feeds a second kernel'), function (track) {
         if (!isGPUMode) return 'skip';
         const gpu = track(new GPU({ mode: mode }));
         const first = gpu.createKernel(function (a) {
@@ -362,7 +366,7 @@
         });
       });
 
-      test(label('graphical kernel paints pixels'), function (track) {
+      await test(label('graphical kernel paints pixels'), function (track) {
         const gpu = track(new GPU({ mode: mode }));
         const kernel = gpu.createKernel(function () {
           this.color(0, 1, 0, 1);
@@ -374,7 +378,7 @@
           'expected opaque green, got rgba(' + pixels[0] + ',' + pixels[1] + ',' + pixels[2] + ',' + pixels[3] + ')');
       });
 
-      test(label('kernel map / sub-kernels'), function (track) {
+      await test(label('kernel map / sub-kernels'), function (track) {
         if (!isGPUMode) return 'skip';
         const gpu = track(new GPU({ mode: mode }));
         // GPU.isKernelMapSupported answers for the best available backend, so it
@@ -392,7 +396,7 @@
         assertClose(out.doubled[2], 6, 'doubled[2]');
       });
 
-      test(label('unsigned precision'), function (track) {
+      await test(label('unsigned precision'), function (track) {
         if (!isGPUMode) return 'skip';
         const gpu = track(new GPU({ mode: mode }));
         const kernel = gpu.createKernel(function (a) {
@@ -404,7 +408,7 @@
         });
       });
 
-      test(label('single precision'), function (track) {
+      await test(label('single precision'), function (track) {
         if (!isGPUMode) return 'skip';
         const gpu = track(new GPU({ mode: mode }));
         const features = gpu.Kernel.features;
@@ -420,7 +424,7 @@
         assertClose(out[0], -12.75, 'index 0', 0.05);
         assertClose(out[1], 184.875, 'index 1', 0.05);
       });
-    });
+    }
   } catch (e) {
     results.error = (e && e.stack) || String(e);
     record('harness', 'fail', results.error);

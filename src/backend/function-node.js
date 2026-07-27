@@ -267,7 +267,8 @@ class FunctionNode {
     }
 
     const ast = Object.freeze(inParser.parse(`const parser_${ this.name } = ${ this.source };`, {
-      locations: true
+      locations: true,
+      ecmaVersion: 2020
     }));
     // take out the function object, outside the var declarations
     const functionAST = ast.body[0].declarations[0].init;

@@ -551,11 +551,16 @@ class GPU {
       // if webGl is created and destroyed in the same run loop.
       setTimeout(() => {
         try {
-          for (let i = 0; i < this.kernels.length; i++) {
-            this.kernels[i].destroy(true); // remove canvas if exists
+          // kernel.destroy() splices itself out of this.kernels, so walk a copy:
+          // mutating the list being indexed skipped every other kernel, and left
+          // this.kernels[0] undefined below, which meant a single-kernel GPU
+          // never released its WebGL context at all
+          const kernels = this.kernels.slice();
+          for (let i = 0; i < kernels.length; i++) {
+            kernels[i].destroy(true); // remove canvas if exists
           }
           // all kernels are associated with one context, go ahead and take care of it here
-          let firstKernel = this.kernels[0];
+          let firstKernel = kernels[0];
           if (firstKernel) {
             // if it is shortcut
             if (firstKernel.kernel) {

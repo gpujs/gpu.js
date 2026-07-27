@@ -151,7 +151,10 @@ function buildCapabilities(target, context) {
     localIdentifier: context.localIdentifier,
     userName: context.user,
     accessKey: context.key,
-    seleniumVersion: '4.0.0'
+    seleniumVersion: '4.0.0',
+    // desktop sessions capture nothing by default, and the browser console is
+    // where WebGL driver complaints surface — they never reach the page
+    consoleLogs: 'verbose'
   };
   Object.keys(source).forEach(cap => {
     // browserName/browserVersion are W3C top-level; everything else is BrowserStack's.

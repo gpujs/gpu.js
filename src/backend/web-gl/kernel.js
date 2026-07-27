@@ -438,6 +438,10 @@ class WebGLKernel extends GLKernel {
     if (index !== -1) {
       this.textureCache.splice(index, 1);
     }
+    // a Texture keeps a reference to the kernel that made it, so it can outlive
+    // that kernel and call back here after destroy() has released the context.
+    // The GL texture went with the context, so there is nothing left to free.
+    if (!this.context) return;
     this.context.deleteTexture(texture);
   }
 
@@ -580,12 +584,20 @@ class WebGLKernel extends GLKernel {
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, vertices);
     gl.bufferSubData(gl.ARRAY_BUFFER, texCoordOffset, texCoords);
 
+    // getAttribLocation returns -1 for an attribute the GLSL compiler removed —
+    // aTexCoord goes when the fragment shader samples no texture — and passing
+    // that on raises INVALID_VALUE on every draw. Software GL keeps the unused
+    // attribute, so this only shows on real drivers.
     const aPosLoc = gl.getAttribLocation(this.program, 'aPos');
-    gl.enableVertexAttribArray(aPosLoc);
-    gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, false, 0, 0);
+    if (aPosLoc !== -1) {
+      gl.enableVertexAttribArray(aPosLoc);
+      gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, false, 0, 0);
+    }
     const aTexCoordLoc = gl.getAttribLocation(this.program, 'aTexCoord');
-    gl.enableVertexAttribArray(aTexCoordLoc);
-    gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, false, 0, texCoordOffset);
+    if (aTexCoordLoc !== -1) {
+      gl.enableVertexAttribArray(aTexCoordLoc);
+      gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, false, 0, texCoordOffset);
+    }
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
 
     let i = 0;

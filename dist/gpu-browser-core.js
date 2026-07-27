@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.8
- * @date Mon Jul 27 2026 01:14:09 GMT+0800 (Singapore Standard Time)
+ * @date Mon Jul 27 2026 10:18:00 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -2434,7 +2434,8 @@ class FunctionNode {
     }
 
     const ast = Object.freeze(inParser.parse(`const parser_${ this.name } = ${ this.source };`, {
-      locations: true
+      locations: true,
+      ecmaVersion: 2020
     }));
     const functionAST = ast.body[0].declarations[0].init;
     this.traceFunctionAST(functionAST);
@@ -10097,6 +10098,7 @@ class WebGLKernel extends GLKernel {
     if (index !== -1) {
       this.textureCache.splice(index, 1);
     }
+    if (!this.context) return;
     this.context.deleteTexture(texture);
   }
 
@@ -10240,11 +10242,15 @@ class WebGLKernel extends GLKernel {
     gl.bufferSubData(gl.ARRAY_BUFFER, texCoordOffset, texCoords);
 
     const aPosLoc = gl.getAttribLocation(this.program, 'aPos');
-    gl.enableVertexAttribArray(aPosLoc);
-    gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, false, 0, 0);
+    if (aPosLoc !== -1) {
+      gl.enableVertexAttribArray(aPosLoc);
+      gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, false, 0, 0);
+    }
     const aTexCoordLoc = gl.getAttribLocation(this.program, 'aTexCoord');
-    gl.enableVertexAttribArray(aTexCoordLoc);
-    gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, false, 0, texCoordOffset);
+    if (aTexCoordLoc !== -1) {
+      gl.enableVertexAttribArray(aTexCoordLoc);
+      gl.vertexAttribPointer(aTexCoordLoc, 2, gl.FLOAT, false, 0, texCoordOffset);
+    }
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
 
     let i = 0;
@@ -13578,10 +13584,11 @@ class GPU {
       }
       setTimeout(() => {
         try {
-          for (let i = 0; i < this.kernels.length; i++) {
-            this.kernels[i].destroy(true); 
+          const kernels = this.kernels.slice();
+          for (let i = 0; i < kernels.length; i++) {
+            kernels[i].destroy(true); 
           }
-          let firstKernel = this.kernels[0];
+          let firstKernel = kernels[0];
           if (firstKernel) {
             if (firstKernel.kernel) {
               firstKernel = firstKernel.kernel;
@@ -14451,7 +14458,7 @@ const utils = {
     if (!flattened) {
       flattened = settings.flattened = {};
     }
-    const ast = acorn.parse(source);
+    const ast = acorn.parse(source, { ecmaVersion: 2020 });
     const functionDependencies = [];
     let indent = 0;
 
@@ -14790,7 +14797,7 @@ const utils = {
 
   getMinifySafeName: (fn) => {
     try {
-      const ast = acorn.parse(`const value = ${fn.toString()}`);
+      const ast = acorn.parse(`const value = ${fn.toString()}`, { ecmaVersion: 2020 });
       const { init } = ast.body[0].declarations[0];
       return init.body.name || init.body.body[0].argument.name;
     } catch (e) {
