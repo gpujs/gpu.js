@@ -170,8 +170,12 @@ function buildCapabilities(target, context) {
     consoleLogs: 'verbose'
   };
   Object.keys(source).forEach(cap => {
-    // browserName/browserVersion are W3C top-level; everything else is BrowserStack's.
-    if (cap === 'browserName' || cap === 'browserVersion') {
+    // browserName/browserVersion are W3C top-level, and vendor-prefixed caps
+    // (goog:chromeOptions, moz:firefoxOptions) must stay top-level too --
+    // that is how a temporary debug target can pass browser flags, e.g.
+    // --enable-privileged-webgl-extensions to read ANGLE's translated HLSL
+    // through WEBGL_debug_shaders. Everything else is BrowserStack's.
+    if (cap === 'browserName' || cap === 'browserVersion' || cap.includes(':')) {
       caps[cap] = source[cap];
     } else {
       bstack[cap] = source[cap];
