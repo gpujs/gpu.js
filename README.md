@@ -1,4 +1,4 @@
-[<img width="100" alt="Logo" src="http://gpu.rocks/static/media/jelly.3587de60.png">](http://gpu.rocks/)
+[<img width="100" alt="Logo" src="https://raw.githubusercontent.com/gpujs/gpu.js/develop/assets/jelly.png">](https://gpu.rocks/)
 # GPU.js
 GPU.js is a JavaScript Acceleration library for GPGPU (General purpose computing on GPUs) in JavaScript for Web and Node.
 GPU.js automatically transpiles simple JavaScript functions into shader language and compiles them so they run on your GPU.
@@ -1286,7 +1286,7 @@ Support this project by becoming a sponsor. Your logo will show up here with a l
 ![](https://www.leadergpu.com/assets/main/logo_leadergpu-a8cacac0c90d204b7f7f6c8420c6a149e71ebe53f3f28f3fc94a01cd05c0bd93.png)
 Sponsored NodeJS GPU environment from [LeaderGPU](https://www.leadergpu.com) - These guys rock!
 
-![](https://3fxtqy18kygf3on3bu39kh93-wpengine.netdna-ssl.com/wp-content/themes/browserstack/img/browserstack-logo.svg)
+![](https://d98b8t1nnulk5.cloudfront.net/production/images/layout/logo-header.png)
 Sponsored Browser GPU environment's from [BrowserStack](https://browserstack.com) - Second to none!
 
 <a href="https://opencollective.com/gpujs/sponsor/0/website" target="_blank"><img src="https://opencollective.com/gpujs/sponsor/0/avatar.svg"></a>
