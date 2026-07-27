@@ -218,14 +218,36 @@ const EXTRACT_QUNIT = `
   return Object.assign({ env: { userAgent: navigator.userAgent } }, results);
 `;
 
+// BrowserStack occasionally fails to hand over a device — "Could not start
+// Mobile Browser", "session not created". That is an allocation fault, not a
+// result: the browser never ran, so retrying cannot mask a regression. Only
+// session creation is retried; once a session exists its outcome stands.
+const SESSION_ATTEMPTS = 3;
+
+async function openSession(target, context) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= SESSION_ATTEMPTS; attempt++) {
+    try {
+      return await new Builder()
+        .usingServer(HUB)
+        .withCapabilities(buildCapabilities(target, context))
+        .build();
+    } catch (e) {
+      lastError = e;
+      if (attempt === SESSION_ATTEMPTS) break;
+      const reason = (e.message || '').split('\n')[0].slice(0, 70);
+      console.log(`   ${target.name}: session did not start (${reason}) — retry ${attempt}/${SESSION_ATTEMPTS - 1}`);
+      await new Promise(r => setTimeout(r, 5000 * attempt));
+    }
+  }
+  throw new Error(`could not start a session after ${SESSION_ATTEMPTS} attempts: ${lastError && lastError.message}`);
+}
+
 async function runTarget(target, context) {
   const started = Date.now();
   let driver = null;
   try {
-    driver = await new Builder()
-      .usingServer(HUB)
-      .withCapabilities(buildCapabilities(target, context))
-      .build();
+    driver = await openSession(target, context);
 
     const session = await driver.getSession();
     const sessionId = session.getId();
