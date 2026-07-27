@@ -1,6 +1,6 @@
 const { assert, skip, test, module: describe, only } = require('qunit');
 const { GPU } = require('../../../../../../src');
-const { loadVideo } = require('../../../../../browser-test-utils');
+const { loadVideo, assertVideoFailureIsUnsupportedFormat } = require('../../../../../browser-test-utils');
 
 describe('feature: to-string unsigned precision arguments HTMLVideo');
 
@@ -34,7 +34,7 @@ function testArgument(mode, done) {
     gpu.destroy();
     done();
   }).catch(error => {
-    assert.ok(false, error.message);
+    assertVideoFailureIsUnsupportedFormat(assert, error);
     done();
   });
 }

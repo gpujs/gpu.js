@@ -53,7 +53,17 @@ function loadVideo(src, currentTime) {
     video.preload = 'auto';
     video.muted = true;
     video.playsInline = true;
-    video.onerror = () => reject(new Error(`could not load ${src}`));
+    video.onerror = () => {
+      // Say which kind of failure it was: a codec the browser will not play is
+      // a fact about the browser, a network error is a fact about the run.
+      const code = video.error ? video.error.code : 0;
+      const why = code === 4 ? 'format not supported' :
+        code === 2 ? 'network error' :
+        code === 3 ? 'decode error' : `media error ${code}`;
+      const error = new Error(`could not load ${src}: ${why}`);
+      error.mediaErrorCode = code;
+      reject(error);
+    };
     if (currentTime) {
       // seeking needs the duration, which arrives with the metadata; `seeked`
       // then means readyState is back to at least HAVE_CURRENT_DATA
@@ -64,6 +74,16 @@ function loadVideo(src, currentTime) {
     }
     video.src = src;
   });
+}
+
+// A browser that will not decode the format has nothing to prove here, so let
+// that pass; anything else -- a network error, a decode error -- is real and
+// should fail. canPlayType cannot be used to decide this ahead of time: Safari
+// answers "maybe" for video/webm and then fails to decode it, so the media
+// error is the only honest signal.
+function assertVideoFailureIsUnsupportedFormat(assert, error) {
+  const MEDIA_ERR_SRC_NOT_SUPPORTED = 4;
+  assert.ok(error.mediaErrorCode === MEDIA_ERR_SRC_NOT_SUPPORTED, error.message);
 }
 
 function check2DImage(result, expected, channel) {
@@ -96,6 +116,7 @@ const _exports = {
   loadImage,
   loadImages,
   loadVideo,
+  assertVideoFailureIsUnsupportedFormat,
   check2DImage,
 };
 

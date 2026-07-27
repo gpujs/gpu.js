@@ -1,6 +1,6 @@
 const { assert, skip, test, module: describe } = require('qunit');
 const { GPU } = require('../../src');
-const { loadVideo } = require('../browser-test-utils');
+const { loadVideo, assertVideoFailureIsUnsupportedFormat } = require('../browser-test-utils');
 
 describe('video');
 function videoArgumentTest(mode, done) {
@@ -29,7 +29,7 @@ function videoArgumentTest(mode, done) {
     gpu.destroy();
     done();
   }).catch(error => {
-    assert.ok(false, error.message);
+    assertVideoFailureIsUnsupportedFormat(assert, error);
     done();
   });
 }
