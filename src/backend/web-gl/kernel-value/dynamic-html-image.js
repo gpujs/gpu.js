@@ -1,5 +1,5 @@
 const { utils } = require('../../../utils');
-const { WebGLKernelValueHTMLImage } = require('./html-image');
+const { WebGLKernelValueHTMLImage, mediaSize } = require('./html-image');
 
 class WebGLKernelValueDynamicHTMLImage extends WebGLKernelValueHTMLImage {
   getSource() {
@@ -11,7 +11,7 @@ class WebGLKernelValueDynamicHTMLImage extends WebGLKernelValueHTMLImage {
   }
 
   updateValue(value) {
-    const { width, height } = value;
+    const { width, height } = mediaSize(value);
     this.checkSize(width, height);
     this.dimensions = [width, height, 1];
     this.textureSize = [width, height];

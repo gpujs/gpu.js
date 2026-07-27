@@ -1,10 +1,24 @@
 const { utils } = require('../../../utils');
 const { WebGLKernelArray } = require('./array');
 
+// A <video> reports its presentational width/height attributes here, and those
+// are 0 unless the page set them -- the frame's own size is videoWidth and
+// videoHeight. The CPU backend has always fallen back this way in
+// _mediaTo2DArray, so the two disagreed about the size of every video: this one
+// baked ivec2(0, 0) into the shader, and getImage2D then divided by zero and
+// sampled arbitrary texels. Constant indices happened to survive it; anything
+// computed did not.
+function mediaSize(value) {
+  return {
+    width: value.width > 0 ? value.width : value.videoWidth,
+    height: value.height > 0 ? value.height : value.videoHeight,
+  };
+}
+
 class WebGLKernelValueHTMLImage extends WebGLKernelArray {
   constructor(value, settings) {
     super(value, settings);
-    const { width, height } = value;
+    const { width, height } = mediaSize(value);
     this.checkSize(width, height);
     this.dimensions = [width, height, 1];
     this.textureSize = [width, height];
@@ -38,5 +52,6 @@ class WebGLKernelValueHTMLImage extends WebGLKernelArray {
 }
 
 module.exports = {
-  WebGLKernelValueHTMLImage
+  WebGLKernelValueHTMLImage,
+  mediaSize
 };

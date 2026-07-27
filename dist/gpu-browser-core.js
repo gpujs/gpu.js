@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.8
- * @date Mon Jul 27 2026 20:45:40 GMT+0800 (Singapore Standard Time)
+ * @date Mon Jul 27 2026 20:53:52 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -7306,10 +7306,16 @@
   var require_html_image$1 = __commonJSMin((exports, module) => {
     const {utils: utils} = require_utils();
     const {WebGLKernelArray: WebGLKernelArray} = require_array();
+    function mediaSize(value) {
+      return {
+        width: value.width > 0 ? value.width : value.videoWidth,
+        height: value.height > 0 ? value.height : value.videoHeight
+      };
+    }
     var WebGLKernelValueHTMLImage = class extends WebGLKernelArray {
       constructor(value, settings) {
         super(value, settings);
-        const {width: width, height: height} = value;
+        const {width: width, height: height} = mediaSize(value);
         this.checkSize(width, height);
         this.dimensions = [ width, height, 1 ];
         this.textureSize = [ width, height ];
@@ -7335,18 +7341,19 @@
       }
     };
     module.exports = {
-      WebGLKernelValueHTMLImage: WebGLKernelValueHTMLImage
+      WebGLKernelValueHTMLImage: WebGLKernelValueHTMLImage,
+      mediaSize: mediaSize
     };
   });
   var require_dynamic_html_image$1 = __commonJSMin((exports, module) => {
     const {utils: utils} = require_utils();
-    const {WebGLKernelValueHTMLImage: WebGLKernelValueHTMLImage} = require_html_image$1();
+    const {WebGLKernelValueHTMLImage: WebGLKernelValueHTMLImage, mediaSize: mediaSize} = require_html_image$1();
     var WebGLKernelValueDynamicHTMLImage = class extends WebGLKernelValueHTMLImage {
       getSource() {
         return utils.linesToString([ `uniform sampler2D ${this.id}`, `uniform ivec2 ${this.sizeId}`, `uniform ivec3 ${this.dimensionsId}` ]);
       }
       updateValue(value) {
-        const {width: width, height: height} = value;
+        const {width: width, height: height} = mediaSize(value);
         this.checkSize(width, height);
         this.dimensions = [ width, height, 1 ];
         this.textureSize = [ width, height ];
