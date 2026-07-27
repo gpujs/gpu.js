@@ -35,9 +35,7 @@ whitespace churn in files you did not touch. That is expected.
 
 The suite has platform-dependent failures that are **not** regressions:
 
-- **macOS**: 3 known failures, all `Infinity without float` (the unsigned
-  encoding saturates to ~1.7e38 instead of producing NaN).
-- **Linux/Mesa**: a different and larger set, baselined in
+- **Linux/Mesa**: a set of failures baselined in
   `.github/known-test-failures.txt`. CI compares against it with
   `.github/compare-test-failures.js` and fails only on *new* failures, so the
   raw exit code is not the signal.

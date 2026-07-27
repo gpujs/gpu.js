@@ -67,9 +67,6 @@ features: unsigned precision textures > with Uint8ClampedArray2D headlessgl
 features: unsigned precision textures > with Uint8ClampedArray3D auto
 features: unsigned precision textures > with Uint8ClampedArray3D gpu
 features: unsigned precision textures > with Uint8ClampedArray3D headlessgl
-infinity > Infinity without float auto
-infinity > Infinity without float gpu
-infinity > Infinity without float headlessgl
 input > inputInt32ArrayX auto
 input > inputInt32ArrayX gpu
 internal: recycling > immutable unsigned precision headlessgl
