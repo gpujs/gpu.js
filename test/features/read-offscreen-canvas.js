@@ -2,7 +2,17 @@ if (typeof importScripts !== 'undefined') {
   // inside Worker
   importScripts('../../dist/gpu-browser.js');
   onmessage = function (e) {
-    const gpu = new GPU({ mode: e.data });
+    // A worker does not necessarily have the contexts the page has -- Firefox
+    // on Windows offers no WebGL2 here -- and an uncaught throw would surface
+    // as a global failure with no test attached. Report it as data and let the
+    // page decide what it proves.
+    let gpu;
+    try {
+      gpu = new GPU({ mode: e.data });
+    } catch (error) {
+      postMessage({ unsupported: String(error.message || error) });
+      return;
+    }
     const kernel1 = gpu.createKernel(function() {
       this.color(1, 1, 1, 1);
     }, {
@@ -27,6 +37,17 @@ if (typeof importScripts !== 'undefined') {
   function testReadOffscreenCanvas(mode, done) {
     const worker = new Worker('features/read-offscreen-canvas.js');
     worker.onmessage = function (e) {
+      // The worker owns the answer to "is this mode available here": the page
+      // may have WebGL2 while the worker does not (Firefox on Windows). An
+      // unsupported mode is that browser's honest answer, not a gpu.js failure.
+      if (e.data.unsupported) {
+        assert.ok(
+          /not supported/i.test(e.data.unsupported),
+          `worker reported: ${e.data.unsupported}`
+        );
+        done();
+        return;
+      }
       const { result } = e.data;
       if (mode) assert.equal(e.data.mode, mode, 'GPU mode used in Worker');
       assert.deepEqual(result, Float32Array.from([4]));
