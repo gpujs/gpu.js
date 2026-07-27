@@ -62,7 +62,8 @@ function parseArgs(argv) {
     project: process.env.BROWSERSTACK_PROJECT || 'gpu.js',
     only: '',
     concurrency: 5,
-    timeout: 300,
+    // per-suite default, overridden by --timeout; see the adjustment below
+    timeout: 0,
     filter: '',
     'dry-run': false,
     // visual only: report the pixel deltas without failing on them, which is
@@ -84,6 +85,11 @@ function parseArgs(argv) {
       throw new Error(`unknown option --${key}`);
     }
   });
+  // The smoke and visual suites are a handful of assertions; the qunit suite is
+  // the whole of test/all.html, which takes minutes in a real browser over the
+  // tunnel — Safari needed 385s. One budget cannot serve both.
+  if (!args.timeout) args.timeout = args.suite === 'qunit' ? 900 : 300;
+
   return args;
 }
 

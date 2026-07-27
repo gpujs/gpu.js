@@ -48,18 +48,71 @@
       passed: 0,
       failed: 0,
       skipped: 0,
-      tests: []
+      tests: [],
+      modules: {},
+      pageErrors: []
     };
+
+    // Crash tolerance. A test that throws from a callback QUnit is not inside --
+    // an image onload, a promise, a WebGL callback -- escapes QUnit's try/catch,
+    // so its assert.async() done() never fires and the whole run stops on that
+    // test forever. One broken test must not cost us the other 3000 results, so
+    // cap every test: QUnit fails a test that overruns and moves to the next.
+    // Remote grids are slower than a local machine, hence the override.
+    const timeoutParam = new URLSearchParams(location.search).get('testTimeout');
+    QUnit.config.testTimeout = timeoutParam ? Number(timeoutParam) : 30000;
+
+    // Those escaped errors are still the most useful diagnostic in the run, and
+    // by default they land nowhere. Record them against whatever was running,
+    // which is almost always the test that threw.
+    let running = null;
+    QUnit.on('testStart', testStart => { running = testStart.fullName.join(': '); });
+    function recordPageError(message, stack) {
+      results.pageErrors.push({
+        during: running,
+        message: String(message).slice(0, 300),
+        stack: String(stack || '').split('\n').slice(0, 6).join('\n')
+      });
+    }
+    window.addEventListener('error', event => recordPageError(event.message, event.error && event.error.stack));
+    window.addEventListener('unhandledrejection', event => recordPageError(event.reason, event.reason && event.reason.stack));
+    // A failed deepEqual carries no message, only expected and actual, so
+    // falling back to the stack reports where the assertion is rather than what
+    // went wrong — useless for the automated runners that read this.
+    function describeValue(value) {
+      if (value === null || typeof value !== 'object') return String(value);
+      const values = Array.from(value.length !== undefined ? value : Object.values(value));
+      const head = values.slice(0, 6).map(describeValue).join(', ');
+      return `[${head}${values.length > 6 ? `, …${values.length - 6} more` : ''}]`;
+    }
+    function describeError(error) {
+      if (error.message) return error.message;
+      if ('expected' in error || 'actual' in error) {
+        return `expected ${describeValue(error.expected)}, got ${describeValue(error.actual)}`;
+      }
+      return (error.stack || '').split('\n')[0] || 'failed';
+    }
+
     QUnit.on('testEnd', testEnd => {
+      // Per-module tallies let a Node-side runner report one result per module
+      // from a single page load, instead of reloading this page — which pulls
+      // in the bundle and every test file — once per module.
+      const moduleName = testEnd.fullName.length > 1 ? testEnd.fullName[0] : '(no module)';
+      const tally = results.modules[moduleName] || (results.modules[moduleName] = {
+        passed: 0, failed: 0, skipped: 0, failures: []
+      });
+      if (testEnd.status === 'failed') tally.failed++;
+      else if (testEnd.status === 'skipped') tally.skipped++;
+      else tally.passed++;
+
       if (testEnd.status !== 'failed') return;
-      results.tests.push({
+      const entry = {
         name: testEnd.fullName.join(': '),
         status: 'fail',
-        message: testEnd.errors
-          .map(error => error.message || (error.stack || '').split('\n')[0] || 'failed')
-          .join(' | ')
-          .slice(0, 500)
-      });
+        message: testEnd.errors.map(describeError).join(' | ').slice(0, 500)
+      };
+      tally.failures.push(entry);
+      results.tests.push(entry);
     });
     QUnit.on('error', error => {
       results.tests.push({

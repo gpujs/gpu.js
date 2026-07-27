@@ -39,3 +39,10 @@ yarn.lock
 test/browserstack/.credentials.json
 browserstack-results.json
 local.log
+
+# playwright
+test-results/
+playwright-report/
+
+# browserstack-node-sdk
+log/

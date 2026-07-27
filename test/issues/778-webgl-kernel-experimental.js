@@ -1,15 +1,21 @@
-const { assert, test, module: describe } = require('qunit');
+const { assert, test, skip, module: describe } = require('qunit');
 const { GPU } = require('../../src');
+
+// The scenario is an environment that has OffscreenCanvas but no document —
+// a Worker. A browser page cannot have its document taken away, so this can
+// only be staged in Node; `global` is also not defined in a browser, which is
+// what used to break the whole module there.
+const isNode = typeof window === 'undefined';
 
 const old = {};
 describe('issue #778 - WebGL kernel feature checks may throw an error', {
     before: () => {
-        old.document = global.document;
-        old.OffscreenCanvas = global.OffscreenCanvas;
+        old.document = globalThis.document;
+        old.OffscreenCanvas = globalThis.OffscreenCanvas;
         
-        global.document = undefined;
+        globalThis.document = undefined;
         // Mocking OffscreenCanvas
-        global.OffscreenCanvas = class OffscreenCanvas {
+        globalThis.OffscreenCanvas = class OffscreenCanvas {
             constructor() {}
     
             getContext(context) {
@@ -19,11 +25,11 @@ describe('issue #778 - WebGL kernel feature checks may throw an error', {
         }
     },
     after: () => {
-        global.document = old.document;
-        global.OffscreenCanvas = old.OffscreenCanvas;
+        globalThis.document = old.document;
+        globalThis.OffscreenCanvas = old.OffscreenCanvas;
     }
 });
 
-test('Check that WebGL is not supported', () => {
+(isNode ? test : skip)('Check that WebGL is not supported', () => {
     assert.notOk(GPU.isWebGLSupported);
 });

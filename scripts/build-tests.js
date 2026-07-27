@@ -1,6 +1,9 @@
 // Regenerates test/all.html from all-template.html. Replaces gulp's
-// `build-tests`. The script tags are built from every .js under test/ except
-// those sitting directly in it, which are helpers rather than test files.
+// `build-tests`. The script tags are built from the suites under test/, minus
+// the files sitting directly in it, which are helpers rather than tests, and
+// minus the directories that hold Node-side tooling — those use require('http')
+// and module.exports, which throw in the browser and stop the page before a
+// single test runs.
 const fs = require('fs');
 const path = require('path');
 const { readDirDeepSync } = require('read-dir-deep');
@@ -12,7 +15,7 @@ function run() {
 
   const files = readDirDeepSync(folder, {
     patterns: ['**/*.js'],
-    ignore: ['*.js'],
+    ignore: ['*.js', 'browserstack/**', 'playwright/**'],
   }).map(file => file.replace(/^test\//, ''));
 
   const warning = '<!-- the following list of javascript files is built automatically -->\n';
