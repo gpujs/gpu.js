@@ -29,7 +29,6 @@
     "c8": "10.1.2",
     "decomment": "^0.9.5",
     "js-beautify": "^1.15.4",
-    "lodash.template": "^4.18.1",
     "qunit": "2.22.0",
     "read-dir-deep": "8.0.0",
     "rolldown": "^1.2.0",
