@@ -4,14 +4,29 @@ const { GPU, plugins: { mathRandom } } = require('../../src');
 
 describe('Math.random() unique');
 
+// What this guards against is Math.random() inside a kernel returning the same
+// value on every run — the seed not advancing. It used to assert all 20 draws
+// were pairwise distinct, which failed about a third of the time for two
+// reasons that have nothing to do with that bug:
+//
+//   * it fed each result back in as the next seed, and that loop can land in a
+//     short cycle. Measured over 60 trials, as few as 8 of 20 draws came back
+//     distinct. Real usage seeds each run independently, which lifts the worst
+//     case to 18 of 20.
+//   * the draw is a float read back through a texture, so its value space is
+//     small enough that 20 samples collide by birthday even when seeded well.
+//
+// So: seed the way production does, and assert the property that matters with
+// enough headroom to survive a collision. A broken seed yields 1 distinct
+// value, nowhere near this threshold.
+const CHECK_COUNT = 20;
+const MIN_DISTINCT = 12;
+
 function mathRandomUnique(mode) {
   const gpu = new GPU({ mode });
-  const checkCount = 20;
-  let seed1 = Math.random();
-  let seed2 = Math.random();
-  let stub = sinon.stub(mathRandom, 'onBeforeRun').callsFake((kernel) => {
-    kernel.setUniform1f('randomSeed1', seed1);
-    kernel.setUniform1f('randomSeed2', seed2);
+  const stub = sinon.stub(mathRandom, 'onBeforeRun').callsFake((kernel) => {
+    kernel.setUniform1f('randomSeed1', Math.random());
+    kernel.setUniform1f('randomSeed2', Math.random());
   });
   try {
     gpu.addNativeFunction('getSeed', `highp float getSeed() {
@@ -22,18 +37,14 @@ function mathRandomUnique(mode) {
       return getSeed();
     }, {output: [1]});
     const results = [];
-    for (let i = 0; i < checkCount; i++) {
-      const result = kernel();
-      assert.ok(results.indexOf(result[0]) === -1, `duplication at index ${results.indexOf(result[0])} from new value ${result[0]}.  Values ${JSON.stringify(results)}`);
-      results.push(result[0]);
-      seed2 = result[0];
-      assert.ok(stub.called);
-      stub.restore();
-      stub.callsFake((kernel) => {
-        kernel.setUniform1f('randomSeed1', seed1);
-        kernel.setUniform1f('randomSeed2', seed2);
-      });
+    for (let i = 0; i < CHECK_COUNT; i++) {
+      results.push(kernel()[0]);
     }
+    assert.ok(stub.called, 'the Math.random plugin should seed each run');
+    const distinct = new Set(results).size;
+    assert.ok(distinct > 1, `Math.random() returned the same value every run: ${results[0]}`);
+    assert.ok(distinct >= MIN_DISTINCT,
+      `expected at least ${MIN_DISTINCT} of ${CHECK_COUNT} draws to differ, got ${distinct}. Values ${JSON.stringify(results)}`);
   } finally {
     stub.restore();
     gpu.destroy();
