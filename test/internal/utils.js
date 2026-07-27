@@ -571,6 +571,41 @@ test('flattenFunctionToString', () => {
   assert.ok(true);
 });
 
+test('flattenFunctionToString with an uninitialized declaration', () => {
+  // a bare `let x;` parses to a VariableDeclarator whose init is null, which
+  // used to throw and take the whole kernel.toString() call down with it
+  const flattened = utils.flattenFunctionToString('function f() { let x; x = 1; return x; }', {
+    findDependency: () => null,
+    thisLookup: () => null,
+  });
+  assert.equal(eval(`(${flattened.replace(/^function f/, 'function')})`)(), 1);
+});
+
+test('flattenFunctionToString keeps else branches', () => {
+  // the alternate used to be dropped entirely, so the flattened kernel still
+  // parsed and ran, and quietly returned the wrong answer
+  const flatten = source => {
+    const flattened = utils.flattenFunctionToString(source, {
+      findDependency: () => null,
+      thisLookup: () => null,
+    });
+    return eval(`(${flattened.replace(/^function f/, 'function')})`);
+  };
+  const block = flatten('function f(x) { if (x) { return 1; } else { return 2; } }');
+  assert.equal(block(true), 1);
+  assert.equal(block(false), 2);
+
+  // a consequent without braces needs the semicolon the block would have added
+  const bare = flatten('function f(x) { if (x) return 1; else return 2; }');
+  assert.equal(bare(true), 1);
+  assert.equal(bare(false), 2);
+
+  const chained = flatten('function f(x) { if (x === 1) return 1; else if (x === 2) return 2; else return 3; }');
+  assert.equal(chained(1), 1);
+  assert.equal(chained(2), 2);
+  assert.equal(chained(9), 3);
+});
+
 test('improper getMinifySafeName usage with arrow function', () => {
   assert.throws(() => {
     utils.getMinifySafeName(() => {});

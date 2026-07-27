@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.8
- * @date Mon Jul 27 2026 12:36:16 GMT+0800 (Singapore Standard Time)
+ * @date Mon Jul 27 2026 20:17:47 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -719,6 +719,7 @@
             if (declarations.length < 1) return ""; else return `${ast.kind} ${declarations.join(",")}`;
 
            case "VariableDeclarator":
+            if (!ast.init) return ast.id.name;
             if (ast.init.object && ast.init.object.type === "ThisExpression") if (thisLookup(ast.init.property.name, true)) return `${ast.id.name} = ${flatten(ast.init)}`; else return null; else return `${ast.id.name} = ${flatten(ast.init)}`;
 
            case "CallExpression":
@@ -780,7 +781,12 @@
             return `${flatten(ast.argument)}${ast.operator}`;
 
            case "IfStatement":
-            return `if (${flatten(ast.test)}) ${flatten(ast.consequent)}`;
+            {
+              const consequent = flatten(ast.consequent);
+              if (!ast.alternate) return `if (${flatten(ast.test)}) ${consequent}`;
+              const terminator = ast.consequent.type === "BlockStatement" ? "" : ";";
+              return `if (${flatten(ast.test)}) ${consequent}${terminator} else ${flatten(ast.alternate)}`;
+            }
 
            case "ThrowStatement":
             return `throw ${flatten(ast.argument)}`;
@@ -6817,7 +6823,14 @@
     const {glWiretap: glWiretap} = require_gl_wiretap();
     const {utils: utils} = require_utils();
     function toStringWithoutUtils(fn) {
-      return fn.toString().replace("=>", "").replace(/^function /, "").replace(/utils[.]/g, "/*utils.*/");
+      let source = fn.toString().replace(/^function /, "");
+      const arrow = source.indexOf("=>");
+      if (arrow !== -1 && !/[{]|\bfunction\b/.test(source.slice(0, arrow))) {
+        const params = source.slice(0, arrow).trim();
+        const body = source.slice(arrow + 2).trim();
+        source = body.startsWith("{") ? `${params} ${body}` : `${params} { return ${body}; }`;
+      }
+      return source.replace(/utils[.]/g, "/*utils.*/");
     }
     function glKernelString(Kernel, args, originKernel, setupContextString, destroyContextString) {
       if (!originKernel.built) originKernel.build.apply(originKernel, args);
@@ -6943,6 +6956,7 @@
       result.push(`function ${toStringWithoutUtils(utils.flatten4dArrayTo)}`);
       result.push(`function ${toStringWithoutUtils(utils.isArray)}`);
       if (kernel.renderOutput !== kernel.renderTexture && kernel.formatValues) result.push(`  const renderOutput = function ${toStringWithoutUtils(kernel.formatValues)};`);
+      result.push(`let readFramebuffer = null;\nfunction getReadFramebuffer() {\n  if (!readFramebuffer) readFramebuffer = gl.createFramebuffer();\n  return readFramebuffer;\n}`);
       result.push("/** end of injected functions **/");
       result.push(`  const innerKernel = function (${kernel.kernelArguments.map(kernelArgument => kernelArgument.varName).join(", ")}) {`);
       context.setIndent(4);
@@ -6956,24 +6970,23 @@
       result.push(context.toString());
       if (kernel.renderOutput === kernel.renderTexture) {
         context.reset();
-        const framebufferName = context.getContextVariableName(kernel.framebuffer);
         if (kernel.renderKernels) {
           const results = kernel.renderKernels();
           const textureName = context.getContextVariableName(kernel.texture.texture);
-          result.push(`    return {\n      result: {\n        texture: ${textureName},\n        type: '${results.result.type}',\n        toArray: ${getToArrayString(results.result, textureName, framebufferName)}\n      },`);
+          result.push(`    return {\n      result: {\n        texture: ${textureName},\n        type: '${results.result.type}',\n        toArray: ${getToArrayString(results.result, textureName)}\n      },`);
           const {subKernels: subKernels, mappedTextures: mappedTextures} = kernel;
           for (let i = 0; i < subKernels.length; i++) {
             const texture = mappedTextures[i];
             const subKernel = subKernels[i];
             const subKernelResult = results[subKernel.property];
             const subKernelTextureName = context.getContextVariableName(texture.texture);
-            result.push(`\n      ${subKernel.property}: {\n        texture: ${subKernelTextureName},\n        type: '${subKernelResult.type}',\n        toArray: ${getToArrayString(subKernelResult, subKernelTextureName, framebufferName)}\n      },`);
+            result.push(`\n      ${subKernel.property}: {\n        texture: ${subKernelTextureName},\n        type: '${subKernelResult.type}',\n        toArray: ${getToArrayString(subKernelResult, subKernelTextureName)}\n      },`);
           }
           result.push(`    };`);
         } else {
           const rendered = kernel.renderOutput();
           const textureName = context.getContextVariableName(kernel.texture.texture);
-          result.push(`    return {\n        texture: ${textureName},\n        type: '${rendered.type}',\n        toArray: ${getToArrayString(rendered, textureName, framebufferName)}\n      };`);
+          result.push(`    return {\n        texture: ${textureName},\n        type: '${rendered.type}',\n        toArray: ${getToArrayString(rendered, textureName)}\n      };`);
         }
       }
       result.push(`    ${destroyContextString ? "\n" + destroyContextString + "    " : ""}`);
@@ -7011,10 +7024,10 @@
         }
       });
     }
-    function getToArrayString(kernelResult, textureName, framebufferName) {
+    function getToArrayString(kernelResult, textureName) {
       const toArray = kernelResult.toArray.toString();
       const useFunctionKeyword = !/^function/.test(toArray);
-      return `() => {\n  function framebuffer() { return ${framebufferName}; };\n  ${utils.flattenFunctionToString(`${useFunctionKeyword ? "function " : ""}${toArray}`, {
+      return `() => {\n  function framebuffer() { return getReadFramebuffer(); };\n  ${utils.flattenFunctionToString(`${useFunctionKeyword ? "function " : ""}${toArray}`, {
         findDependency: (object, name) => {
           if (object === "utils") return `const ${name} = ${utils[name].toString()};`; else if (object === "this") {
             if (name === "framebuffer") return "";

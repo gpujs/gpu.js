@@ -671,6 +671,11 @@ const utils = {
             return `${ast.kind} ${declarations.join(',')}`;
           }
         case 'VariableDeclarator':
+          // a declaration with no initializer (`let x;`) has a null init, so
+          // there is nothing to flatten and nothing to look up on `this`
+          if (!ast.init) {
+            return ast.id.name;
+          }
           if (ast.init.object && ast.init.object.type === 'ThisExpression') {
             const lookup = thisLookup(ast.init.property.name, true);
             if (lookup) {
@@ -745,8 +750,19 @@ const utils = {
           return `${flatten(ast.left)}${ast.operator}${flatten(ast.right)}`;
         case 'UpdateExpression':
           return `${flatten(ast.argument)}${ast.operator}`;
-        case 'IfStatement':
-          return `if (${flatten(ast.test)}) ${flatten(ast.consequent)}`;
+        case 'IfStatement': {
+          // the else branch is semantics, not decoration — dropping it produced
+          // kernel strings that still parsed and ran, and returned garbage
+          const consequent = flatten(ast.consequent);
+          if (!ast.alternate) {
+            return `if (${flatten(ast.test)}) ${consequent}`;
+          }
+          // a consequent that is not a block (`if (x) return 1;`) needs the
+          // semicolon the enclosing block would have added, or `else` follows
+          // an unterminated statement
+          const terminator = ast.consequent.type === 'BlockStatement' ? '' : ';';
+          return `if (${flatten(ast.test)}) ${consequent}${terminator} else ${flatten(ast.alternate)}`;
+        }
         case 'ThrowStatement':
           return `throw ${flatten(ast.argument)}`;
         case 'ObjectPattern':

@@ -1,11 +1,22 @@
 const { glWiretap } = require('../../vendor/gl-wiretap');
 const { utils } = require('../../utils');
 
+// Callers prepend `function `, so this returns the body of a function
+// declaration whatever shape the source had.
 function toStringWithoutUtils(fn) {
-  return fn.toString()
-    .replace('=>', '')
-    .replace(/^function /, '')
-    .replace(/utils[.]/g, '/*utils.*/');
+  let source = fn.toString().replace(/^function /, '');
+  const arrow = source.indexOf('=>');
+  // Only an arrow at the top level: a `=>` that appears after a brace or the
+  // function keyword belongs to a nested callback, and stripping that one
+  // corrupts the body it lives in.
+  if (arrow !== -1 && !/[{]|\bfunction\b/.test(source.slice(0, arrow))) {
+    const params = source.slice(0, arrow).trim();
+    const body = source.slice(arrow + 2).trim();
+    // an expression-bodied arrow has no braces to fall back on, so removing the
+    // arrow alone leaves `function (array, width) array.subarray(0, width)`
+    source = body.startsWith('{') ? `${params} ${body}` : `${params} { return ${body}; }`;
+  }
+  return source.replace(/utils[.]/g, '/*utils.*/');
 }
 
 /**
@@ -174,6 +185,17 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       `  const renderOutput = function ${toStringWithoutUtils(kernel.formatValues)};`
     );
   }
+  // Readback framebuffer, kept separate from the kernel's own. A mapped kernel
+  // leaves every subKernel texture bound to COLOR_ATTACHMENT1 and up on the
+  // draw framebuffer, and binding one of them to COLOR_ATTACHMENT0 there to
+  // read it back yields zeros. The live kernel reads through a dedicated
+  // framebuffer (getRawValueFramebuffer) for exactly this reason; the main
+  // result only worked here because it is already attachment 0.
+  result.push(`let readFramebuffer = null;
+function getReadFramebuffer() {
+  if (!readFramebuffer) readFramebuffer = gl.createFramebuffer();
+  return readFramebuffer;
+}`);
   result.push('/** end of injected functions **/');
   result.push(`  const innerKernel = function (${kernel.kernelArguments.map(kernelArgument => kernelArgument.varName).join(', ')}) {`);
   context.setIndent(4);
@@ -191,7 +213,6 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
   result.push(context.toString());
   if (kernel.renderOutput === kernel.renderTexture) {
     context.reset();
-    const framebufferName = context.getContextVariableName(kernel.framebuffer);
     if (kernel.renderKernels) {
       const results = kernel.renderKernels();
       const textureName = context.getContextVariableName(kernel.texture.texture);
@@ -199,7 +220,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       result: {
         texture: ${ textureName },
         type: '${ results.result.type }',
-        toArray: ${ getToArrayString(results.result, textureName, framebufferName) }
+        toArray: ${ getToArrayString(results.result, textureName) }
       },`);
       const { subKernels, mappedTextures } = kernel;
       for (let i = 0; i < subKernels.length; i++) {
@@ -211,7 +232,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       ${subKernel.property}: {
         texture: ${ subKernelTextureName },
         type: '${ subKernelResult.type }',
-        toArray: ${ getToArrayString(subKernelResult, subKernelTextureName, framebufferName) }
+        toArray: ${ getToArrayString(subKernelResult, subKernelTextureName) }
       },`);
       }
       result.push(`    };`);
@@ -221,7 +242,7 @@ function glKernelString(Kernel, args, originKernel, setupContextString, destroyC
       result.push(`    return {
         texture: ${ textureName },
         type: '${ rendered.type }',
-        toArray: ${ getToArrayString(rendered, textureName, framebufferName) }
+        toArray: ${ getToArrayString(rendered, textureName) }
       };`);
     }
   }
@@ -280,7 +301,7 @@ function getGetPixelsString(kernel) {
   });
 }
 
-function getToArrayString(kernelResult, textureName, framebufferName) {
+function getToArrayString(kernelResult, textureName) {
   const toArray = kernelResult.toArray.toString();
   const useFunctionKeyword = !/^function/.test(toArray);
   const flattenedFunctions = utils.flattenFunctionToString(`${useFunctionKeyword ? 'function ' : ''}${ toArray }`, {
@@ -311,7 +332,7 @@ function getToArrayString(kernelResult, textureName, framebufferName) {
     }
   });
   return `() => {
-  function framebuffer() { return ${framebufferName}; };
+  function framebuffer() { return getReadFramebuffer(); };
   ${flattenedFunctions}
   return toArray();
   }`;
