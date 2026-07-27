@@ -1236,14 +1236,22 @@ devices exercise your working copy rather than a published build. Options:
 | `npm run test:browserstack:desktop` | Smoke suite on desktop Chrome/Firefox/Edge/Safari |
 | `node test/browserstack/run.js --browsers=all` | Both sets |
 | `node test/browserstack/run.js --only=iPhone` | Only targets whose name matches |
+| `node test/browserstack/run.js --suite=visual` | Visual regression: compares rendered output against each device's own CPU render |
 | `node test/browserstack/run.js --suite=qunit` | The full `test/all.html` suite instead of the smoke suite |
 
 The smoke suite (`test/browserstack/smoke.html`) covers kernel compilation and
 execution in `cpu`, `webgl` and `webgl2` modes: 1D/2D/3D output, loops and
 branching, `Math` built-ins, constants and custom functions, typed-array and
 `input()` arguments, dynamic output, texture pipelines, graphical output,
-kernel maps, and both precision modes. Targets live in
-`test/browserstack/browsers.js`. Results are written to
+kernel maps, and both precision modes.
+
+The visual suite (`test/browserstack/visual.html`) renders a flat fill, a
+gradient and a Mandelbrot in each GPU mode and compares them against the same
+device's CPU render, which is bit-identical across hardware. Pixel-exact
+comparison between devices does not work — GPUs disagree by a least significant
+bit on ordinary rounding — so it asserts against measured tolerances instead.
+
+Targets live in `test/browserstack/browsers.js`. Results are written to
 `browserstack-results.json`.
 
 ## Building

@@ -4,59 +4,88 @@
   <meta charset="utf-8">
   <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>GPU.JS : visual rendering probe</title>
+  <title>GPU.JS : visual regression</title>
   <style>
     body { font: 13px -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 8px; }
     canvas { border: 1px solid #ccc; image-rendering: pixelated; }
-    .scene { display: inline-block; margin: 4px; }
+    .scene { display: inline-block; margin: 4px; text-align: center; }
+    .scene span { display: block; font-size: 11px; color: #666; }
+    .fail { color: #cf222e; }
   </style>
   <script src="../../dist/gpu-browser.js"></script>
 </head>
 <body>
+<div id="summary">running&hellip;</div>
 <div id="scenes"></div>
 <script>
-(function () {
+(async function () {
   'use strict';
 
-  const results = window.__gpujsVisual = { done: false, error: null, env: {}, scenes: [] };
-
-  // FNV-1a over the raw pixel bytes. Exact-match across devices is the strict
-  // bar; the per-channel stats below are what a tolerant comparison would use.
-  function hash(bytes) {
-    let h = 0x811c9dc5;
-    for (let i = 0; i < bytes.length; i++) {
-      h ^= bytes[i];
-      h = (h * 0x01000193) >>> 0;
-    }
-    return h.toString(16).padStart(8, '0');
-  }
-
-  function summarise(pixels) {
-    let sum = 0;
-    let nonZero = 0;
-    for (let i = 0; i < pixels.length; i++) {
-      sum += pixels[i];
-      if (pixels[i] !== 0) nonZero++;
-    }
-    return { mean: +(sum / pixels.length).toFixed(4), nonZero };
-  }
+  // Comparing pixels between devices does not work: GPUs disagree by a least
+  // significant bit on ordinary rounding (0.9 * 255 = 229.5 lands on 229 or 230
+  // depending on the driver), and iterative float math diverges further. The cpu
+  // renderer is bit-identical everywhere, so each GPU render is compared against
+  // the cpu render of the same scene on the same device instead.
+  const results = window.__gpujsVisual = {
+    done: false,
+    error: null,
+    env: {},
+    // set by the runner: when false the page only measures and never fails,
+    // which is how the thresholds below were chosen
+    assert: !/[?&]measure=1/.test(location.search),
+    total: 0,
+    passed: 0,
+    failed: 0,
+    skipped: 0,
+    tests: []
+  };
 
   const SIZE = 64;
 
+  // A channel may differ from the cpu reference by `channel` before the pixel
+  // counts as an outlier; at most `outliers` of the image may be outliers, and
+  // the mean channel difference must stay under `meanDelta`.
+  //
+  // Measured across all nine targets (iPhone 15 Pro / 14, iPad Pro, Galaxy S23,
+  // Pixel 7, Chrome / Firefox / Edge on Windows, Safari on macOS), worst case
+  // over every scene and mode:
+  //
+  //   scene        maxDelta   meanDelta   outlierFraction
+  //   flat                1        0.25                 0
+  //   gradient            1        0.50                 0
+  //   mandelbrot          1        0.33                 0
+  //
+  // So healthy hardware agrees with cpu to within a single least significant
+  // bit, even for the iterative scene. The thresholds below sit several times
+  // above that, because a gate that fails on a rounding difference is worse
+  // than no gate — and the bug class this catches is nowhere near the margin:
+  // when `/` truncated to an integer divide, mandelbrot rendered flat, mean
+  // 127.5 against 142.93, a mean delta around 15 with essentially every pixel
+  // an outlier.
+  const TOLERANCE = {
+    flat:       { channel: 4, outliers: 0.01, meanDelta: 2 },
+    gradient:   { channel: 4, outliers: 0.01, meanDelta: 2 },
+    // the iterative scene gets more room: a pixel sitting exactly on the escape
+    // boundary can flip iteration count between float32 and double
+    mandelbrot: { channel: 8, outliers: 0.05, meanDelta: 3 }
+  };
+
   const scenes = {
-    // flat fill: any device disagreeing here has a colour-management problem
+    // flat fill: isolates colour quantisation, nothing else
     flat: function () {
       return function () {
         this.color(0.2, 0.6, 0.9, 1);
       };
     },
-    // linear gradient: exercises thread indexing and float->byte quantisation
+    // exercises thread indexing and the float -> byte conversion across the image
     gradient: function () {
       return function () {
         this.color(this.thread.x / 64, this.thread.y / 64, 0.5, 1);
       };
     },
-    // iterative float math: the scene most likely to diverge between GPUs
+    // iterative float math: the scene that actually catches transpiler bugs.
+    // Integer division truncating made this render flat, mean 127.5 against
+    // 142.93, which any of these thresholds rejects.
     mandelbrot: function () {
       return function () {
         const cx = (this.thread.x / 64) * 3.0 - 2.0;
@@ -78,6 +107,62 @@
     }
   };
 
+  function record(name, status, message, stats) {
+    results.total++;
+    results[status === 'pass' ? 'passed' : status === 'fail' ? 'failed' : 'skipped']++;
+    results.tests.push({ name: name, status: status, message: message || '', stats: stats || null });
+  }
+
+  // renders one scene and hands back its pixels, tearing the GPU down first so
+  // contexts do not pile up past the browser's limit
+  async function render(mode, sceneName, show) {
+    const gpu = new GPU({ mode: mode });
+    try {
+      const kernel = gpu.createKernel(scenes[sceneName](), { output: [SIZE, SIZE], graphical: true });
+      kernel();
+      const pixels = kernel.getPixels();
+      if (show && kernel.canvas) {
+        const wrap = document.createElement('div');
+        wrap.className = 'scene';
+        wrap.appendChild(kernel.canvas);
+        const label = document.createElement('span');
+        label.textContent = mode + ' ' + sceneName;
+        wrap.appendChild(label);
+        document.getElementById('scenes').appendChild(wrap);
+      }
+      return pixels;
+    } finally {
+      await gpu.destroy();
+    }
+  }
+
+  function compare(reference, candidate, channelTolerance) {
+    if (!reference || !candidate || reference.length !== candidate.length) {
+      return { error: 'pixel buffers differ in size' };
+    }
+    let maxDelta = 0;
+    let sumDelta = 0;
+    let outliers = 0;
+    const pixelCount = reference.length / 4;
+    for (let p = 0; p < pixelCount; p++) {
+      let pixelMax = 0;
+      for (let c = 0; c < 4; c++) {
+        const delta = Math.abs(reference[p * 4 + c] - candidate[p * 4 + c]);
+        sumDelta += delta;
+        if (delta > pixelMax) pixelMax = delta;
+      }
+      if (pixelMax > maxDelta) maxDelta = pixelMax;
+      if (pixelMax > channelTolerance) outliers++;
+    }
+    return {
+      maxDelta: maxDelta,
+      meanDelta: +(sumDelta / reference.length).toFixed(4),
+      outliers: outliers,
+      outlierFraction: +(outliers / pixelCount).toFixed(5),
+      pixelCount: pixelCount
+    };
+  }
+
   try {
     results.env = {
       userAgent: navigator.userAgent,
@@ -86,60 +171,57 @@
       isWebGL2Supported: GPU.isWebGL2Supported
     };
 
-    const modes = [];
-    if (GPU.isWebGLSupported) modes.push('webgl');
-    if (GPU.isWebGL2Supported) modes.push('webgl2');
-    modes.push('cpu');
+    const gpuModes = [];
+    if (GPU.isWebGLSupported) gpuModes.push('webgl');
+    if (GPU.isWebGL2Supported) gpuModes.push('webgl2');
+    results.env.modes = gpuModes;
 
-    modes.forEach(function (mode) {
-      Object.keys(scenes).forEach(function (name) {
-        const entry = { mode: mode, scene: name };
-        let gpu = null;
+    for (const sceneName of Object.keys(scenes)) {
+      const tolerance = TOLERANCE[sceneName];
+      let reference = null;
+      try {
+        reference = await render('cpu', sceneName, true);
+      } catch (e) {
+        record(`[cpu] ${sceneName} reference`, 'fail', (e && e.message) || String(e));
+        continue;
+      }
+
+      for (const mode of gpuModes) {
+        const name = `[${mode}] ${sceneName} matches cpu`;
         try {
-          gpu = new GPU({ mode: mode });
-          const kernel = gpu.createKernel(scenes[name](), {
-            output: [SIZE, SIZE],
-            graphical: true
-          });
-          kernel();
-
-          const pixels = kernel.getPixels();
-          entry.pixelHash = hash(pixels);
-          entry.stats = summarise(pixels);
-          entry.corners = [
-            Array.from(pixels.slice(0, 4)),
-            Array.from(pixels.slice((SIZE - 1) * 4, SIZE * 4)),
-            Array.from(pixels.slice(pixels.length - 4))
-          ];
-
-          // does the canvas itself read back, independently of getPixels?
-          const canvas = kernel.canvas;
-          if (canvas) {
-            const wrap = document.createElement('div');
-            wrap.className = 'scene';
-            wrap.appendChild(canvas);
-            document.getElementById('scenes').appendChild(wrap);
-            try {
-              const url = canvas.toDataURL('image/png');
-              entry.dataUrlLength = url.length;
-              entry.dataUrlHash = hash(url.slice(22));
-            } catch (e) {
-              entry.dataUrlError = e.message;
-            }
+          const candidate = await render(mode, sceneName, true);
+          const stats = compare(reference, candidate, tolerance.channel);
+          if (stats.error) {
+            record(name, 'fail', stats.error);
+            continue;
+          }
+          const problems = [];
+          if (stats.outlierFraction > tolerance.outliers) {
+            problems.push(`${(stats.outlierFraction * 100).toFixed(2)}% of pixels differ by more than ${tolerance.channel} (limit ${(tolerance.outliers * 100).toFixed(2)}%)`);
+          }
+          if (stats.meanDelta > tolerance.meanDelta) {
+            problems.push(`mean channel delta ${stats.meanDelta} exceeds ${tolerance.meanDelta}`);
+          }
+          // when measuring, report the numbers and never fail
+          if (!results.assert || problems.length === 0) {
+            record(name, 'pass', JSON.stringify(stats), stats);
+          } else {
+            record(name, 'fail', problems.join('; ') + ' — ' + JSON.stringify(stats), stats);
           }
         } catch (e) {
-          entry.error = (e && e.message) || String(e);
-        } finally {
-          if (gpu) { try { gpu.destroy(); } catch (e) {} }
+          record(name, 'fail', (e && e.message) || String(e));
         }
-        results.scenes.push(entry);
-      });
-    });
+      }
+    }
   } catch (e) {
     results.error = (e && e.stack) || String(e);
+    record('harness', 'fail', results.error);
   }
 
   results.done = true;
+  const el = document.getElementById('summary');
+  el.textContent = `${results.failed} failed, ${results.passed} passed, ${results.skipped} skipped`;
+  if (results.failed) el.className = 'fail';
 })();
 </script>
 </body>

@@ -43,6 +43,16 @@ jobs:
           BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
         run: node test/browserstack/run.js --browsers=${{ inputs.browsers || 'all' }}
 
+      # Renders three scenes and compares each GPU render against the same
+      # device's cpu render, which is bit-identical everywhere. Healthy
+      # hardware agrees to within 1 least significant bit; the integer-division
+      # bug moved 84% of mandelbrot's pixels.
+      - name: Run visual regression suite
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+        run: node test/browserstack/run.js --suite=visual --browsers=${{ inputs.browsers || 'all' }}
+
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4

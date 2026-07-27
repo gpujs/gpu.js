@@ -9,8 +9,10 @@
  * Usage:
  *   BROWSERSTACK_USERNAME=... BROWSERSTACK_ACCESS_KEY=... node test/browserstack/run.js
  *
- *   --suite=smoke|qunit     smoke (default) runs test/browserstack/smoke.html,
- *                           qunit runs the full test/all.html suite
+ *   --suite=smoke|visual|qunit
+ *                           smoke (default) runs test/browserstack/smoke.html,
+ *                           visual compares rendered output against each
+ *                           device's own cpu render, qunit runs test/all.html
  *   --browsers=real-devices|desktop|all
  *   --project=NAME          BrowserStack project to group builds under
  *                           (default gpu.js, or $BROWSERSTACK_PROJECT)
@@ -20,6 +22,8 @@
  *   --filter=TEXT           QUnit filter, only meaningful with --suite=qunit
  *   --dry-run               print the resolved capabilities and exit without
  *                           opening any session
+ *   --measure               visual suite only: report pixel deltas instead of
+ *                           asserting against the tolerances
  */
 
 'use strict';
@@ -60,7 +64,10 @@ function parseArgs(argv) {
     concurrency: 5,
     timeout: 300,
     filter: '',
-    'dry-run': false
+    'dry-run': false,
+    // visual only: report the pixel deltas without failing on them, which is
+    // how the tolerances in visual.html were chosen
+    measure: false
   };
   argv.forEach(arg => {
     const match = /^--([^=]+)=?(.*)$/.exec(arg);
@@ -69,7 +76,7 @@ function parseArgs(argv) {
     const value = match[2];
     if (key === 'concurrency' || key === 'timeout') {
       args[key] = parseInt(value, 10);
-    } else if (key === 'dry-run') {
+    } else if (key === 'dry-run' || key === 'measure') {
       args[key] = true;
     } else if (key in args) {
       args[key] = value;
@@ -196,6 +203,8 @@ async function poll(driver, extract, timeoutMs) {
 
 const EXTRACT_SMOKE = 'return window.__gpujsResults || null;';
 
+const EXTRACT_VISUAL = 'return window.__gpujsVisual || null;';
+
 // test/all-template.html installs a QUnit reporter that fills in
 // window.__qunitResults; the DOM is only consulted for a progress hint.
 const EXTRACT_QUNIT = `
@@ -224,7 +233,8 @@ async function runTarget(target, context) {
     await driver.get(context.url);
     const results = await poll(
       driver,
-      context.suite === 'qunit' ? EXTRACT_QUNIT : EXTRACT_SMOKE,
+      context.suite === 'qunit' ? EXTRACT_QUNIT :
+        context.suite === 'visual' ? EXTRACT_VISUAL : EXTRACT_SMOKE,
       context.timeout * 1000
     );
 
@@ -282,8 +292,8 @@ async function main() {
   if (!targets.length) {
     throw new Error(`--only=${args.only} matched no target in the "${args.browsers}" set`);
   }
-  if (args.suite !== 'smoke' && args.suite !== 'qunit') {
-    throw new Error(`unknown suite "${args.suite}"; expected smoke or qunit`);
+  if (!['smoke', 'visual', 'qunit'].includes(args.suite)) {
+    throw new Error(`unknown suite "${args.suite}"; expected smoke, visual or qunit`);
   }
   if (!fs.existsSync(path.join(REPO_ROOT, 'dist', 'gpu-browser.js'))) {
     throw new Error('dist/gpu-browser.js is missing — run `npx gulp make` first');
@@ -301,7 +311,9 @@ async function main() {
 
   const suitePath = args.suite === 'qunit'
     ? `/test/all.html${args.filter ? `?filter=${encodeURIComponent(args.filter)}` : ''}`
-    : '/test/browserstack/smoke.html';
+    : args.suite === 'visual'
+      ? `/test/browserstack/visual.html${args.measure ? '?measure=1' : ''}`
+      : '/test/browserstack/smoke.html';
   const url = `http://${TUNNEL_HOST}:${port}${suitePath}`;
 
   console.log(`suite:    ${args.suite}`);
