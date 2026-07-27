@@ -16,16 +16,19 @@ if (typeof importScripts !== 'undefined') {
   const { assert, skip, test, module: describe } = require('qunit');
   describe('offscreen canvas');
 
-  function testOffscreenCanvas(mode, done) {
+  function testOffscreenCanvas(requestedMode, done) {
     const worker = new Worker('features/offscreen-canvas.js');
     worker.onmessage = function (e) {
-      const mode = e.data.mode;
-      const result = e.data.result;
-      assert.equal(mode, 'gpu', 'GPU mode used in Worker');
-      assert.deepEqual(result, Float32Array.from([-2, 0, 2]));
+      // GPU keeps the mode it was given; only auto resolves to the chosen
+      // kernel's own mode, which is 'gpu' for all of the WebGL backends. Asking
+      // for 'webgl' and expecting 'gpu' back was never going to hold, and
+      // expecting it of 'cpu' least of all.
+      const expectedMode = requestedMode || 'gpu';
+      assert.equal(e.data.mode, expectedMode, `${expectedMode} mode used in Worker`);
+      assert.deepEqual(e.data.result, Float32Array.from([-2, 0, 2]));
       done();
     };
-    worker.postMessage(mode);
+    worker.postMessage(requestedMode);
   }
 
   (GPU.isOffscreenCanvasSupported ? test : skip)('offscreen canvas auto', t => {
