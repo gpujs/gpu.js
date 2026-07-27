@@ -2,19 +2,25 @@
 
 ## Build environment
 
-Use Node 22.23.1 via `~/.asdf/installs/nodejs/22.23.1/bin`. The system Node
-(22.2.0) is too old — early v22 hits a vinyl-fs bug that breaks gulp. Node 23
-breaks headless-gl.
+Use Node 22.23.1 via `~/.asdf/installs/nodejs/22.23.1/bin`. Node 23 breaks
+headless-gl.
 
 ```bash
 export PATH="$HOME/.asdf/installs/nodejs/22.23.1/bin:$PATH"
 ```
 
-`npx gulp make` runs build → beautify → minify → build-tests. It rewrites
-`dist/` and regenerates `test/all.html`, so run it before anything that loads
-the browser bundle, and commit `dist/` with the change.
+`npm run make` runs build → beautify → minify → build-tests, from plain Node
+scripts in `scripts/`. It rewrites `dist/` and regenerates `test/all.html`, so
+run it before anything that loads the browser bundle, and commit `dist/` with
+the change. Individual steps are available as `npm run build`, `minify`,
+`beautify`, `build-tests`; `npm run dev` serves the repo for test/all.html.
 
-Note `beautify` reformats `src/`, so `gulp make` can produce unrelated
+The banner interpolates `new Date()`, so two builds are never byte-identical —
+compare `dist/` with the `@date` lines normalized. Note the minified bundles
+carry the banner twice: terser preserves the original because it contains
+`@license`, and the minify step prepends another.
+
+Note `beautify` reformats `src/`, so `npm run make` can produce unrelated
 whitespace churn in files you did not touch. That is expected.
 
 ## Tests
@@ -42,7 +48,7 @@ were found this way in 2.19.8 alone, none of which any CI runner could have
 caught. See the Testing section of README.md for how to run it.
 
 ```bash
-npx gulp make                    # devices load dist/, so build first
+npm run make                     # devices load dist/, so build first
 npm run test:browserstack        # real iOS/Android
 node test/browserstack/run.js --dry-run --browsers=desktop   # inspect caps, no session
 ```
@@ -65,7 +71,7 @@ their release notes tell people to install a version that does not exist.
 export PATH="$HOME/.asdf/installs/nodejs/22.23.1/bin:$PATH"
 
 npm version <version> --no-git-tag-version   # package.json only
-npx gulp make                                # dist/ carries the version header
+npm run make                                 # dist/ carries the version header
 npm test                                     # expect the known baseline
 
 git add -A && git commit -m "chore: Release <version>"

@@ -1221,7 +1221,7 @@ context does, it is also tested on real browsers and real mobile devices on
 To run it yourself you need a BrowserStack Automate account:
 
 ```bash
-npx gulp make                  # the devices test dist/, so build it first
+npm run make                  # the devices test dist/, so build it first
 export BROWSERSTACK_USERNAME=...
 export BROWSERSTACK_ACCESS_KEY=...
 npm run test:browserstack      # smoke suite on real iOS/Android devices

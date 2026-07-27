@@ -30,7 +30,7 @@ jobs:
 
       - name: Build
         # the devices load dist/, so it has to come from this commit
-        run: npx gulp make
+        run: npm run make
 
       # 'all' is real devices plus desktop Chrome/Firefox/Edge/Safari. The
       # concurrency cap is 5, so nine targets run as two waves — roughly a
