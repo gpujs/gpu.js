@@ -127,9 +127,15 @@ test('handles argument types of CallExpression that return arrays', () => {
     lookupFunctionArgumentTypes: () => [],
     triggerImplyArgumentType: () => {}
   });
+  // the inner array2 call is lifted out of the outer one: a self-nested call
+  // is the shape FXC miscompiles when the function takes an array (#300), and
+  // the lift is applied to every self-nested call because argument types are
+  // not knowable at normalization time -- for a pure function it is merely a
+  // named temporary
   assert.equal(node.toString(), `float kernel() {
 vec2 user_p=vec2(threadId.x, threadId.y);
-float user_z=array2(array2(user_p, 0.01), 0.02);
+float user_hoistSeq0=array2(user_p, 0.01);
+float user_z=array2(user_hoistSeq0, 0.02);
 return 1.0;
 }`);
 });
