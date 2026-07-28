@@ -46,3 +46,6 @@ playwright-report/
 
 # browserstack-node-sdk
 log/
+
+# asdf
+.tool-versions
