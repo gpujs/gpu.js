@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.9
- * @date Wed Jul 29 2026 00:18:17 GMT+0800 (Singapore Standard Time)
+ * @date Wed Jul 29 2026 00:30:31 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -2821,6 +2821,7 @@
         return retArr;
       }
       astExpressionStatement(esNode, retArr) {
+        if (esNode.expression.type === "AssignmentExpression") this.pushState("assignment-as-statement");
         this.astGeneric(esNode.expression, retArr);
         retArr.push(";");
         return retArr;
@@ -3234,7 +3235,10 @@
           this.popState("in-for-loop-init");
         } else isSafe = false;
         if (forNode.test) this.astGeneric(forNode.test, testArr); else isSafe = false;
-        if (forNode.update) this.astGeneric(forNode.update, updateArr); else isSafe = false;
+        if (forNode.update) {
+          if (forNode.update.type === "AssignmentExpression") this.pushState("assignment-as-statement");
+          this.astGeneric(forNode.update, updateArr);
+        } else isSafe = false;
         if (forNode.body) {
           this.pushState("loop-body");
           this.astGeneric(forNode.body, bodyArr);
@@ -3284,9 +3288,12 @@
       astAssignmentExpression(assNode, retArr) {
         const declaration = this.getDeclaration(assNode.left);
         if (declaration && !declaration.assignable) throw this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
+        const isStatement = this.isState("assignment-as-statement");
+        if (isStatement) this.popState("assignment-as-statement"); else retArr.push("(");
         this.astGeneric(assNode.left, retArr);
         retArr.push(assNode.operator);
         this.astGeneric(assNode.right, retArr);
+        if (!isStatement) retArr.push(")");
         return retArr;
       }
       astBlockStatement(bNode, retArr) {
@@ -5768,7 +5775,10 @@
           for (let i = 0; i < declarations.length; i++) if (declarations[i].init && declarations[i].init.type !== "Literal") isSafe = false;
         } else isSafe = false;
         if (forNode.test) this.astGeneric(forNode.test, testArr); else isSafe = false;
-        if (forNode.update) this.astGeneric(forNode.update, updateArr); else isSafe = false;
+        if (forNode.update) {
+          if (forNode.update.type === "AssignmentExpression") this.pushState("assignment-as-statement");
+          this.astGeneric(forNode.update, updateArr);
+        } else isSafe = false;
         if (forNode.body) {
           this.pushState("loop-body");
           this.astGeneric(forNode.body, bodyArr);
@@ -5815,6 +5825,8 @@
         return retArr;
       }
       astAssignmentExpression(assNode, retArr) {
+        const isStatement = this.isState("assignment-as-statement");
+        if (isStatement) this.popState("assignment-as-statement"); else retArr.push("(");
         if (assNode.operator === "%=") {
           this.astGeneric(assNode.left, retArr);
           retArr.push("=");
@@ -5841,8 +5853,9 @@
             this.astGeneric(assNode.right, retArr);
             retArr.push(")");
           } else this.astGeneric(assNode.right, retArr);
-          return retArr;
         }
+        if (!isStatement) retArr.push(")");
+        return retArr;
       }
       astBlockStatement(bNode, retArr) {
         if (this.isState("loop-body")) {
@@ -5926,6 +5939,32 @@
             }
 
            case "SwitchStatement":
+            if (statementContainsNestedIndexRead(statement.discriminant)) {
+              const wrapper = {
+                type: "VariableDeclaration",
+                kind: "const",
+                declarations: [ {
+                  type: "VariableDeclarator",
+                  id: {
+                    type: "Identifier",
+                    name: `hoistSeqIf${this.linearTempId = (this.linearTempId || 0) + 1}`
+                  },
+                  init: statement.discriminant
+                } ]
+              };
+              const linearized = this.linearizeStatement(wrapper);
+              if (linearized !== null) {
+                statement.discriminant = {
+                  type: "Identifier",
+                  name: wrapper.declarations[0].id.name,
+                  start: this.syntheticNodeId,
+                  end: this.syntheticNodeId + 1
+                };
+                this.syntheticNodeId += 2;
+                body.splice(i, 0, ...linearized);
+                i += linearized.length;
+              }
+            }
             for (let c = 0; c < statement.cases.length; c++) {
               const block = {
                 type: "BlockStatement",
@@ -6438,6 +6477,29 @@
         }
         return retArr;
       }
+      astSwitchCaseConsequent(consequent, retArr) {
+        const statements = [];
+        for (let i = 0; i < consequent.length; i++) {
+          if (consequent[i].type === "BreakStatement") break;
+          statements.push(consequent[i]);
+        }
+        for (let i = 0; i < statements.length; i++) {
+          const containsBreak = node => {
+            if (!node || typeof node !== "object") return false;
+            if (Array.isArray(node)) return node.some(containsBreak);
+            if (node.type === "BreakStatement") return true;
+            if (node.type === "ForStatement" || node.type === "WhileStatement" || node.type === "DoWhileStatement" || node.type === "SwitchStatement") return false;
+            for (const key in node) {
+              if (key === "loc" || key === "range" || key === "parent") continue;
+              if (containsBreak(node[key])) return true;
+            }
+            return false;
+          };
+          if (containsBreak(statements[i])) throw this.astErrorOutput("break inside a switch case is only supported as the case terminator", statements[i]);
+        }
+        this.astGeneric(statements, retArr);
+        return retArr;
+      }
       astSwitchStatement(ast, retArr) {
         if (ast.type !== "SwitchStatement") throw this.astErrorOutput("Invalid switch statement", ast);
         const {discriminant: discriminant, cases: cases} = ast;
@@ -6458,7 +6520,7 @@
           break;
         }
         if (cases.length === 1 && !cases[0].test) {
-          this.astGeneric(cases[0].consequent, retArr);
+          this.astSwitchCaseConsequent(cases[0].consequent, retArr);
           return retArr;
         }
         let fallingThrough = false;
@@ -6468,7 +6530,7 @@
         for (let i = 0; i < cases.length; i++) {
           if (!cases[i].test) if (cases.length > i + 1) {
             movingDefaultToEnd = true;
-            this.astGeneric(cases[i].consequent, defaultResult);
+            this.astSwitchCaseConsequent(cases[i].consequent, defaultResult);
             continue;
           } else retArr.push(" else {\n"); else {
             if (i === 0 || !pastFirstIf) {
@@ -6487,7 +6549,7 @@
              case "LiteralInteger":
               this.castLiteralToInteger(cases[i].test, retArr);
               break;
-            } else if (type === "Float") switch (this.getType(cases[i].test)) {
+            } else if (type === "Float" || type === "Number") switch (this.getType(cases[i].test)) {
              case "LiteralInteger":
               this.castLiteralToFloat(cases[i].test, retArr);
               break;
@@ -6495,7 +6557,7 @@
              case "Integer":
               this.castValueToFloat(cases[i].test, retArr);
               break;
-            } else throw new Error("unhanlded");
+            } else throw this.astErrorOutput(`Unhandled switch discriminant type "${type}"`, ast);
             if (!cases[i].consequent || cases[i].consequent.length === 0) {
               fallingThrough = true;
               retArr.push(" || ");
@@ -6503,7 +6565,7 @@
             }
             retArr.push(`) {\n`);
           }
-          this.astGeneric(cases[i].consequent, retArr);
+          this.astSwitchCaseConsequent(cases[i].consequent, retArr);
           retArr.push("\n}");
         }
         if (movingDefaultToEnd) {

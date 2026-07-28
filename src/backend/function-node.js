@@ -1060,6 +1060,11 @@ class FunctionNode {
    * @returns {Array} the append retArr
    */
   astExpressionStatement(esNode, retArr) {
+    // an assignment used as a statement needs no parentheses; the emitters
+    // consume this marker and parenthesize everywhere else (#854)
+    if (esNode.expression.type === 'AssignmentExpression') {
+      this.pushState('assignment-as-statement');
+    }
     this.astGeneric(esNode.expression, retArr);
     retArr.push(';');
     return retArr;

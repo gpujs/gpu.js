@@ -183,6 +183,9 @@ class CPUFunctionNode extends FunctionNode {
     }
 
     if (forNode.update) {
+      if (forNode.update.type === 'AssignmentExpression') {
+        this.pushState('assignment-as-statement');
+      }
       this.astGeneric(forNode.update, updateArr);
     } else {
       isSafe = false;
@@ -284,9 +287,19 @@ class CPUFunctionNode extends FunctionNode {
     if (declaration && !declaration.assignable) {
       throw this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
     }
+    // see the WebGL emitter: subexpression assignments need parens (#854)
+    const isStatement = this.isState('assignment-as-statement');
+    if (isStatement) {
+      this.popState('assignment-as-statement');
+    } else {
+      retArr.push('(');
+    }
     this.astGeneric(assNode.left, retArr);
     retArr.push(assNode.operator);
     this.astGeneric(assNode.right, retArr);
+    if (!isStatement) {
+      retArr.push(')');
+    }
     return retArr;
   }
 

@@ -666,6 +666,9 @@ class WebGLFunctionNode extends FunctionNode {
     }
 
     if (forNode.update) {
+      if (forNode.update.type === 'AssignmentExpression') {
+        this.pushState('assignment-as-statement');
+      }
       this.astGeneric(forNode.update, updateArr);
     } else {
       isSafe = false;
@@ -756,6 +759,16 @@ class WebGLFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astAssignmentExpression(assNode, retArr) {
+    // As a statement (or a for-update) the assignment stands alone; as a
+    // subexpression it must be parenthesized, or `(i += 1) * 0.0` re-parses
+    // as `i += (1.0 * 0.0)` (#854). The marker is consumed here so that a
+    // nested assignment inside this one's right side still gets parens.
+    const isStatement = this.isState('assignment-as-statement');
+    if (isStatement) {
+      this.popState('assignment-as-statement');
+    } else {
+      retArr.push('(');
+    }
     // TODO: casting needs implemented here
     if (assNode.operator === '%=') {
       this.astGeneric(assNode.left, retArr);
@@ -785,8 +798,11 @@ class WebGLFunctionNode extends FunctionNode {
       } else {
         this.astGeneric(assNode.right, retArr);
       }
-      return retArr;
     }
+    if (!isStatement) {
+      retArr.push(')');
+    }
+    return retArr;
   }
 
   /**
@@ -927,10 +943,27 @@ class WebGLFunctionNode extends FunctionNode {
           break;
         }
         case 'SwitchStatement': {
-          // No discriminant handling: the switch emitter only accepts Integer
-          // and Float discriminants, so one containing an array read has never
-          // compiled -- there is nothing there for FXC to miscompile. The
-          // case bodies are ordinary statement lists, though.
+          // a discriminant evaluates exactly when the statement runs, like an
+          // if condition, so the same lift applies
+          if (statementContainsNestedIndexRead(statement.discriminant)) {
+            const wrapper = {
+              type: 'VariableDeclaration',
+              kind: 'const',
+              declarations: [{
+                type: 'VariableDeclarator',
+                id: { type: 'Identifier', name: `hoistSeqIf${this.linearTempId = (this.linearTempId || 0) + 1}` },
+                init: statement.discriminant,
+              }],
+            };
+            const linearized = this.linearizeStatement(wrapper);
+            if (linearized !== null) {
+              const name = wrapper.declarations[0].id.name;
+              statement.discriminant = { type: 'Identifier', name, start: this.syntheticNodeId, end: this.syntheticNodeId + 1 };
+              this.syntheticNodeId += 2;
+              body.splice(i, 0, ...linearized);
+              i += linearized.length;
+            }
+          }
           for (let c = 0; c < statement.cases.length; c++) {
             const block = { type: 'BlockStatement', body: statement.cases[c].consequent };
             this.normalizeBlock(block);
@@ -1420,6 +1453,53 @@ class WebGLFunctionNode extends FunctionNode {
     return retArr;
   }
 
+  /**
+   * @desc Emits a switch case's statements. The switch lowers to an if chain,
+   * so a case-terminating `break` must be consumed rather than emitted --
+   * GLSL rejects `break` outside loops (#855). Statements after it are
+   * unreachable and dropped; a `break` anywhere deeper in the case has no
+   * if-chain equivalent and is rejected up front, instead of surfacing as a
+   * shader compile error.
+   * @param {Array} consequent - the case's statements
+   * @param {Array} retArr - return array string
+   * @returns {Array} the append retArr
+   */
+  astSwitchCaseConsequent(consequent, retArr) {
+    const statements = [];
+    for (let i = 0; i < consequent.length; i++) {
+      if (consequent[i].type === 'BreakStatement') break;
+      statements.push(consequent[i]);
+    }
+    for (let i = 0; i < statements.length; i++) {
+      const containsBreak = (node) => {
+        if (!node || typeof node !== 'object') return false;
+        if (Array.isArray(node)) return node.some(containsBreak);
+        if (node.type === 'BreakStatement') return true;
+        if (
+          node.type === 'ForStatement' ||
+          node.type === 'WhileStatement' ||
+          node.type === 'DoWhileStatement' ||
+          node.type === 'SwitchStatement'
+        ) {
+          return false;
+        }
+        for (const key in node) {
+          if (key === 'loc' || key === 'range' || key === 'parent') continue;
+          if (containsBreak(node[key])) return true;
+        }
+        return false;
+      };
+      if (containsBreak(statements[i])) {
+        throw this.astErrorOutput(
+          'break inside a switch case is only supported as the case terminator',
+          statements[i]
+        );
+      }
+    }
+    this.astGeneric(statements, retArr);
+    return retArr;
+  }
+
   astSwitchStatement(ast, retArr) {
     if (ast.type !== 'SwitchStatement') {
       throw this.astErrorOutput('Invalid switch statement', ast);
@@ -1442,7 +1522,7 @@ class WebGLFunctionNode extends FunctionNode {
     }
     // switch with just a default:
     if (cases.length === 1 && !cases[0].test) {
-      this.astGeneric(cases[0].consequent, retArr);
+      this.astSwitchCaseConsequent(cases[0].consequent, retArr);
       return retArr;
     }
 
@@ -1456,7 +1536,7 @@ class WebGLFunctionNode extends FunctionNode {
       if (!cases[i].test) {
         if (cases.length > i + 1) {
           movingDefaultToEnd = true;
-          this.astGeneric(cases[i].consequent, defaultResult);
+          this.astSwitchCaseConsequent(cases[i].consequent, defaultResult);
           continue;
         } else {
           retArr.push(' else {\n');
@@ -1485,7 +1565,7 @@ class WebGLFunctionNode extends FunctionNode {
               this.castLiteralToInteger(cases[i].test, retArr);
               break;
           }
-        } else if (type === 'Float') {
+        } else if (type === 'Float' || type === 'Number') {
           const testType = this.getType(cases[i].test);
           switch (testType) {
             case 'LiteralInteger':
@@ -1496,7 +1576,7 @@ class WebGLFunctionNode extends FunctionNode {
               break;
           }
         } else {
-          throw new Error('unhanlded');
+          throw this.astErrorOutput(`Unhandled switch discriminant type "${type}"`, ast);
         }
         if (!cases[i].consequent || cases[i].consequent.length === 0) {
           fallingThrough = true;
@@ -1505,7 +1585,7 @@ class WebGLFunctionNode extends FunctionNode {
         }
         retArr.push(`) {\n`);
       }
-      this.astGeneric(cases[i].consequent, retArr);
+      this.astSwitchCaseConsequent(cases[i].consequent, retArr);
       retArr.push('\n}');
     }
     if (movingDefaultToEnd) {
