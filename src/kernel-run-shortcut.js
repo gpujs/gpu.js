@@ -7,6 +7,16 @@ const { utils } = require('./utils');
  */
 function kernelRunShortcut(kernel) {
   let run = function() {
+    // async backends (webgpu): build() stores its promise on the kernel and
+    // run() chains on it, so run's Promise is the entire result channel —
+    // none of the sync post-run machinery below applies
+    if (kernel.constructor.isAsync === true) {
+      kernel.build.apply(kernel, arguments);
+      run = function() {
+        return kernel.run.apply(kernel, arguments);
+      };
+      return run.apply(kernel, arguments);
+    }
     kernel.build.apply(kernel, arguments);
     run = function() {
       let result = kernel.run.apply(kernel, arguments);

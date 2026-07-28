@@ -5,6 +5,7 @@ const { CPUKernel } = require('./backend/cpu/kernel');
 const { HeadlessGLKernel } = require('./backend/headless-gl/kernel');
 const { WebGL2Kernel } = require('./backend/web-gl2/kernel');
 const { WebGLKernel } = require('./backend/web-gl/kernel');
+const { WebGPUKernel } = require('./backend/web-gpu/kernel');
 const { kernelRunShortcut } = require('./kernel-run-shortcut');
 
 
@@ -24,6 +25,10 @@ const internalKernels = {
   'headlessgl': HeadlessGLKernel,
   'webgl2': WebGL2Kernel,
   'webgl': WebGLKernel,
+  // deliberately NOT in kernelOrder: the sync isSupported check
+  // (navigator.gpu presence) does not prove an adapter exists, so webgpu is
+  // explicit opt-in via `new GPU({ mode: 'webgpu' })` only
+  'webgpu': WebGPUKernel,
 };
 
 let validate = true;
@@ -80,6 +85,25 @@ class GPU {
    */
   static get isHeadlessGLSupported() {
     return HeadlessGLKernel.isSupported;
+  }
+
+  /**
+   * @desc TRUE if the WebGPU API surface exists (navigator.gpu). Optimistic:
+   * an adapter may still be unavailable — use `await GPU.isWebGPUAvailable()`
+   * for the authoritative answer.
+   */
+  static get isWebGPUSupported() {
+    return WebGPUKernel.isSupported;
+  }
+
+  /**
+   * @desc Actually requests an adapter; resolves whether a webgpu kernel
+   * could run here.
+   * @returns {Promise<boolean>}
+   */
+  static isWebGPUAvailable() {
+    if (!WebGPUKernel.isSupported) return Promise.resolve(false);
+    return navigator.gpu.requestAdapter().then(adapter => adapter !== null, () => false);
   }
 
   /**
@@ -405,6 +429,9 @@ class GPU {
 
     if (this.mode !== 'dev') {
       if (!this.Kernel.isSupported || !this.Kernel.features.kernelMap) {
+        if (this.Kernel.mode === 'webgpu') {
+          throw new Error('WebGPU backend does not yet support createKernelMap');
+        }
         if (this.mode && kernelTypes.indexOf(this.mode) < 0) {
           throw new Error(`kernelMap not supported on ${this.Kernel.name}`);
         }
@@ -471,6 +498,9 @@ class GPU {
     const firstKernel = arguments[0];
     const combinedKernel = arguments[arguments.length - 1];
     if (firstKernel.kernel.constructor.mode === 'cpu') return combinedKernel;
+    if (firstKernel.kernel.constructor.mode === 'webgpu') {
+      throw new Error('WebGPU backend does not yet support combineKernels; chain kernels with `await` and pipeline mode instead');
+    }
     const canvas = arguments[0].canvas;
     const context = arguments[0].context;
     const max = arguments.length - 1;
