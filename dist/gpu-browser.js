@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.9
- * @date Wed Jul 29 2026 00:09:48 GMT+0800 (Singapore Standard Time)
+ * @date Wed Jul 29 2026 00:18:17 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -10110,7 +10110,27 @@
            case "ForStatement":
            case "WhileStatement":
            case "DoWhileStatement":
-            this.normalizeBranch(statement, "body");
+            {
+              const rewritten = this.normalizeLoopHeader(statement);
+              if (rewritten !== null) {
+                body.splice(i, 1, rewritten);
+                this.normalizeBlock(rewritten);
+                i--;
+                break;
+              }
+              this.normalizeBranch(statement, "body");
+              break;
+            }
+
+           case "SwitchStatement":
+            for (let c = 0; c < statement.cases.length; c++) {
+              const block = {
+                type: "BlockStatement",
+                body: statement.cases[c].consequent
+              };
+              this.normalizeBlock(block);
+              statement.cases[c].consequent = block.body;
+            }
             break;
 
            case "BlockStatement":
@@ -10132,6 +10152,124 @@
           body: [ branch ]
         };
         this.normalizeBlock(statement[key]);
+      }
+      normalizeLoopHeader(statement) {
+        const {type: type} = statement;
+        const init = type === "ForStatement" ? statement.init : null;
+        const test = statement.test || null;
+        const update = type === "ForStatement" ? statement.update : null;
+        if (![ init, test, update ].some(part => part !== null && statementContainsNestedIndexRead(part))) return null;
+        const clone = node => JSON.parse(JSON.stringify(node));
+        const breakCheck = testExpression => ({
+          type: "IfStatement",
+          test: {
+            type: "UnaryExpression",
+            operator: "!",
+            prefix: true,
+            argument: testExpression
+          },
+          consequent: {
+            type: "BlockStatement",
+            body: [ {
+              type: "BreakStatement",
+              label: null
+            } ]
+          },
+          alternate: null
+        });
+        const asStatement = expression => expression.type === "VariableDeclaration" ? expression : {
+          type: "ExpressionStatement",
+          expression: expression
+        };
+        const bodyStatements = statement.body.type === "BlockStatement" ? statement.body.body.slice() : [ statement.body ];
+        const rewriteContinues = (nodes, makePrefix) => {
+          const visit = node => {
+            if (!node || typeof node !== "object") return node;
+            if (Array.isArray(node)) return node.map(visit);
+            switch (node.type) {
+             case "ContinueStatement":
+              return {
+                type: "BlockStatement",
+                body: [ ...makePrefix(), node ]
+              };
+
+             case "ForStatement":
+             case "WhileStatement":
+             case "DoWhileStatement":
+              return node;
+
+             case "IfStatement":
+              return {
+                ...node,
+                consequent: visit(node.consequent),
+                alternate: visit(node.alternate)
+              };
+
+             case "BlockStatement":
+              return {
+                ...node,
+                body: node.body.map(visit)
+              };
+
+             case "SwitchStatement":
+              return {
+                ...node,
+                cases: node.cases.map(c => ({
+                  ...c,
+                  consequent: c.consequent.map(visit)
+                }))
+              };
+
+             default:
+              return node;
+            }
+          };
+          return nodes.map(visit);
+        };
+        const loopBody = [];
+        if (type === "DoWhileStatement") {
+          loopBody.push(...test ? rewriteContinues(bodyStatements, () => [ breakCheck(clone(test)) ]) : bodyStatements);
+          if (test) loopBody.push(breakCheck(test));
+        } else {
+          if (test) loopBody.push(breakCheck(test));
+          loopBody.push(...update ? rewriteContinues(bodyStatements, () => [ asStatement(clone(update)) ]) : bodyStatements);
+          if (update) loopBody.push(asStatement(update));
+        }
+        const replacement = {
+          type: "BlockStatement",
+          body: [ ...init ? [ asStatement(init) ] : [], {
+            type: "WhileStatement",
+            test: {
+              type: "Literal",
+              value: true,
+              raw: "true"
+            },
+            body: {
+              type: "BlockStatement",
+              body: loopBody
+            }
+          } ]
+        };
+        let syntheticId = this.syntheticNodeId || 1073741824;
+        const stamp = node => {
+          if (!node || typeof node !== "object") return;
+          if (Array.isArray(node)) {
+            node.forEach(stamp);
+            return;
+          }
+          if (typeof node.type === "string" && node.start === void 0) {
+            node.start = syntheticId;
+            node.end = syntheticId + 1;
+            syntheticId += 2;
+          }
+          for (const key in node) {
+            if (key === "loc" || key === "range" || key === "parent") continue;
+            stamp(node[key]);
+          }
+        };
+        stamp(replacement);
+        this.syntheticNodeId = syntheticId;
+        return replacement;
       }
       linearizeStatement(statement) {
         const statements = [];

@@ -915,11 +915,29 @@ class WebGLFunctionNode extends FunctionNode {
         }
         case 'ForStatement':
         case 'WhileStatement':
-        case 'DoWhileStatement':
-          // only the body: rewriting loop headers would change how often
-          // their expressions run, and the hoist never fires there anyway
+        case 'DoWhileStatement': {
+          const rewritten = this.normalizeLoopHeader(statement);
+          if (rewritten !== null) {
+            body.splice(i, 1, rewritten);
+            this.normalizeBlock(rewritten);
+            i--;
+            break;
+          }
           this.normalizeBranch(statement, 'body');
           break;
+        }
+        case 'SwitchStatement': {
+          // No discriminant handling: the switch emitter only accepts Integer
+          // and Float discriminants, so one containing an array read has never
+          // compiled -- there is nothing there for FXC to miscompile. The
+          // case bodies are ordinary statement lists, though.
+          for (let c = 0; c < statement.cases.length; c++) {
+            const block = { type: 'BlockStatement', body: statement.cases[c].consequent };
+            this.normalizeBlock(block);
+            statement.cases[c].consequent = block.body;
+          }
+          break;
+        }
         case 'BlockStatement':
           this.normalizeBlock(statement);
           break;
@@ -944,6 +962,119 @@ class WebGLFunctionNode extends FunctionNode {
     if (!statementContainsNestedIndexRead(branch)) return;
     statement[key] = { type: 'BlockStatement', body: [branch] };
     this.normalizeBlock(statement[key]);
+  }
+
+  /**
+   * @desc Rewrites a loop whose header contains the nested-index-read pattern
+   * into a while(true)-shaped loop whose condition check, body and update are
+   * all plain statements -- the same restructuring ANGLE's
+   * SimplifyLoopConditions performs -- so linearization and the FXC hoist
+   * apply to them with per-iteration timing intact.
+   *
+   * `continue` keeps its meaning by rewriting: in a for loop each
+   * loop-level continue gains a copy of the update in front of it, exactly
+   * the order JavaScript runs them; in a do-while it gains a copy of the
+   * condition check, which is where continue jumps to.
+   * @param {Object} statement - the loop node
+   * @returns {Object|null} a replacement BlockStatement, or null when the
+   * header is clean and the loop should be left as written
+   */
+  normalizeLoopHeader(statement) {
+    const { type } = statement;
+    const init = type === 'ForStatement' ? statement.init : null;
+    const test = statement.test || null;
+    const update = type === 'ForStatement' ? statement.update : null;
+    const headerHasPattern = [init, test, update].some(
+      part => part !== null && statementContainsNestedIndexRead(part)
+    );
+    if (!headerHasPattern) return null;
+
+    const clone = node => JSON.parse(JSON.stringify(node));
+    const breakCheck = testExpression => ({
+      type: 'IfStatement',
+      test: { type: 'UnaryExpression', operator: '!', prefix: true, argument: testExpression },
+      consequent: { type: 'BlockStatement', body: [{ type: 'BreakStatement', label: null }] },
+      alternate: null,
+    });
+    const asStatement = expression =>
+      expression.type === 'VariableDeclaration' ? expression : { type: 'ExpressionStatement', expression };
+
+    const bodyStatements =
+      statement.body.type === 'BlockStatement' ? statement.body.body.slice() : [statement.body];
+
+    // rewrite this loop's own continues; nested loops keep theirs
+    const rewriteContinues = (nodes, makePrefix) => {
+      const visit = node => {
+        if (!node || typeof node !== 'object') return node;
+        if (Array.isArray(node)) return node.map(visit);
+        switch (node.type) {
+          case 'ContinueStatement':
+            return { type: 'BlockStatement', body: [...makePrefix(), node] };
+          case 'ForStatement':
+          case 'WhileStatement':
+          case 'DoWhileStatement':
+            return node;
+          case 'IfStatement':
+            return { ...node, consequent: visit(node.consequent), alternate: visit(node.alternate) };
+          case 'BlockStatement':
+            return { ...node, body: node.body.map(visit) };
+          case 'SwitchStatement':
+            return { ...node, cases: node.cases.map(c => ({ ...c, consequent: c.consequent.map(visit) })) };
+          default:
+            return node;
+        }
+      };
+      return nodes.map(visit);
+    };
+
+    const loopBody = [];
+    if (type === 'DoWhileStatement') {
+      loopBody.push(
+        ...(test ? rewriteContinues(bodyStatements, () => [breakCheck(clone(test))]) : bodyStatements)
+      );
+      if (test) loopBody.push(breakCheck(test));
+    } else {
+      if (test) loopBody.push(breakCheck(test));
+      loopBody.push(
+        ...(update ? rewriteContinues(bodyStatements, () => [asStatement(clone(update))]) : bodyStatements)
+      );
+      if (update) loopBody.push(asStatement(update));
+    }
+
+    const replacement = {
+      type: 'BlockStatement',
+      body: [
+        ...(init ? [asStatement(init)] : []),
+        {
+          type: 'WhileStatement',
+          test: { type: 'Literal', value: true, raw: 'true' },
+          body: { type: 'BlockStatement', body: loopBody },
+        },
+      ],
+    };
+
+    // synthetic nodes need the unique positions the type cache expects
+    let syntheticId = this.syntheticNodeId || 0x40000000;
+    const stamp = node => {
+      if (!node || typeof node !== 'object') return;
+      if (Array.isArray(node)) {
+        node.forEach(stamp);
+        return;
+      }
+      if (typeof node.type === 'string' && node.start === undefined) {
+        node.start = syntheticId;
+        node.end = syntheticId + 1;
+        syntheticId += 2;
+      }
+      for (const key in node) {
+        if (key === 'loc' || key === 'range' || key === 'parent') continue;
+        stamp(node[key]);
+      }
+    };
+    stamp(replacement);
+    this.syntheticNodeId = syntheticId;
+
+    return replacement;
   }
 
   linearizeStatement(statement) {

@@ -8,8 +8,11 @@ describe('internal: hoisted index reads');
 // pattern with side effects are first linearized -- each side effect lifted
 // into its own statement in evaluation order, guarded side effects unfolded
 // into ifs, if-conditions lifted into declarations -- so the hoist applies to
-// them without ever reordering an observable effect. Only loop headers are
-// left as written.
+// them without ever reordering an observable effect. Loops whose headers
+// contain the pattern are restructured the way ANGLE's SimplifyLoopConditions
+// does it -- condition checked at the top of the body, update at its end,
+// with continue statements gaining a copy of whatever they would jump to --
+// so per-iteration timing survives there too.
 
 function check(assert, kernelFunction, args, expected, expectHoist) {
   const gpu = new GPU({ mode: 'headlessgl' });
@@ -102,4 +105,60 @@ function check(assert, kernelFunction, args, expected, expectHoist) {
     }
     return out;
   }, [[2], [7, 13, 19, 23]], 5, true);
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('a read in a for init hoists', (t) => {
+  check(t, function (input, lookup) {
+    let acc = 0.0;
+    for (let i = lookup[input[this.thread.x]]; i < 21.0; i++) {
+      acc += 1.0;
+    }
+    return acc;
+  }, [[2], [7, 13, 19, 23]], 2, true);
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('a read in a for test re-evaluates per iteration', (t) => {
+  check(t, function (input, lookup) {
+    let acc = 0.0;
+    for (let i = 0; lookup[input[i]] > 10.0; i++) {
+      acc += 1.0;
+    }
+    return acc;
+  }, [[2, 2, 0], [7, 13, 19]], 2, true);
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('a read in a for update runs after continue too', (t) => {
+  check(t, function (input, lookup) {
+    let acc = 0.0;
+    for (let i = 0.0; i < 3.0; i += lookup[input[i]]) {
+      if (i == 1.0) continue;
+      acc += 10.0;
+    }
+    return acc;
+  }, [[0, 0, 0], [1, 5, 9]], 20, true);
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('a read in a while test re-evaluates per iteration', (t) => {
+  check(t, function (input, lookup) {
+    let i = 0;
+    let acc = 0.0;
+    while (lookup[input[i]] > 10.0) {
+      acc += 1.0;
+      i++;
+    }
+    return acc;
+  }, [[2, 2, 0], [7, 13, 19]], 2, true);
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('a read in a do-while test survives continue', (t) => {
+  check(t, function (input, lookup) {
+    let i = 0;
+    let acc = 0.0;
+    do {
+      i++;
+      if (i == 2) continue;
+      acc += 100.0;
+    } while (lookup[input[i]] > 10.0);
+    return acc * 10.0 + i;
+  }, [[9, 2, 2, 0], [7, 13, 19, 23]], 2003, true);
 });
