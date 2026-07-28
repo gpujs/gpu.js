@@ -1511,7 +1511,13 @@ class WebGLFunctionNode extends FunctionNode {
         );
       }
     }
-    this.astGeneric(statements, retArr);
+    // route through the hoisting wrapper: a nested texture read inside a
+    // case body needs the FXC hoist like any other statement, and the
+    // hoisted temporary belongs inside this branch of the if chain
+    for (let i = 0; i < statements.length; i++) {
+      this.astStatementWithHoisting(statements[i], retArr);
+      retArr.push('\n');
+    }
     return retArr;
   }
 

@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.9
- * @date Wed Jul 29 2026 04:05:40 GMT+0800 (Singapore Standard Time)
+ * @date Wed Jul 29 2026 05:05:56 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -6503,7 +6503,10 @@
           };
           if (containsBreak(statements[i])) throw this.astErrorOutput("break inside a switch case is only supported as the case terminator", statements[i]);
         }
-        this.astGeneric(statements, retArr);
+        for (let i = 0; i < statements.length; i++) {
+          this.astStatementWithHoisting(statements[i], retArr);
+          retArr.push("\n");
+        }
         return retArr;
       }
       astSwitchStatement(ast, retArr) {
@@ -10801,26 +10804,50 @@
           throw new Error("Unknown internal format");
         }
       }
+      renderValues() {
+        if (this._tightRead === void 0) this._detectTightRead();
+        return super.renderValues();
+      }
+      renderKernelsToArrays() {
+        if (this._tightRead === void 0) this._detectTightRead();
+        return super.renderKernelsToArrays();
+      }
+      readFloatPixelsToFloat32Array() {
+        if (!this._tightRead) return super.readFloatPixelsToFloat32Array();
+        const {texSize: texSize, context: gl} = this;
+        const w = texSize[0];
+        const h = texSize[1];
+        const result = new Float32Array(w * h);
+        gl.readPixels(0, 0, w, h, gl.RED, gl.FLOAT, result);
+        return result;
+      }
+      _detectTightRead() {
+        const gl = this.context;
+        this._tightRead = false;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+        const scalarReturn = this.returnType === "Number" || this.returnType === "Float" || this.returnType === "Integer" || this.returnType === "LiteralInteger";
+        if (this.precision !== "single" || this.optimizeFloatMemory || this.graphical || !scalarReturn) return;
+        if (gl.getParameter(gl.IMPLEMENTATION_COLOR_READ_FORMAT) !== gl.RED || gl.getParameter(gl.IMPLEMENTATION_COLOR_READ_TYPE) !== gl.FLOAT) return;
+        if (this.formatValues === utils.erectFloat) this.formatValues = utils.erectMemoryOptimizedFloat; else if (this.formatValues === utils.erect2DFloat) this.formatValues = utils.erectMemoryOptimized2DFloat; else if (this.formatValues === utils.erect3DFloat) this.formatValues = utils.erectMemoryOptimized3DFloat; else if (this.formatValues !== utils.erectMemoryOptimizedFloat && this.formatValues !== utils.erectMemoryOptimized2DFloat && this.formatValues !== utils.erectMemoryOptimized3DFloat) return;
+        this._tightRead = true;
+      }
       getInternalFormat() {
         const {context: gl} = this;
-        if (this.precision === "single") {
-          if (this.pipeline) switch (this.returnType) {
-           case "Number":
-           case "Float":
-           case "Integer":
-            if (this.optimizeFloatMemory) return gl.RGBA32F; else return gl.R32F;
+        if (this.precision === "single") switch (this.returnType) {
+         case "Number":
+         case "Float":
+         case "Integer":
+          if (this.optimizeFloatMemory) return gl.RGBA32F; else return gl.R32F;
 
-           case "Array(2)":
-            return gl.RG32F;
+         case "Array(2)":
+          return gl.RG32F;
 
-           case "Array(3)":
-           case "Array(4)":
-            return gl.RGBA32F;
-
-           default:
-            throw new Error("Unhandled return type");
-          }
+         case "Array(3)":
+         case "Array(4)":
           return gl.RGBA32F;
+
+         default:
+          throw new Error("Unhandled return type");
         }
         return gl.RGBA;
       }
@@ -10828,6 +10855,7 @@
         const gl = this.context;
         if (this.texture) {
           gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture.texture, 0);
+          this._tightRead = void 0;
           return;
         }
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
@@ -10852,6 +10880,7 @@
           textureFormat: this.getTextureFormat(),
           kernel: this
         });
+        this._tightRead = void 0;
       }
       _setupSubOutputTextures() {
         const gl = this.context;

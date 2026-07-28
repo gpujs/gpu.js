@@ -247,30 +247,117 @@ class WebGL2Kernel extends WebGLKernel {
         throw new Error('Unknown internal format');
     }
   }
+  /**
+   * @desc Reads the output as tightly as the driver will allow. RGBA/FLOAT is
+   * the only combination the spec guarantees for float color buffers, but for
+   * the R32F target scalar single-precision kernels render to, most drivers
+   * report RED/FLOAT as their implementation combination -- one float per
+   * value instead of four, so the readback transfers a quarter of the bytes.
+   * The stride-1 erect family already exists for the memory-optimized layout
+   * and describes the tight buffer exactly; unsupported drivers keep the
+   * guaranteed RGBA path untouched.
+   */
+  /**
+   * @desc Detection must happen at render time: the framebuffer is only
+   * guaranteed complete here (setup-time queries return null mid-resize on
+   * the dynamic-output path), and it must happen before renderValues resolves
+   * its erect function reference, which JavaScript does before evaluating the
+   * read call that could otherwise swap it.
+   */
+  renderValues() {
+    if (this._tightRead === undefined) {
+      this._detectTightRead();
+    }
+    return super.renderValues();
+  }
+
+  renderKernelsToArrays() {
+    if (this._tightRead === undefined) {
+      this._detectTightRead();
+    }
+    return super.renderKernelsToArrays();
+  }
+
+  readFloatPixelsToFloat32Array() {
+    if (!this._tightRead) {
+      return super.readFloatPixelsToFloat32Array();
+    }
+    const { texSize, context: gl } = this;
+    const w = texSize[0];
+    const h = texSize[1];
+    const result = new Float32Array(w * h);
+    gl.readPixels(0, 0, w, h, gl.RED, gl.FLOAT, result);
+    return result;
+  }
+
+  _detectTightRead() {
+    const gl = this.context;
+    this._tightRead = false;
+    // the implementation read format is a property of the bound READ
+    // framebuffer; callers reach here with varying binding state (the
+    // inherit path of _setupOutputTexture never binds), so bind explicitly
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+    const scalarReturn =
+      this.returnType === 'Number' ||
+      this.returnType === 'Float' ||
+      this.returnType === 'Integer' ||
+      this.returnType === 'LiteralInteger';
+    if (this.precision !== 'single' || this.optimizeFloatMemory || this.graphical || !scalarReturn) return;
+    if (
+      gl.getParameter(gl.IMPLEMENTATION_COLOR_READ_FORMAT) !== gl.RED ||
+      gl.getParameter(gl.IMPLEMENTATION_COLOR_READ_TYPE) !== gl.FLOAT
+    ) {
+      return;
+    }
+    // The tight buffer is stride 1, which is exactly the layout the
+    // memory-optimized erect family describes. Detection re-runs whenever the
+    // output texture is set up again (setOutput, kernel switching), so an
+    // already-swapped erect function counts as tight-ready -- bailing on it
+    // would strand a stride-1 formatter on the stride-4 fallback read.
+    if (this.formatValues === utils.erectFloat) {
+      this.formatValues = utils.erectMemoryOptimizedFloat;
+    } else if (this.formatValues === utils.erect2DFloat) {
+      this.formatValues = utils.erectMemoryOptimized2DFloat;
+    } else if (this.formatValues === utils.erect3DFloat) {
+      this.formatValues = utils.erectMemoryOptimized3DFloat;
+    } else if (
+      this.formatValues !== utils.erectMemoryOptimizedFloat &&
+      this.formatValues !== utils.erectMemoryOptimized2DFloat &&
+      this.formatValues !== utils.erectMemoryOptimized3DFloat
+    ) {
+      return;
+    }
+    this._tightRead = true;
+  }
+
   getInternalFormat() {
     const { context: gl } = this;
 
     if (this.precision === 'single') {
-      if (this.pipeline) {
-        switch (this.returnType) {
-          case 'Number':
-          case 'Float':
-          case 'Integer':
-            if (this.optimizeFloatMemory) {
-              return gl.RGBA32F;
-            } else {
-              return gl.R32F;
-            }
-          case 'Array(2)':
-            return gl.RG32F;
-          case 'Array(3)': // there is _no_ 3 channel format which is guaranteed to be color-renderable
-          case 'Array(4)':
+      // The same tight formats whether or not the kernel pipelines: a scalar
+      // kernel rendering to RGBA32F writes one channel and drags three dead
+      // ones through the render target -- a 4x bandwidth tax on memory-bound
+      // kernels. Reading back stays RGBA/FLOAT either way, which the spec
+      // guarantees for every float color buffer, so only the attachment
+      // narrows. optimizeFloatMemory genuinely fills all four channels and
+      // keeps RGBA32F.
+      switch (this.returnType) {
+        case 'Number':
+        case 'Float':
+        case 'Integer':
+          if (this.optimizeFloatMemory) {
             return gl.RGBA32F;
-          default:
-            throw new Error('Unhandled return type');
-        }
+          } else {
+            return gl.R32F;
+          }
+        case 'Array(2)':
+          return gl.RG32F;
+        case 'Array(3)': // there is _no_ 3 channel format which is guaranteed to be color-renderable
+        case 'Array(4)':
+          return gl.RGBA32F;
+        default:
+          throw new Error('Unhandled return type');
       }
-      return gl.RGBA32F;
     }
     return gl.RGBA;
   }
@@ -280,6 +367,7 @@ class WebGL2Kernel extends WebGLKernel {
     if (this.texture) {
       // here we inherit from an already existing kernel, so go ahead and just bind textures to the framebuffer
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture.texture, 0);
+      this._tightRead = undefined;
       return;
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
@@ -308,6 +396,7 @@ class WebGL2Kernel extends WebGLKernel {
       textureFormat: this.getTextureFormat(),
       kernel: this,
     });
+    this._tightRead = undefined;
   }
 
   _setupSubOutputTextures() {
