@@ -833,6 +833,19 @@ class WebGLFunctionNode extends FunctionNode {
       case 'ExpressionStatement':
       case 'VariableDeclaration':
       case 'ReturnStatement': {
+        // Hoisting moves the read to just before the statement, which is only
+        // unobservable while nothing else in the statement has side effects: a
+        // read hoisted past an i++ or an inner assignment would see the old
+        // value, and one hoisted out of a short-circuited operand would run
+        // its argument's side effects unconditionally. Reads themselves are
+        // pure, so with no side effects in the statement, timing cannot be
+        // observed and pure guards (ternary, &&) are safe to hoist past. A
+        // statement that does mix them keeps the nested form -- the FXC bug
+        // stays for that kernel on Windows, but wrong-order is worse than
+        // slow-path.
+        if (!statementIsSideEffectFreeBesidesTopLevelAssignment(ast)) {
+          return this.astGeneric(ast, retArr);
+        }
         const previousHoist = this.hoistedIndexReads;
         const hoisted = this.hoistedIndexReads = [];
         const statement = [];
@@ -1633,6 +1646,37 @@ class WebGLFunctionNode extends FunctionNode {
     }
     return markup;
   }
+}
+
+/**
+ * @desc Whether a statement contains no side effects other than the statement's
+ * own top-level assignment, which runs after every subexpression and therefore
+ * cannot observe a hoisted read's timing. Update expressions, comma sequences
+ * and inner assignments can; kernel function calls cannot, since the kernel
+ * language has no mutable shared state for them to touch.
+ * @param {Object} statement - the statement node
+ * @returns {Boolean}
+ */
+function statementIsSideEffectFreeBesidesTopLevelAssignment(statement) {
+  const topLevelAssignment =
+    statement.type === 'ExpressionStatement' && statement.expression.type === 'AssignmentExpression' ?
+    statement.expression :
+    null;
+
+  function walk(node) {
+    if (!node || typeof node !== 'object') return true;
+    if (Array.isArray(node)) return node.every(walk);
+    if (typeof node.type === 'string') {
+      if (node.type === 'UpdateExpression' || node.type === 'SequenceExpression') return false;
+      if (node.type === 'AssignmentExpression' && node !== topLevelAssignment) return false;
+    }
+    for (const key in node) {
+      if (key === 'loc' || key === 'range' || key === 'parent') continue;
+      if (!walk(node[key])) return false;
+    }
+    return true;
+  }
+  return walk(statement);
 }
 
 // the square float matrices GLSL has, and their dimension

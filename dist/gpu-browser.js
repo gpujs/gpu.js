@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.9
- * @date Tue Jul 28 2026 17:41:46 GMT+0800 (Singapore Standard Time)
+ * @date Tue Jul 28 2026 23:51:14 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -10059,6 +10059,7 @@
          case "VariableDeclaration":
          case "ReturnStatement":
           {
+            if (!statementIsSideEffectFreeBesidesTopLevelAssignment(ast)) return this.astGeneric(ast, retArr);
             const previousHoist = this.hoistedIndexReads;
             const hoisted = this.hoistedIndexReads = [];
             const statement = [];
@@ -10672,6 +10673,23 @@
         return markup;
       }
     };
+    function statementIsSideEffectFreeBesidesTopLevelAssignment(statement) {
+      const topLevelAssignment = statement.type === "ExpressionStatement" && statement.expression.type === "AssignmentExpression" ? statement.expression : null;
+      function walk(node) {
+        if (!node || typeof node !== "object") return true;
+        if (Array.isArray(node)) return node.every(walk);
+        if (typeof node.type === "string") {
+          if (node.type === "UpdateExpression" || node.type === "SequenceExpression") return false;
+          if (node.type === "AssignmentExpression" && node !== topLevelAssignment) return false;
+        }
+        for (const key in node) {
+          if (key === "loc" || key === "range" || key === "parent") continue;
+          if (!walk(node[key])) return false;
+        }
+        return true;
+      }
+      return walk(statement);
+    }
     const matrixSizes = {
       "Matrix(2)": 2,
       "Matrix(3)": 3,
