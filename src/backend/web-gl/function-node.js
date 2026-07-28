@@ -828,6 +828,314 @@ class WebGLFunctionNode extends FunctionNode {
    * @param {Object} ast - the statement node
    * @param {Array} retArr - return array string
    */
+
+  /**
+   * @desc Rewrites one statement into several so that its side effects and its
+   * texture-read indices each live in a statement of their own, in the
+   * original evaluation order. This is what makes the FXC hoist (see
+   * astStatementWithHoisting) applicable to statements that mix the nested
+   * read pattern with i++, comma sequences, inner assignments, or guards
+   * containing them -- the same normalization ANGLE performs with
+   * SimplifyLoopConditions, SplitSequenceOperator and UnfoldShortCircuitToIf
+   * before its own version of the hoist.
+   *
+   * The kernel language makes this tractable: function calls cannot mutate
+   * anything, logical operators are boolean, and the only side effects are
+   * update and assignment expressions.
+   * @param {Object} statement - the statement node
+   * @returns {Array|null} replacement statements, or null to leave the
+   * statement exactly as written
+   */
+  /**
+   * @desc Normalizes the function AST before tracing: every statement that
+   * mixes the nested-index-read pattern with side effects is linearized into
+   * several clean statements (see linearizeStatement), so the FXC hoist in
+   * astStatementWithHoisting applies to them. Runs before FunctionTracer so
+   * the rewritten declarations are the ones the tracer registers.
+   * @param {Object} ast - the parsed function node
+   */
+  traceFunctionAST(ast) {
+    this.normalizeBlock(ast.body);
+    super.traceFunctionAST(ast);
+  }
+
+  /**
+   * @param {Object} block - a BlockStatement whose body may be rewritten
+   */
+  normalizeBlock(block) {
+    if (!block || block.type !== 'BlockStatement') return;
+    const body = block.body;
+    for (let i = 0; i < body.length; i++) {
+      const statement = body[i];
+      switch (statement.type) {
+        case 'ExpressionStatement':
+        case 'VariableDeclaration':
+        case 'ReturnStatement': {
+          if (
+            !statementIsSideEffectFreeBesidesTopLevelAssignment(statement) &&
+            statementContainsNestedIndexRead(statement)
+          ) {
+            const linearized = this.linearizeStatement(statement);
+            if (linearized !== null) {
+              body.splice(i, 1, ...linearized);
+              i += linearized.length - 1;
+            }
+          }
+          break;
+        }
+        case 'IfStatement': {
+          // An if's condition evaluates exactly when the statement runs, so
+          // lifting it into a declaration just before the if is
+          // timing-identical -- and turns a condition containing the pattern
+          // into a plain statement the hoist covers. Conditions were never
+          // hoisted before, so this also closes the pure-read case.
+          if (statementContainsNestedIndexRead(statement.test)) {
+            const wrapper = {
+              type: 'VariableDeclaration',
+              kind: 'const',
+              declarations: [{
+                type: 'VariableDeclarator',
+                id: { type: 'Identifier', name: `hoistSeqIf${this.linearTempId = (this.linearTempId || 0) + 1}` },
+                init: statement.test,
+              }],
+            };
+            const linearized = this.linearizeStatement(wrapper);
+            if (linearized !== null) {
+              const name = wrapper.declarations[0].id.name;
+              const reference = { type: 'Identifier', name, start: this.syntheticNodeId, end: this.syntheticNodeId + 1 };
+              this.syntheticNodeId += 2;
+              statement.test = reference;
+              body.splice(i, 0, ...linearized);
+              i += linearized.length;
+            }
+          }
+          this.normalizeBranch(statement, 'consequent');
+          this.normalizeBranch(statement, 'alternate');
+          break;
+        }
+        case 'ForStatement':
+        case 'WhileStatement':
+        case 'DoWhileStatement':
+          // only the body: rewriting loop headers would change how often
+          // their expressions run, and the hoist never fires there anyway
+          this.normalizeBranch(statement, 'body');
+          break;
+        case 'BlockStatement':
+          this.normalizeBlock(statement);
+          break;
+      }
+    }
+  }
+
+  /**
+   * @param {Object} statement - the owning statement
+   * @param {String} key - which branch to normalize, braced first if needed
+   */
+  normalizeBranch(statement, key) {
+    const branch = statement[key];
+    if (!branch) return;
+    if (branch.type === 'BlockStatement') {
+      this.normalizeBlock(branch);
+      return;
+    }
+    // An unbraced branch only gains braces when normalization actually has
+    // work inside it -- bracing unconditionally would change the emitted
+    // text of every kernel with a bare `if (x) break;`.
+    if (!statementContainsNestedIndexRead(branch)) return;
+    statement[key] = { type: 'BlockStatement', body: [branch] };
+    this.normalizeBlock(statement[key]);
+  }
+
+  linearizeStatement(statement) {
+    const statements = [];
+    let failed = false;
+    let tempId = this.linearTempId || 0;
+
+    const identifier = name => ({ type: 'Identifier', name });
+    const declare = (kind, name, init) => ({
+      type: 'VariableDeclaration',
+      kind,
+      declarations: [{ type: 'VariableDeclarator', id: identifier(name), init }],
+    });
+    const capture = (into, expression) => {
+      const name = `hoistSeq${tempId++}`;
+      into.push(declare('const', name, expression));
+      return identifier(name);
+    };
+
+    const hasSideEffects = node => !nodeIsSideEffectFree(node);
+
+    // Rewrites `expression`, pushing lifted statements onto `into`, and
+    // returns the expression to use in its place.
+    const linearize = (node, into) => {
+      if (failed || !node || typeof node !== 'object') return node;
+      switch (node.type) {
+        case 'Identifier':
+        case 'Literal':
+        case 'ThisExpression':
+          return node;
+        case 'MemberExpression': {
+          const object = linearize(node.object, into);
+          const property = node.computed ? linearize(node.property, into) : node.property;
+          return { ...node, object, property };
+        }
+        case 'CallExpression':
+          return { ...node, arguments: node.arguments.map(argument => linearize(argument, into)) };
+        case 'BinaryExpression': {
+          // evaluation order: left fully before right
+          const left = linearize(node.left, into);
+          const leftStable = hasSideEffects(node.right) ? capture(into, left) : left;
+          return { ...node, left: leftStable, right: linearize(node.right, into) };
+        }
+        case 'UnaryExpression':
+          return { ...node, argument: linearize(node.argument, into) };
+        case 'ArrayExpression':
+          return { ...node, elements: node.elements.map(element => linearize(element, into)) };
+        case 'UpdateExpression': {
+          if (node.argument.type !== 'Identifier') { failed = true; return node; }
+          if (node.prefix) {
+            into.push({ type: 'ExpressionStatement', expression: node });
+            return capture(into, node.argument);
+          }
+          const before = capture(into, node.argument);
+          into.push({ type: 'ExpressionStatement', expression: node });
+          return before;
+        }
+        case 'AssignmentExpression': {
+          if (node.left.type !== 'Identifier') { failed = true; return node; }
+          const value = linearize(node.right, into);
+          into.push({ type: 'ExpressionStatement', expression: { ...node, right: value } });
+          return capture(into, node.left);
+        }
+        case 'SequenceExpression': {
+          for (let i = 0; i < node.expressions.length - 1; i++) {
+            const expression = linearize(node.expressions[i], into);
+            // a lifted side effect is already a statement; anything left is
+            // a discarded pure value
+            if (expression.type === 'UpdateExpression' || expression.type === 'AssignmentExpression') {
+              into.push({ type: 'ExpressionStatement', expression });
+            }
+          }
+          return linearize(node.expressions[node.expressions.length - 1], into);
+        }
+        case 'ConditionalExpression': {
+          if (!hasSideEffects(node.consequent) && !hasSideEffects(node.alternate)) {
+            // pure branches: reads hoisted past the guard are value-safe
+            return { ...node, test: linearize(node.test, into) };
+          }
+          // a guarded side effect must stay guarded: unfold to an if
+          const test = linearize(node.test, into);
+          const name = `hoistSeq${tempId++}`;
+          into.push(declare('let', name, { type: 'Literal', value: 0, raw: '0' }));
+          const consequent = [];
+          const alternate = [];
+          const consequentValue = linearize(node.consequent, consequent);
+          const alternateValue = linearize(node.alternate, alternate);
+          const assign = (target, value) => ({
+            type: 'ExpressionStatement',
+            expression: { type: 'AssignmentExpression', operator: '=', left: identifier(target), right: value },
+          });
+          consequent.push(assign(name, consequentValue));
+          alternate.push(assign(name, alternateValue));
+          into.push({
+            type: 'IfStatement',
+            test,
+            consequent: { type: 'BlockStatement', body: consequent },
+            alternate: { type: 'BlockStatement', body: alternate },
+          });
+          return identifier(name);
+        }
+        case 'LogicalExpression': {
+          if (!hasSideEffects(node.right)) {
+            return { ...node, left: linearize(node.left, into) };
+          }
+          const left = linearize(node.left, into);
+          const name = `hoistSeq${tempId++}`;
+          into.push(declare('let', name, left));
+          const branch = [];
+          const rightValue = linearize(node.right, branch);
+          branch.push({
+            type: 'ExpressionStatement',
+            expression: { type: 'AssignmentExpression', operator: '=', left: identifier(name), right: rightValue },
+          });
+          into.push({
+            type: 'IfStatement',
+            test: node.operator === '&&' ?
+              identifier(name) : { type: 'UnaryExpression', operator: '!', prefix: true, argument: identifier(name) },
+            consequent: { type: 'BlockStatement', body: branch },
+            alternate: null,
+          });
+          return identifier(name);
+        }
+        default:
+          // an expression kind this rewrite does not understand: bail out and
+          // leave the whole statement as written
+          failed = true;
+          return node;
+      }
+    };
+
+    switch (statement.type) {
+      case 'ExpressionStatement': {
+        const expression = statement.expression;
+        if (expression.type === 'AssignmentExpression' && expression.left.type === 'Identifier') {
+          const value = linearize(expression.right, statements);
+          statements.push({ type: 'ExpressionStatement', expression: { ...expression, right: value } });
+        } else {
+          const value = linearize(expression, statements);
+          if (value.type === 'UpdateExpression' || value.type === 'AssignmentExpression') {
+            statements.push({ type: 'ExpressionStatement', expression: value });
+          }
+        }
+        break;
+      }
+      case 'VariableDeclaration': {
+        for (let i = 0; i < statement.declarations.length; i++) {
+          const declarator = statement.declarations[i];
+          const init = linearize(declarator.init, statements);
+          statements.push({ ...statement, declarations: [{ ...declarator, init }] });
+        }
+        break;
+      }
+      case 'ReturnStatement': {
+        const argument = linearize(statement.argument, statements);
+        statements.push({ ...statement, argument });
+        break;
+      }
+      default:
+        return null;
+    }
+
+    if (failed) return null;
+    this.linearTempId = tempId;
+
+    // The type system caches by source position (astKey), which synthetic
+    // nodes do not have. Give every node we created a unique position far
+    // beyond any real source offset; clones made with spread keep their
+    // original's position, which is correct since they have its type.
+    let syntheticId = this.syntheticNodeId || 0x40000000;
+    const stamp = node => {
+      if (!node || typeof node !== 'object') return;
+      if (Array.isArray(node)) {
+        node.forEach(stamp);
+        return;
+      }
+      if (typeof node.type === 'string' && node.start === undefined) {
+        node.start = syntheticId;
+        node.end = syntheticId + 1;
+        syntheticId += 2;
+      }
+      for (const key in node) {
+        if (key === 'loc' || key === 'range' || key === 'parent') continue;
+        stamp(node[key]);
+      }
+    };
+    stamp(statements);
+    this.syntheticNodeId = syntheticId;
+
+    return statements;
+  }
+
   astStatementWithHoisting(ast, retArr) {
     switch (ast.type) {
       case 'ExpressionStatement':
@@ -843,6 +1151,10 @@ class WebGLFunctionNode extends FunctionNode {
         // statement that does mix them keeps the nested form -- the FXC bug
         // stays for that kernel on Windows, but wrong-order is worse than
         // slow-path.
+        // Statements mixing the pattern with side effects were already
+        // rewritten by normalizeFunctionAST before tracing, so ordinarily
+        // everything arriving here is clean. The check stays as a safety net
+        // for anything the normalizer declined to touch.
         if (!statementIsSideEffectFreeBesidesTopLevelAssignment(ast)) {
           return this.astGeneric(ast, retArr);
         }
@@ -1646,6 +1958,62 @@ class WebGLFunctionNode extends FunctionNode {
     }
     return markup;
   }
+}
+
+/**
+ * @desc Whether an expression subtree is free of side effects. The kernel
+ * language keeps this simple: only update and assignment expressions mutate.
+ * @param {Object} node - the expression node
+ * @returns {Boolean}
+ */
+function nodeIsSideEffectFree(node) {
+  if (!node || typeof node !== 'object') return true;
+  if (Array.isArray(node)) return node.every(nodeIsSideEffectFree);
+  if (node.type === 'UpdateExpression' || node.type === 'AssignmentExpression') return false;
+  for (const key in node) {
+    if (key === 'loc' || key === 'range' || key === 'parent') continue;
+    if (!nodeIsSideEffectFree(node[key])) return false;
+  }
+  return true;
+}
+
+/**
+ * @desc Whether a statement contains the shape the FXC hoist exists for: a
+ * computed member read used inside the computed index of another member read.
+ * An AST-level approximation of the sampler test the emitter applies -- a
+ * false positive only means a side-effectful statement gets linearized when it
+ * had nothing to hoist, which preserves semantics.
+ * @param {Object} statement - the statement node
+ * @returns {Boolean}
+ */
+function statementContainsNestedIndexRead(statement) {
+  let found = false;
+
+  function containsComputedRead(node) {
+    if (!node || typeof node !== 'object' || found) return false;
+    if (Array.isArray(node)) return node.some(containsComputedRead);
+    if (node.type === 'MemberExpression' && node.computed) return true;
+    for (const key in node) {
+      if (key === 'loc' || key === 'range' || key === 'parent') continue;
+      if (containsComputedRead(node[key])) return true;
+    }
+    return false;
+  }
+
+  function walk(node) {
+    if (!node || typeof node !== 'object' || found) return;
+    if (Array.isArray(node)) { node.forEach(walk); return; }
+    if (node.type === 'MemberExpression' && node.computed && containsComputedRead(node.property)) {
+      found = true;
+      return;
+    }
+    for (const key in node) {
+      if (key === 'loc' || key === 'range' || key === 'parent') continue;
+      walk(node[key]);
+    }
+  }
+  walk(statement);
+  return found;
 }
 
 /**

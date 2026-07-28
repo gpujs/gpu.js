@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.9
- * @date Tue Jul 28 2026 23:51:14 GMT+0800 (Singapore Standard Time)
+ * @date Wed Jul 29 2026 00:09:48 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -5856,6 +5856,363 @@
         }
         return retArr;
       }
+      traceFunctionAST(ast) {
+        this.normalizeBlock(ast.body);
+        super.traceFunctionAST(ast);
+      }
+      normalizeBlock(block) {
+        if (!block || block.type !== "BlockStatement") return;
+        const body = block.body;
+        for (let i = 0; i < body.length; i++) {
+          const statement = body[i];
+          switch (statement.type) {
+           case "ExpressionStatement":
+           case "VariableDeclaration":
+           case "ReturnStatement":
+            if (!statementIsSideEffectFreeBesidesTopLevelAssignment(statement) && statementContainsNestedIndexRead(statement)) {
+              const linearized = this.linearizeStatement(statement);
+              if (linearized !== null) {
+                body.splice(i, 1, ...linearized);
+                i += linearized.length - 1;
+              }
+            }
+            break;
+
+           case "IfStatement":
+            if (statementContainsNestedIndexRead(statement.test)) {
+              const wrapper = {
+                type: "VariableDeclaration",
+                kind: "const",
+                declarations: [ {
+                  type: "VariableDeclarator",
+                  id: {
+                    type: "Identifier",
+                    name: `hoistSeqIf${this.linearTempId = (this.linearTempId || 0) + 1}`
+                  },
+                  init: statement.test
+                } ]
+              };
+              const linearized = this.linearizeStatement(wrapper);
+              if (linearized !== null) {
+                const reference = {
+                  type: "Identifier",
+                  name: wrapper.declarations[0].id.name,
+                  start: this.syntheticNodeId,
+                  end: this.syntheticNodeId + 1
+                };
+                this.syntheticNodeId += 2;
+                statement.test = reference;
+                body.splice(i, 0, ...linearized);
+                i += linearized.length;
+              }
+            }
+            this.normalizeBranch(statement, "consequent");
+            this.normalizeBranch(statement, "alternate");
+            break;
+
+           case "ForStatement":
+           case "WhileStatement":
+           case "DoWhileStatement":
+            this.normalizeBranch(statement, "body");
+            break;
+
+           case "BlockStatement":
+            this.normalizeBlock(statement);
+            break;
+          }
+        }
+      }
+      normalizeBranch(statement, key) {
+        const branch = statement[key];
+        if (!branch) return;
+        if (branch.type === "BlockStatement") {
+          this.normalizeBlock(branch);
+          return;
+        }
+        if (!statementContainsNestedIndexRead(branch)) return;
+        statement[key] = {
+          type: "BlockStatement",
+          body: [ branch ]
+        };
+        this.normalizeBlock(statement[key]);
+      }
+      linearizeStatement(statement) {
+        const statements = [];
+        let failed = false;
+        let tempId = this.linearTempId || 0;
+        const identifier = name => ({
+          type: "Identifier",
+          name: name
+        });
+        const declare = (kind, name, init) => ({
+          type: "VariableDeclaration",
+          kind: kind,
+          declarations: [ {
+            type: "VariableDeclarator",
+            id: identifier(name),
+            init: init
+          } ]
+        });
+        const capture = (into, expression) => {
+          const name = `hoistSeq${tempId++}`;
+          into.push(declare("const", name, expression));
+          return identifier(name);
+        };
+        const hasSideEffects = node => !nodeIsSideEffectFree(node);
+        const linearize = (node, into) => {
+          if (failed || !node || typeof node !== "object") return node;
+          switch (node.type) {
+           case "Identifier":
+           case "Literal":
+           case "ThisExpression":
+            return node;
+
+           case "MemberExpression":
+            {
+              const object = linearize(node.object, into);
+              const property = node.computed ? linearize(node.property, into) : node.property;
+              return {
+                ...node,
+                object: object,
+                property: property
+              };
+            }
+
+           case "CallExpression":
+            return {
+              ...node,
+              arguments: node.arguments.map(argument => linearize(argument, into))
+            };
+
+           case "BinaryExpression":
+            {
+              const left = linearize(node.left, into);
+              const leftStable = hasSideEffects(node.right) ? capture(into, left) : left;
+              return {
+                ...node,
+                left: leftStable,
+                right: linearize(node.right, into)
+              };
+            }
+
+           case "UnaryExpression":
+            return {
+              ...node,
+              argument: linearize(node.argument, into)
+            };
+
+           case "ArrayExpression":
+            return {
+              ...node,
+              elements: node.elements.map(element => linearize(element, into))
+            };
+
+           case "UpdateExpression":
+            {
+              if (node.argument.type !== "Identifier") {
+                failed = true;
+                return node;
+              }
+              if (node.prefix) {
+                into.push({
+                  type: "ExpressionStatement",
+                  expression: node
+                });
+                return capture(into, node.argument);
+              }
+              const before = capture(into, node.argument);
+              into.push({
+                type: "ExpressionStatement",
+                expression: node
+              });
+              return before;
+            }
+
+           case "AssignmentExpression":
+            {
+              if (node.left.type !== "Identifier") {
+                failed = true;
+                return node;
+              }
+              const value = linearize(node.right, into);
+              into.push({
+                type: "ExpressionStatement",
+                expression: {
+                  ...node,
+                  right: value
+                }
+              });
+              return capture(into, node.left);
+            }
+
+           case "SequenceExpression":
+            for (let i = 0; i < node.expressions.length - 1; i++) {
+              const expression = linearize(node.expressions[i], into);
+              if (expression.type === "UpdateExpression" || expression.type === "AssignmentExpression") into.push({
+                type: "ExpressionStatement",
+                expression: expression
+              });
+            }
+            return linearize(node.expressions[node.expressions.length - 1], into);
+
+           case "ConditionalExpression":
+            {
+              if (!hasSideEffects(node.consequent) && !hasSideEffects(node.alternate)) return {
+                ...node,
+                test: linearize(node.test, into)
+              };
+              const test = linearize(node.test, into);
+              const name = `hoistSeq${tempId++}`;
+              into.push(declare("let", name, {
+                type: "Literal",
+                value: 0,
+                raw: "0"
+              }));
+              const consequent = [];
+              const alternate = [];
+              const consequentValue = linearize(node.consequent, consequent);
+              const alternateValue = linearize(node.alternate, alternate);
+              const assign = (target, value) => ({
+                type: "ExpressionStatement",
+                expression: {
+                  type: "AssignmentExpression",
+                  operator: "=",
+                  left: identifier(target),
+                  right: value
+                }
+              });
+              consequent.push(assign(name, consequentValue));
+              alternate.push(assign(name, alternateValue));
+              into.push({
+                type: "IfStatement",
+                test: test,
+                consequent: {
+                  type: "BlockStatement",
+                  body: consequent
+                },
+                alternate: {
+                  type: "BlockStatement",
+                  body: alternate
+                }
+              });
+              return identifier(name);
+            }
+
+           case "LogicalExpression":
+            {
+              if (!hasSideEffects(node.right)) return {
+                ...node,
+                left: linearize(node.left, into)
+              };
+              const left = linearize(node.left, into);
+              const name = `hoistSeq${tempId++}`;
+              into.push(declare("let", name, left));
+              const branch = [];
+              const rightValue = linearize(node.right, branch);
+              branch.push({
+                type: "ExpressionStatement",
+                expression: {
+                  type: "AssignmentExpression",
+                  operator: "=",
+                  left: identifier(name),
+                  right: rightValue
+                }
+              });
+              into.push({
+                type: "IfStatement",
+                test: node.operator === "&&" ? identifier(name) : {
+                  type: "UnaryExpression",
+                  operator: "!",
+                  prefix: true,
+                  argument: identifier(name)
+                },
+                consequent: {
+                  type: "BlockStatement",
+                  body: branch
+                },
+                alternate: null
+              });
+              return identifier(name);
+            }
+
+           default:
+            failed = true;
+            return node;
+          }
+        };
+        switch (statement.type) {
+         case "ExpressionStatement":
+          {
+            const expression = statement.expression;
+            if (expression.type === "AssignmentExpression" && expression.left.type === "Identifier") {
+              const value = linearize(expression.right, statements);
+              statements.push({
+                type: "ExpressionStatement",
+                expression: {
+                  ...expression,
+                  right: value
+                }
+              });
+            } else {
+              const value = linearize(expression, statements);
+              if (value.type === "UpdateExpression" || value.type === "AssignmentExpression") statements.push({
+                type: "ExpressionStatement",
+                expression: value
+              });
+            }
+            break;
+          }
+
+         case "VariableDeclaration":
+          for (let i = 0; i < statement.declarations.length; i++) {
+            const declarator = statement.declarations[i];
+            const init = linearize(declarator.init, statements);
+            statements.push({
+              ...statement,
+              declarations: [ {
+                ...declarator,
+                init: init
+              } ]
+            });
+          }
+          break;
+
+         case "ReturnStatement":
+          {
+            const argument = linearize(statement.argument, statements);
+            statements.push({
+              ...statement,
+              argument: argument
+            });
+            break;
+          }
+
+         default:
+          return null;
+        }
+        if (failed) return null;
+        this.linearTempId = tempId;
+        let syntheticId = this.syntheticNodeId || 1073741824;
+        const stamp = node => {
+          if (!node || typeof node !== "object") return;
+          if (Array.isArray(node)) {
+            node.forEach(stamp);
+            return;
+          }
+          if (typeof node.type === "string" && node.start === void 0) {
+            node.start = syntheticId;
+            node.end = syntheticId + 1;
+            syntheticId += 2;
+          }
+          for (const key in node) {
+            if (key === "loc" || key === "range" || key === "parent") continue;
+            stamp(node[key]);
+          }
+        };
+        stamp(statements);
+        this.syntheticNodeId = syntheticId;
+        return statements;
+      }
       astStatementWithHoisting(ast, retArr) {
         switch (ast.type) {
          case "ExpressionStatement":
@@ -6476,6 +6833,46 @@
         return markup;
       }
     };
+    function nodeIsSideEffectFree(node) {
+      if (!node || typeof node !== "object") return true;
+      if (Array.isArray(node)) return node.every(nodeIsSideEffectFree);
+      if (node.type === "UpdateExpression" || node.type === "AssignmentExpression") return false;
+      for (const key in node) {
+        if (key === "loc" || key === "range" || key === "parent") continue;
+        if (!nodeIsSideEffectFree(node[key])) return false;
+      }
+      return true;
+    }
+    function statementContainsNestedIndexRead(statement) {
+      let found = false;
+      function containsComputedRead(node) {
+        if (!node || typeof node !== "object" || found) return false;
+        if (Array.isArray(node)) return node.some(containsComputedRead);
+        if (node.type === "MemberExpression" && node.computed) return true;
+        for (const key in node) {
+          if (key === "loc" || key === "range" || key === "parent") continue;
+          if (containsComputedRead(node[key])) return true;
+        }
+        return false;
+      }
+      function walk(node) {
+        if (!node || typeof node !== "object" || found) return;
+        if (Array.isArray(node)) {
+          node.forEach(walk);
+          return;
+        }
+        if (node.type === "MemberExpression" && node.computed && containsComputedRead(node.property)) {
+          found = true;
+          return;
+        }
+        for (const key in node) {
+          if (key === "loc" || key === "range" || key === "parent") continue;
+          walk(node[key]);
+        }
+      }
+      walk(statement);
+      return found;
+    }
     function statementIsSideEffectFreeBesidesTopLevelAssignment(statement) {
       const topLevelAssignment = statement.type === "ExpressionStatement" && statement.expression.type === "AssignmentExpression" ? statement.expression : null;
       function walk(node) {
