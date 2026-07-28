@@ -192,3 +192,70 @@ function check(assert, kernelFunction, args, expected, expectHoist) {
     return out;
   }, [[2], [7, 13, 19, 23]], 5, true);
 });
+
+// The ANGLE-side review of the upstream workaround surfaced two shapes this
+// compiler also mishandled: a user function taking an array compiles to a
+// sampler-taking GLSL function, so calling it nested inside itself is the
+// same FXC shape as a nested texture read; and a pure comma inside a kept
+// ternary branch survived linearization and silently lost the hoist.
+
+function makeGpuWithPick() {
+  const gpu = new GPU({ mode: 'headlessgl' });
+  gpu.addFunction(function pick(arr, i) { return arr[i]; }, {
+    argumentTypes: { arr: 'Array', i: 'Number' },
+    returnType: 'Number',
+  });
+  return gpu;
+}
+
+(GPU.isHeadlessGLSupported ? test : skip)('a user function called nested inside itself lifts', (t) => {
+  const gpu = makeGpuWithPick();
+  const kernel = gpu.createKernel(function (input, lookup) {
+    return pick(lookup, pick(input, this.thread.x));
+  }).setOutput([1]);
+  t.equal(kernel([2], [7, 13, 19, 23])[0], 19);
+  t.notOk(
+    /pick\([^;\n]*pick\(/.test(kernel.kernel.translatedSource),
+    'no call to pick nested inside another on one statement'
+  );
+  gpu.destroy();
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('a nested self-call in an if condition lifts', (t) => {
+  const gpu = makeGpuWithPick();
+  const kernel = gpu.createKernel(function (input, lookup) {
+    let out = -1.0;
+    if (pick(lookup, pick(input, this.thread.x)) > 18.0) {
+      out = 5.0;
+    }
+    return out;
+  }).setOutput([1]);
+  t.equal(kernel([2], [7, 13, 19, 23])[0], 5);
+  t.notOk(
+    /pick\([^;\n]*pick\(/.test(kernel.kernel.translatedSource),
+    'no call to pick nested inside another on one statement'
+  );
+  gpu.destroy();
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('a nested self-call keeps order around side effects', (t) => {
+  const gpu = makeGpuWithPick();
+  const kernel = gpu.createKernel(function (input, lookup) {
+    let i = this.thread.x;
+    const value = pick(lookup, pick(input, i++)) + i;
+    return value;
+  }).setOutput([1]);
+  t.equal(kernel([2], [7, 13, 19, 23])[0], 20);
+  t.notOk(
+    /pick\([^;\n]*pick\(/.test(kernel.kernel.translatedSource),
+    'no call to pick nested inside another on one statement'
+  );
+  gpu.destroy();
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('a pure comma inside a kept ternary still hoists', (t) => {
+  check(t, function (flag, input, lookup) {
+    const value = flag > 0.0 ? (0.0, lookup[input[this.thread.x]]) : -1.0;
+    return value;
+  }, [1, [2], [7, 13, 19, 23]], 19, true);
+});

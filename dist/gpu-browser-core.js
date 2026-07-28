@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.9
- * @date Wed Jul 29 2026 00:37:03 GMT+0800 (Singapore Standard Time)
+ * @date Wed Jul 29 2026 04:05:40 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -5882,7 +5882,7 @@
            case "ExpressionStatement":
            case "VariableDeclaration":
            case "ReturnStatement":
-            if (!statementIsSideEffectFreeBesidesTopLevelAssignment(statement) && statementContainsNestedIndexRead(statement)) {
+            if (!statementIsSideEffectFreeBesidesTopLevelAssignment(statement) && statementContainsNestedIndexRead(statement) || containsNestedSameFunctionCall(statement)) {
               const linearized = this.linearizeStatement(statement);
               if (linearized !== null) {
                 body.splice(i, 1, ...linearized);
@@ -5892,7 +5892,7 @@
             break;
 
            case "IfStatement":
-            if (statementContainsNestedIndexRead(statement.test)) {
+            if (statementContainsNestedIndexRead(statement.test) || containsNestedSameFunctionCall(statement.test)) {
               const wrapper = {
                 type: "VariableDeclaration",
                 kind: "const",
@@ -5988,7 +5988,7 @@
           this.normalizeBlock(branch);
           return;
         }
-        if (!statementContainsNestedIndexRead(branch)) return;
+        if (!statementContainsNestedIndexRead(branch) && !containsNestedSameFunctionCall(branch)) return;
         statement[key] = {
           type: "BlockStatement",
           body: [ branch ]
@@ -6000,7 +6000,7 @@
         const init = type === "ForStatement" ? statement.init : null;
         const test = statement.test || null;
         const update = type === "ForStatement" ? statement.update : null;
-        if (![ init, test, update ].some(part => part !== null && statementContainsNestedIndexRead(part))) return null;
+        if (![ init, test, update ].some(part => part !== null && (statementContainsNestedIndexRead(part) || containsNestedSameFunctionCall(part)))) return null;
         const clone = node => JSON.parse(JSON.stringify(node));
         const breakCheck = testExpression => ({
           type: "IfStatement",
@@ -6156,10 +6156,16 @@
             }
 
            case "CallExpression":
-            return {
-              ...node,
-              arguments: node.arguments.map(argument => linearize(argument, into))
-            };
+            {
+              const args = node.arguments.map(argument => linearize(argument, into));
+              if (node.callee.type === "Identifier") {
+                for (let i = 0; i < args.length; i++) if (containsCallTo(args[i], node.callee.name)) args[i] = capture(into, args[i]);
+              }
+              return {
+                ...node,
+                arguments: args
+              };
+            }
 
            case "BinaryExpression":
             {
@@ -7036,7 +7042,7 @@
     function nodeIsSideEffectFree(node) {
       if (!node || typeof node !== "object") return true;
       if (Array.isArray(node)) return node.every(nodeIsSideEffectFree);
-      if (node.type === "UpdateExpression" || node.type === "AssignmentExpression") return false;
+      if (node.type === "UpdateExpression" || node.type === "AssignmentExpression" || node.type === "SequenceExpression") return false;
       for (const key in node) {
         if (key === "loc" || key === "range" || key === "parent") continue;
         if (!nodeIsSideEffectFree(node[key])) return false;
@@ -7064,6 +7070,38 @@
         if (node.type === "MemberExpression" && node.computed && containsComputedRead(node.property)) {
           found = true;
           return;
+        }
+        for (const key in node) {
+          if (key === "loc" || key === "range" || key === "parent") continue;
+          walk(node[key]);
+        }
+      }
+      walk(statement);
+      return found;
+    }
+    function containsCallTo(node, name) {
+      if (!node || typeof node !== "object") return false;
+      if (Array.isArray(node)) return node.some(child => containsCallTo(child, name));
+      if (node.type === "CallExpression" && node.callee.type === "Identifier" && node.callee.name === name) return true;
+      for (const key in node) {
+        if (key === "loc" || key === "range" || key === "parent") continue;
+        if (containsCallTo(node[key], name)) return true;
+      }
+      return false;
+    }
+    function containsNestedSameFunctionCall(statement) {
+      let found = false;
+      function walk(node) {
+        if (!node || typeof node !== "object" || found) return;
+        if (Array.isArray(node)) {
+          node.forEach(walk);
+          return;
+        }
+        if (node.type === "CallExpression" && node.callee.type === "Identifier") {
+          if (node.arguments.some(argument => containsCallTo(argument, node.callee.name))) {
+            found = true;
+            return;
+          }
         }
         for (const key in node) {
           if (key === "loc" || key === "range" || key === "parent") continue;

@@ -888,8 +888,9 @@ class WebGLFunctionNode extends FunctionNode {
         case 'VariableDeclaration':
         case 'ReturnStatement': {
           if (
-            !statementIsSideEffectFreeBesidesTopLevelAssignment(statement) &&
-            statementContainsNestedIndexRead(statement)
+            (!statementIsSideEffectFreeBesidesTopLevelAssignment(statement) &&
+              statementContainsNestedIndexRead(statement)) ||
+            containsNestedSameFunctionCall(statement)
           ) {
             const linearized = this.linearizeStatement(statement);
             if (linearized !== null) {
@@ -905,7 +906,7 @@ class WebGLFunctionNode extends FunctionNode {
           // timing-identical -- and turns a condition containing the pattern
           // into a plain statement the hoist covers. Conditions were never
           // hoisted before, so this also closes the pure-read case.
-          if (statementContainsNestedIndexRead(statement.test)) {
+          if (statementContainsNestedIndexRead(statement.test) || containsNestedSameFunctionCall(statement.test)) {
             const wrapper = {
               type: 'VariableDeclaration',
               kind: 'const',
@@ -992,7 +993,7 @@ class WebGLFunctionNode extends FunctionNode {
     // An unbraced branch only gains braces when normalization actually has
     // work inside it -- bracing unconditionally would change the emitted
     // text of every kernel with a bare `if (x) break;`.
-    if (!statementContainsNestedIndexRead(branch)) return;
+    if (!statementContainsNestedIndexRead(branch) && !containsNestedSameFunctionCall(branch)) return;
     statement[key] = { type: 'BlockStatement', body: [branch] };
     this.normalizeBlock(statement[key]);
   }
@@ -1018,7 +1019,9 @@ class WebGLFunctionNode extends FunctionNode {
     const test = statement.test || null;
     const update = type === 'ForStatement' ? statement.update : null;
     const headerHasPattern = [init, test, update].some(
-      part => part !== null && statementContainsNestedIndexRead(part)
+      part =>
+      part !== null &&
+      (statementContainsNestedIndexRead(part) || containsNestedSameFunctionCall(part))
     );
     if (!headerHasPattern) return null;
 
@@ -1143,8 +1146,20 @@ class WebGLFunctionNode extends FunctionNode {
           const property = node.computed ? linearize(node.property, into) : node.property;
           return { ...node, object, property };
         }
-        case 'CallExpression':
-          return { ...node, arguments: node.arguments.map(argument => linearize(argument, into)) };
+        case 'CallExpression': {
+          const args = node.arguments.map(argument => linearize(argument, into));
+          if (node.callee.type === 'Identifier') {
+            // an argument containing a call to the same function is the FXC
+            // nested-call shape; lift the whole argument so the emitted GLSL
+            // calls the function with a plain temporary
+            for (let i = 0; i < args.length; i++) {
+              if (containsCallTo(args[i], node.callee.name)) {
+                args[i] = capture(into, args[i]);
+              }
+            }
+          }
+          return { ...node, arguments: args };
+        }
         case 'BinaryExpression': {
           // evaluation order: left fully before right
           const left = linearize(node.left, into);
@@ -2180,7 +2195,10 @@ class WebGLFunctionNode extends FunctionNode {
 function nodeIsSideEffectFree(node) {
   if (!node || typeof node !== 'object') return true;
   if (Array.isArray(node)) return node.every(nodeIsSideEffectFree);
-  if (node.type === 'UpdateExpression' || node.type === 'AssignmentExpression') return false;
+  // a comma is not itself a side effect, but treating it as one makes a
+  // guarded comma unfold with its guard, so its operands get split instead
+  // of surviving into emission where the hoist cannot reach them
+  if (node.type === 'UpdateExpression' || node.type === 'AssignmentExpression' || node.type === 'SequenceExpression') return false;
   for (const key in node) {
     if (key === 'loc' || key === 'range' || key === 'parent') continue;
     if (!nodeIsSideEffectFree(node[key])) return false;
@@ -2217,6 +2235,54 @@ function statementContainsNestedIndexRead(statement) {
     if (node.type === 'MemberExpression' && node.computed && containsComputedRead(node.property)) {
       found = true;
       return;
+    }
+    for (const key in node) {
+      if (key === 'loc' || key === 'range' || key === 'parent') continue;
+      walk(node[key]);
+    }
+  }
+  walk(statement);
+  return found;
+}
+
+/**
+ * @desc Whether the subtree contains a call to the named user function.
+ * @param {Object} node - the node to search
+ * @param {String} name - the callee name
+ * @returns {Boolean}
+ */
+function containsCallTo(node, name) {
+  if (!node || typeof node !== 'object') return false;
+  if (Array.isArray(node)) return node.some(child => containsCallTo(child, name));
+  if (node.type === 'CallExpression' && node.callee.type === 'Identifier' && node.callee.name === name) return true;
+  for (const key in node) {
+    if (key === 'loc' || key === 'range' || key === 'parent') continue;
+    if (containsCallTo(node[key], name)) return true;
+  }
+  return false;
+}
+
+/**
+ * @desc Whether the subtree contains a user function called nested inside a
+ * call to itself -- f(a, f(b, x)). If f takes an array, both calls become the
+ * same sampler-taking GLSL function and FXC miscompiles the nested form just
+ * as it does nested texture reads (#300); the linearizer lifts the inner call
+ * out. Calls are pure in the kernel language, so lifting one earlier can
+ * never change what it computes.
+ * @param {Object} statement - the node to search
+ * @returns {Boolean}
+ */
+function containsNestedSameFunctionCall(statement) {
+  let found = false;
+
+  function walk(node) {
+    if (!node || typeof node !== 'object' || found) return;
+    if (Array.isArray(node)) { node.forEach(walk); return; }
+    if (node.type === 'CallExpression' && node.callee.type === 'Identifier') {
+      if (node.arguments.some(argument => containsCallTo(argument, node.callee.name))) {
+        found = true;
+        return;
+      }
     }
     for (const key in node) {
       if (key === 'loc' || key === 'range' || key === 'parent') continue;
