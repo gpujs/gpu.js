@@ -72,6 +72,7 @@
     "gl": {
       "node-gyp": "^11.4.2"
     },
-    "immutable": "^4.3.9"
+    "immutable": "^4.3.9",
+    "minimatch@^9.0.1": "^10.2.5"
   }
 }
