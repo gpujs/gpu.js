@@ -59,6 +59,39 @@ function testNumberDiscriminant(mode) {
   testNumberDiscriminant('headlessgl');
 });
 
+(GPU.isHeadlessGLSupported ? test : skip)('statements after break are unreachable and dropped - headlessgl', () => {
+  const gpu = new GPU({ mode: 'headlessgl' });
+  const kernel = gpu.createKernel(function (mode) {
+    let out = 0.0;
+    switch (mode) {
+      case 1:
+        out = 5.0;
+        break;
+        out = 99.0;
+      default:
+        out = 1.0;
+    }
+    return out;
+  }).setOutput([1]);
+  assert.equal(kernel(1)[0], 5);
+  gpu.destroy();
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('a default-only switch with break - headlessgl', () => {
+  const gpu = new GPU({ mode: 'headlessgl' });
+  const kernel = gpu.createKernel(function (mode) {
+    let out = 0.0;
+    switch (mode) {
+      default:
+        out = 7.0;
+        break;
+    }
+    return out;
+  }).setOutput([1]);
+  assert.equal(kernel(1)[0], 7);
+  gpu.destroy();
+});
+
 (GPU.isHeadlessGLSupported ? test : skip)('mid-case break is rejected clearly - headlessgl', () => {
   const gpu = new GPU({ mode: 'headlessgl' });
   assert.throws(() => {

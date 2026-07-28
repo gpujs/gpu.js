@@ -162,3 +162,33 @@ function check(assert, kernelFunction, args, expected, expectHoist) {
     return acc * 10.0 + i;
   }, [[9, 2, 2, 0], [7, 13, 19, 23]], 2003, true);
 });
+
+(GPU.isHeadlessGLSupported ? test : skip)('a do-while continue evaluates the test and can exit', (t) => {
+  // the condition is false at the moment continue runs, so the loop must
+  // exit right there: acc stays 100, i stays 2. Skipping the check would
+  // run one more iteration and produce 2003.
+  check(t, function (input, lookup) {
+    let i = 0;
+    let acc = 0.0;
+    do {
+      i++;
+      if (i == 2) continue;
+      acc += 100.0;
+    } while (lookup[input[i]] > 10.0);
+    return acc * 10.0 + i;
+  }, [[9, 2, 0, 0], [7, 13, 19, 23]], 1002, true);
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('a switch discriminant containing the pattern hoists', (t) => {
+  check(t, function (input, lookup) {
+    let out = -1.0;
+    switch (lookup[input[this.thread.x]]) {
+      case 19:
+        out = 5.0;
+        break;
+      default:
+        out = 1.0;
+    }
+    return out;
+  }, [[2], [7, 13, 19, 23]], 5, true);
+});
