@@ -72,6 +72,32 @@ class WGSLFunctionNode extends FunctionNode {
    * — both sides evaluate eagerly, which is observationally safe in the
    * side-effect-free kernel language. Void (minified) case lowers to if/else.
    */
+  astUpdateExpression(uNode, retArr) {
+    // WGSL has only the postfix increment/decrement statement form; at the
+    // statement and for-update positions -- the only places WGSL allows an
+    // increment at all -- prefix and postfix are indistinguishable, so both
+    // emit postfix rather than the invalid `++x`
+    this.astGeneric(uNode.argument, retArr);
+    retArr.push(uNode.operator);
+    return retArr;
+  }
+
+  getType(ast) {
+    // a ternary with an integer consequent but a float alternate emits as
+    // f32 (see astConditionalExpression); the type system must agree or the
+    // enclosing expression casts the wrong way
+    if (ast && ast.type === 'ConditionalExpression') {
+      const consequentType = this.getType(ast.consequent);
+      if (consequentType === 'Integer' || consequentType === 'LiteralInteger') {
+        const alternateType = this.getType(ast.alternate);
+        if (alternateType === 'Number' || alternateType === 'Float') {
+          return 'Number';
+        }
+      }
+    }
+    return super.getType(ast);
+  }
+
   astConditionalExpression(ast, retArr) {
     if (ast.type !== 'ConditionalExpression') {
       throw this.astErrorOutput('Not a conditional expression', ast);
@@ -91,7 +117,13 @@ class WGSLFunctionNode extends FunctionNode {
       return retArr;
     }
     // the consequent's type wins, matching getType's ConditionalExpression rule
-    const targetType = consequentType === 'LiteralInteger' ? 'Number' : consequentType;
+    let targetType = consequentType === 'LiteralInteger' ? 'Number' : consequentType;
+    // mixed int/float branches promote to float: coercing the float branch to
+    // integer would silently round it away from JS semantics. getType's
+    // ConditionalExpression override reports the same promotion.
+    if (targetType === 'Integer' && (alternateType === 'Number' || alternateType === 'Float')) {
+      targetType = 'Number';
+    }
     const emitBranch = (branch) => {
       const branchType = this.getType(branch);
       switch (targetType) {
@@ -951,6 +983,36 @@ class WGSLFunctionNode extends FunctionNode {
       if (consequent[i].type === 'BreakStatement') break;
       statements.push(consequent[i]);
     }
+    // a break anywhere deeper -- behind an if, inside a block -- would be
+    // emitted into the if chain, where WGSL reads it as breaking the
+    // enclosing loop (or rejects the shader outside one); same guard as the
+    // GL backends
+    for (let i = 0; i < statements.length; i++) {
+      const containsBreak = (node) => {
+        if (!node || typeof node !== 'object') return false;
+        if (Array.isArray(node)) return node.some(containsBreak);
+        if (node.type === 'BreakStatement') return true;
+        if (
+          node.type === 'ForStatement' ||
+          node.type === 'WhileStatement' ||
+          node.type === 'DoWhileStatement' ||
+          node.type === 'SwitchStatement'
+        ) {
+          return false;
+        }
+        for (const key in node) {
+          if (key === 'loc' || key === 'range' || key === 'parent') continue;
+          if (containsBreak(node[key])) return true;
+        }
+        return false;
+      };
+      if (containsBreak(statements[i])) {
+        throw this.astErrorOutput(
+          'break inside a switch case is only supported as the case terminator',
+          statements[i]
+        );
+      }
+    }
     for (let i = 0; i < statements.length; i++) {
       this.astGeneric(statements[i], retArr);
       retArr.push('\n');
@@ -1247,6 +1309,11 @@ class WGSLFunctionNode extends FunctionNode {
       throw this.astErrorOutput(`Unhandled function, couldn't find name`, ast);
     }
 
+    // FunctionBuilder's functionMap and the type-inference tables are keyed
+    // by the ORIGINAL function name; only the emitted WGSL uses the mangled
+    // one. Mangling before the registry traffic would silently drop the
+    // helper's definition from the assembled shader.
+    let emitName = functionName;
     if (isMathFunction) {
       if (functionName === 'random') {
         throw this.astErrorOutput('WebGPU backend does not yet support Math.random', ast);
@@ -1254,8 +1321,9 @@ class WGSLFunctionNode extends FunctionNode {
       if (mathFunctionRenames[functionName]) {
         functionName = mathFunctionRenames[functionName];
       }
+      emitName = functionName;
     } else {
-      functionName = this.mangleFunctionName(functionName);
+      emitName = this.mangleFunctionName(functionName);
     }
 
     if (this.calledFunctions.indexOf(functionName) < 0) {
@@ -1276,7 +1344,7 @@ class WGSLFunctionNode extends FunctionNode {
       retArr.push('i32(');
     }
 
-    retArr.push(functionName);
+    retArr.push(emitName);
     retArr.push('(');
 
     if (isMathFunction) {
