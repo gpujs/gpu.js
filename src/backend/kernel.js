@@ -199,6 +199,15 @@ class Kernel {
     this.pipeline = false;
 
     /**
+     * Makes the kernel return a Promise of its result on every backend.
+     * Backends with a genuinely non-blocking readback (webgl2 fences,
+     * webgpu natively) use it; the rest resolve their synchronous result,
+     * so the calling contract is uniform either way.
+     * @type {Boolean}
+     */
+    this.asyncMode = false;
+
+    /**
      * Make GPU use single precision or unsigned.  Acceptable values: 'single' or 'unsigned'
      * @type {String|null}
      * @enum 'single' | 'unsigned'
@@ -564,6 +573,16 @@ class Kernel {
    */
   setPipeline(flag) {
     this.pipeline = flag;
+    return this;
+  }
+
+  /**
+   * Set Promise-returning mode on/off
+   * @param {Boolean} flag
+   * @return {this}
+   */
+  setAsyncMode(flag) {
+    this.asyncMode = flag;
     return this;
   }
 

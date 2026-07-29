@@ -6,36 +6,82 @@ const { utils } = require('./utils');
  * @returns {function()}
  */
 function kernelRunShortcut(kernel) {
-  let run = function() {
-    // async backends (webgpu): build() stores its promise on the kernel and
-    // run() chains on it, so run's Promise is the entire result channel —
-    // none of the sync post-run machinery below applies
-    if (kernel.constructor.isAsync === true) {
-      kernel.build.apply(kernel, arguments);
-      run = function() {
-        return kernel.run.apply(kernel, arguments);
-      };
-      return run.apply(kernel, arguments);
+  function syncRun(args) {
+    // build() is guarded on kernel.built across every backend, so calling it
+    // per run costs one boolean check and stays correct through replaceKernel
+    kernel.build.apply(kernel, args);
+    let result = kernel.run.apply(kernel, args);
+    if (kernel.switchingKernels) {
+      const reasons = kernel.resetSwitchingKernels();
+      const newKernel = kernel.onRequestSwitchKernel(reasons, args, kernel);
+      shortcut.kernel = kernel = newKernel;
+      result = newKernel.run.apply(newKernel, args);
     }
-    kernel.build.apply(kernel, arguments);
-    run = function() {
-      let result = kernel.run.apply(kernel, arguments);
+    if (kernel.renderKernels) {
+      return kernel.renderKernels();
+    } else if (kernel.renderOutput) {
+      return kernel.renderOutput();
+    } else {
+      return result;
+    }
+  }
+
+  function asyncRun(args) {
+    return Promise.resolve().then(() => {
+      // mode 'async' upgrade opportunity: the probe for a natively-async
+      // backend resolves before anything on the proven kernel is built, and
+      // runs at most once. If the upgraded kernel fails its first run, the
+      // original kernel is still intact to retry on -- a genuine user error
+      // fails there too and propagates from the backend that owns the mode.
+      if (kernel.onAsyncModeUpgrade) {
+        const upgrade = kernel.onAsyncModeUpgrade;
+        const provenKernel = kernel;
+        kernel.onAsyncModeUpgrade = null;
+        return upgrade(args, kernel).then(upgradedKernel => {
+          if (!upgradedKernel) return asyncRun(args);
+          shortcut.replaceKernel(upgradedKernel);
+          return asyncRun(args).catch(() => {
+            shortcut.replaceKernel(provenKernel);
+            return asyncRun(args);
+          });
+        });
+      }
+      if (kernel.constructor.isAsync === true) {
+        kernel.build.apply(kernel, args);
+        return kernel.run.apply(kernel, args);
+      }
+      kernel.build.apply(kernel, args);
+      let result = kernel.run.apply(kernel, args);
       if (kernel.switchingKernels) {
         const reasons = kernel.resetSwitchingKernels();
-        const newKernel = kernel.onRequestSwitchKernel(reasons, arguments, kernel);
+        const newKernel = kernel.onRequestSwitchKernel(reasons, args, kernel);
         shortcut.kernel = kernel = newKernel;
-        result = newKernel.run.apply(newKernel, arguments);
+        result = newKernel.run.apply(newKernel, args);
       }
       if (kernel.renderKernels) {
+        // no non-blocking path for mapped outputs yet; resolving the
+        // synchronous read keeps the contract uniform
         return kernel.renderKernels();
       } else if (kernel.renderOutput) {
+        if (kernel.renderOutputAsync) {
+          return kernel.renderOutputAsync();
+        }
         return kernel.renderOutput();
       } else {
         return result;
       }
-    };
-    return run.apply(kernel, arguments);
-  };
+    });
+  }
+
+  function run() {
+    // async backends (webgpu): build() stores its promise on the kernel and
+    // run() chains on it, so run's Promise is the entire result channel —
+    // none of the sync post-run machinery applies
+    if (kernel.constructor.isAsync === true || kernel.asyncMode === true) {
+      return asyncRun(arguments);
+    }
+    return syncRun(arguments);
+  }
   const shortcut = function() {
     return run.apply(kernel, arguments);
   };

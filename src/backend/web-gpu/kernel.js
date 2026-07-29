@@ -114,6 +114,8 @@ class WebGPUKernel extends Kernel {
     if (this.precision === null) {
       this.precision = 'single';
     }
+    // natively async: every run returns a Promise regardless of the setting
+    this.asyncMode = true;
 
     this.threadDim = null;
     this.componentCount = 1;

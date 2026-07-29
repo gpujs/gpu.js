@@ -202,6 +202,21 @@ class GPU {
             break;
           }
         }
+      } else if (this.mode === 'async') {
+        // auto-selection under the Promise contract: pick the best
+        // synchronously-provable backend now (its readback runs non-blocking
+        // where the platform allows), and let the first kernel call upgrade
+        // to webgpu once an adapter has actually answered -- the async
+        // contract is exactly what buys the room to probe
+        for (let i = 0; i < kernelOrder.length; i++) {
+          if (kernelOrder[i].isSupported) {
+            Kernel = kernelOrder[i];
+            break;
+          }
+        }
+        if (!Kernel) {
+          Kernel = CPUKernel;
+        }
       } else if (this.mode === 'cpu') {
         Kernel = CPUKernel;
       }
@@ -367,9 +382,68 @@ class GPU {
       onRequestFallback,
       onRequestSwitchKernel
     }, settingsCopy);
+    if (this.mode === 'async') {
+      mergedSettings.asyncMode = true;
+    }
 
     const kernel = new this.Kernel(source, mergedSettings);
     const kernelRun = kernelRunShortcut(kernel);
+
+    if (this.mode === 'async' && WebGPUKernel.isSupported && !(kernel instanceof WebGPUKernel)) {
+      const gpu = this;
+      // consulted (and cleared) by the shortcut on the first call, before the
+      // chosen kernel builds; every setter chained onto the shortcut lands on
+      // the kernel instance first, so its settings are harvested here rather
+      // than from settingsCopy
+      kernel.onAsyncModeUpgrade = function onAsyncModeUpgrade(args, currentKernel) {
+        return GPU.isWebGPUAvailable().then(available => {
+          if (!available) return null;
+          let webGPUKernel;
+          try {
+            webGPUKernel = new WebGPUKernel(source, {
+              functions: gpu.functions,
+              nativeFunctions: gpu.nativeFunctions,
+              injectedNative: gpu.injectedNative,
+              gpu,
+              validate,
+              asyncMode: true,
+              output: currentKernel.output,
+              pipeline: currentKernel.pipeline,
+              immutable: currentKernel.immutable,
+              dynamicOutput: currentKernel.dynamicOutput,
+              // always dynamic: the GL backends absorb argument-size changes
+              // by switching kernels, so a faithful harvest here would make
+              // the upgrade stricter than the backend it replaced. The WGSL
+              // side reads every array's dimensions from the params buffer
+              // regardless, so the leniency costs nothing.
+              dynamicArguments: true,
+              loopMaxIterations: currentKernel.loopMaxIterations,
+              constants: currentKernel.constants,
+              constantTypes: currentKernel.constantTypes,
+              argumentTypes: currentKernel.argumentTypes,
+              precision: currentKernel.precision,
+              tactic: currentKernel.tactic,
+              strictIntegers: currentKernel.strictIntegers,
+              fixIntegerDivisionAccuracy: currentKernel.fixIntegerDivisionAccuracy,
+              subKernels: currentKernel.subKernels,
+              graphical: currentKernel.graphical,
+              debug: currentKernel.debug,
+            });
+            // deferred features (graphical, kernel maps, unsigned precision,
+            // Math.random) throw synchronously here: the proven backend keeps
+            // the kernel and nothing was lost but the probe
+            webGPUKernel.build.apply(webGPUKernel, args);
+          } catch (e) {
+            if (currentKernel.debug) {
+              console.warn('webgpu upgrade declined: ' + e.message);
+            }
+            return null;
+          }
+          kernels.push(webGPUKernel);
+          return webGPUKernel;
+        }, () => null);
+      };
+    }
 
     //if canvas didn't come from this, propagate from kernel
     if (!this.canvas) {

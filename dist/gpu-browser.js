@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.9
- * @date Wed Jul 29 2026 05:55:11 GMT+0800 (Singapore Standard Time)
+ * @date Wed Jul 29 2026 10:08:13 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -5271,6 +5271,7 @@
         this.validate = true;
         this.immutable = false;
         this.pipeline = false;
+        this.asyncMode = false;
         this.precision = null;
         this.tactic = null;
         this.plugins = null;
@@ -5448,6 +5449,10 @@
       }
       setPipeline(flag) {
         this.pipeline = flag;
+        return this;
+      }
+      setAsyncMode(flag) {
+        this.asyncMode = flag;
         return this;
       }
       setPrecision(flag) {
@@ -15018,6 +15023,76 @@
         gl.readPixels(0, 0, w, h, gl.RED, gl.FLOAT, result);
         return result;
       }
+      renderOutputAsync() {
+        if (this.renderOutput !== this.renderValues) return Promise.resolve(this.renderOutput());
+        return this.renderValuesAsync();
+      }
+      renderValuesAsync() {
+        if (this._tightRead === void 0) this._detectTightRead();
+        const formatValues = this.formatValues;
+        const [x, y, z] = this.output;
+        return this.transferValuesAsync().then(pixels => formatValues(pixels, x, y, z));
+      }
+      transferValuesAsync() {
+        const {texSize: texSize, context: gl} = this;
+        const w = texSize[0];
+        const h = texSize[1];
+        let format, type, result;
+        if (this.precision === "single") {
+          format = this._tightRead ? gl.RED : gl.RGBA;
+          type = gl.FLOAT;
+          result = new Float32Array(w * h * (this._tightRead ? 1 : 4));
+        } else {
+          format = gl.RGBA;
+          type = gl.UNSIGNED_BYTE;
+          result = new Uint8Array(w * h * 4);
+        }
+        const pbo = gl.createBuffer();
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+        gl.bufferData(gl.PIXEL_PACK_BUFFER, result.byteLength, gl.STREAM_READ);
+        gl.readPixels(0, 0, w, h, format, type, 0);
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+        const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+        gl.flush();
+        return this._pollFence(sync).then(() => {
+          gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+          gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, result);
+          gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+          gl.deleteBuffer(pbo);
+          return this.precision === "single" ? result : new Float32Array(result.buffer);
+        }, error => {
+          gl.deleteBuffer(pbo);
+          throw error;
+        });
+      }
+      _pollFence(sync) {
+        const gl = this.context;
+        return new Promise((resolve, reject) => {
+          let schedule;
+          let channel = null;
+          if (typeof MessageChannel !== "undefined") {
+            channel = new MessageChannel;
+            channel.port1.onmessage = () => poll();
+            schedule = () => channel.port2.postMessage(0);
+          } else schedule = () => setTimeout(poll, 0);
+          const settle = (fn, value) => {
+            gl.deleteSync(sync);
+            if (channel) {
+              channel.port1.close();
+              channel.port2.close();
+            }
+            fn(value);
+          };
+          const poll = () => {
+            if (gl.isContextLost()) return settle(reject, new Error("WebGL context lost while awaiting kernel result"));
+            const status = gl.clientWaitSync(sync, 0, 0);
+            if (status === gl.ALREADY_SIGNALED || status === gl.CONDITION_SATISFIED) return settle(resolve);
+            if (status === gl.WAIT_FAILED) return settle(reject, new Error("clientWaitSync failed while awaiting kernel result"));
+            schedule();
+          };
+          poll();
+        });
+      }
       _detectTightRead() {
         const gl = this.context;
         this._tightRead = false;
@@ -16554,6 +16629,7 @@
         }
         this.mergeSettings(source.settings || settings);
         if (this.precision === null) this.precision = "single";
+        this.asyncMode = true;
         this.threadDim = null;
         this.componentCount = 1;
         this.compiledSource = null;
@@ -17230,27 +17306,54 @@
   var require_kernel_run_shortcut = __commonJSMin((exports, module) => {
     const {utils: utils} = require_utils();
     function kernelRunShortcut(kernel) {
-      let run = function() {
-        if (kernel.constructor.isAsync === true) {
-          kernel.build.apply(kernel, arguments);
-          run = function() {
-            return kernel.run.apply(kernel, arguments);
-          };
-          return run.apply(kernel, arguments);
+      function syncRun(args) {
+        kernel.build.apply(kernel, args);
+        let result = kernel.run.apply(kernel, args);
+        if (kernel.switchingKernels) {
+          const reasons = kernel.resetSwitchingKernels();
+          const newKernel = kernel.onRequestSwitchKernel(reasons, args, kernel);
+          shortcut.kernel = kernel = newKernel;
+          result = newKernel.run.apply(newKernel, args);
         }
-        kernel.build.apply(kernel, arguments);
-        run = function() {
-          let result = kernel.run.apply(kernel, arguments);
+        if (kernel.renderKernels) return kernel.renderKernels(); else if (kernel.renderOutput) return kernel.renderOutput(); else return result;
+      }
+      function asyncRun(args) {
+        return Promise.resolve().then(() => {
+          if (kernel.onAsyncModeUpgrade) {
+            const upgrade = kernel.onAsyncModeUpgrade;
+            const provenKernel = kernel;
+            kernel.onAsyncModeUpgrade = null;
+            return upgrade(args, kernel).then(upgradedKernel => {
+              if (!upgradedKernel) return asyncRun(args);
+              shortcut.replaceKernel(upgradedKernel);
+              return asyncRun(args).catch(() => {
+                shortcut.replaceKernel(provenKernel);
+                return asyncRun(args);
+              });
+            });
+          }
+          if (kernel.constructor.isAsync === true) {
+            kernel.build.apply(kernel, args);
+            return kernel.run.apply(kernel, args);
+          }
+          kernel.build.apply(kernel, args);
+          let result = kernel.run.apply(kernel, args);
           if (kernel.switchingKernels) {
             const reasons = kernel.resetSwitchingKernels();
-            const newKernel = kernel.onRequestSwitchKernel(reasons, arguments, kernel);
+            const newKernel = kernel.onRequestSwitchKernel(reasons, args, kernel);
             shortcut.kernel = kernel = newKernel;
-            result = newKernel.run.apply(newKernel, arguments);
+            result = newKernel.run.apply(newKernel, args);
           }
-          if (kernel.renderKernels) return kernel.renderKernels(); else if (kernel.renderOutput) return kernel.renderOutput(); else return result;
-        };
-        return run.apply(kernel, arguments);
-      };
+          if (kernel.renderKernels) return kernel.renderKernels(); else if (kernel.renderOutput) {
+            if (kernel.renderOutputAsync) return kernel.renderOutputAsync();
+            return kernel.renderOutput();
+          } else return result;
+        });
+      }
+      function run() {
+        if (kernel.constructor.isAsync === true || kernel.asyncMode === true) return asyncRun(arguments);
+        return syncRun(arguments);
+      }
       const shortcut = function() {
         return run.apply(kernel, arguments);
       };
@@ -17316,7 +17419,7 @@
       webgpu: WebGPUKernel
     };
     let validate = true;
-    var GPU = class {
+    var GPU = class GPU {
       static disableValidation() {
         validate = false;
       }
@@ -17398,6 +17501,12 @@
               Kernel = kernelOrder[i];
               break;
             }
+          } else if (this.mode === "async") {
+            for (let i = 0; i < kernelOrder.length; i++) if (kernelOrder[i].isSupported) {
+              Kernel = kernelOrder[i];
+              break;
+            }
+            if (!Kernel) Kernel = CPUKernel;
           } else if (this.mode === "cpu") Kernel = CPUKernel;
           if (!Kernel) throw new Error(`A requested mode of "${this.mode}" and is not supported`);
         } else {
@@ -17517,8 +17626,50 @@
           onRequestFallback: onRequestFallback,
           onRequestSwitchKernel: onRequestSwitchKernel
         }, settingsCopy);
+        if (this.mode === "async") mergedSettings.asyncMode = true;
         const kernel = new this.Kernel(source, mergedSettings);
         const kernelRun = kernelRunShortcut(kernel);
+        if (this.mode === "async" && WebGPUKernel.isSupported && !(kernel instanceof WebGPUKernel)) {
+          const gpu = this;
+          kernel.onAsyncModeUpgrade = function onAsyncModeUpgrade(args, currentKernel) {
+            return GPU.isWebGPUAvailable().then(available => {
+              if (!available) return null;
+              let webGPUKernel;
+              try {
+                webGPUKernel = new WebGPUKernel(source, {
+                  functions: gpu.functions,
+                  nativeFunctions: gpu.nativeFunctions,
+                  injectedNative: gpu.injectedNative,
+                  gpu: gpu,
+                  validate: validate,
+                  asyncMode: true,
+                  output: currentKernel.output,
+                  pipeline: currentKernel.pipeline,
+                  immutable: currentKernel.immutable,
+                  dynamicOutput: currentKernel.dynamicOutput,
+                  dynamicArguments: true,
+                  loopMaxIterations: currentKernel.loopMaxIterations,
+                  constants: currentKernel.constants,
+                  constantTypes: currentKernel.constantTypes,
+                  argumentTypes: currentKernel.argumentTypes,
+                  precision: currentKernel.precision,
+                  tactic: currentKernel.tactic,
+                  strictIntegers: currentKernel.strictIntegers,
+                  fixIntegerDivisionAccuracy: currentKernel.fixIntegerDivisionAccuracy,
+                  subKernels: currentKernel.subKernels,
+                  graphical: currentKernel.graphical,
+                  debug: currentKernel.debug
+                });
+                webGPUKernel.build.apply(webGPUKernel, args);
+              } catch (e) {
+                if (currentKernel.debug) console.warn("webgpu upgrade declined: " + e.message);
+                return null;
+              }
+              kernels.push(webGPUKernel);
+              return webGPUKernel;
+            }, () => null);
+          };
+        }
         if (!this.canvas) this.canvas = kernel.canvas;
         if (!this.context) this.context = kernel.context;
         kernels.push(kernel);

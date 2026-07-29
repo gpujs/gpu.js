@@ -206,6 +206,15 @@ Settings are an object used to create an instance of `GPU`.  Example: `new GPU(s
   * 'webgl2': Use the `WebGL2Kernel` for transpiling a kernel
   * 'headlessgl' **New in V2!**: Use the `HeadlessGLKernel` for transpiling a kernel
   * 'cpu': Use the `CPUKernel` for transpiling a kernel
+  * 'webgpu' **New!**: Use the `WebGPUKernel` — kernels compile to WGSL compute shaders over storage buffers.  Explicit opt-in only, never auto-selected, because every kernel call returns a `Promise` of its result (WebGPU readback is inherently asynchronous).  Check `GPU.isWebGPUSupported` (synchronous, `navigator.gpu` presence) or `await GPU.isWebGPUAvailable()` (requests an actual adapter).
+  * 'async' **New!**: Auto-selection under the Promise contract.  Picks the best available backend (webgl2 → webgl → cpu), turns `asyncMode` on for every kernel, and upgrades a kernel to webgpu on its first call if an adapter answers — falling back to the proven backend if the upgraded kernel cannot handle it.  Write `await kernel(...)` once and the same code runs everywhere:
+  ```js
+  const gpu = new GPU({ mode: 'async' });
+  const kernel = gpu.createKernel(function(a) {
+    return a[this.thread.x] * 2;
+  }).setOutput([64]);
+  const result = await kernel(myArray); // webgpu, webgl2 or cpu underneath
+  ```
 * `onIstanbulCoverageVariable`: Removed in v2.11.0, use v8 coverage
 * `removeIstanbulCoverage`: Removed in v2.11.0, use v8 coverage
 
@@ -224,6 +233,7 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
   ```js
   kernel(texture);
   ```
+* `asyncMode` or `kernel.setAsyncMode(boolean)` **New!**: boolean, default = `false` - every call to the kernel returns a `Promise` of the usual result.  On `webgl2` the readback goes through a pixel-pack buffer and a fence, so the main thread stays free while the GPU works (a synchronous kernel call blocks it for the whole readback); on `webgpu` kernels are always asynchronous; the other backends resolve their synchronous result so the calling contract is uniform everywhere.  Adds a small per-readback latency on webgl2 (fence completion granularity) in exchange for the unblocked main thread — pipeline intermediate kernels and await only final results where that matters.  See `mode: 'async'` for automatic backend selection under this contract.
 * `graphical` or `kernel.setGraphical(boolean)`: boolean, default = `false`
 * `loopMaxIterations` or `kernel.setLoopMaxIterations(number)`: number, default = 1000
 * `constants` or `kernel.setConstants(object)`: object, default = null
