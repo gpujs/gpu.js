@@ -79,6 +79,9 @@ const c = multiplyMatrix(a, b) as number[][];
 Notice documentation is off?  We do try our hardest, but if you find something,
   [please bring it to our attention](https://github.com/gpujs/gpu.js/issues), or _[become a contributor](#contributors)_!
 
+* [New in 2.20.0](#new-in-2200)
+* [Supported Backends](#supported-backends)
+* [v3 Will Be Async by Default](#v3-will-be-async-by-default)
 * [Demos](#demos)
 * [Installation](#installation)
 * [`GPU` Settings](#gpu-settings)
@@ -116,6 +119,55 @@ Notice documentation is off?  We do try our hardest, but if you find something,
 * [Contributing](#contributing)
 * [Terms Explained](#terms-explained)
 * [License](#license)
+
+## New in 2.20.0
+
+* **WebGPU backend** — `new GPU({ mode: 'webgpu' })` compiles kernels to WGSL compute shaders over storage buffers.  No float packing, no texture layout tricks, no fragment-shader detour: WebGPU has the primitives WebGL made this library emulate.  On an Apple M1 Max it runs a 1024×1024 matrix multiplication including readback about **3× faster than the WebGL2 backend** (370× faster than the CPU).  Kernel calls in this mode return Promises — see below, this is the future of the whole library.
+* **Async is now a property any kernel can have** — `asyncMode: true` (or `kernel.setAsyncMode(true)`) makes every call return a `Promise` of the usual result on every backend.  On WebGL2 the readback becomes genuinely non-blocking (pixel-pack buffer + fence): a synchronous readback loop that froze the page for 105 ms straight now never stalls the main thread longer than 5 ms.
+* **`mode: 'async'`** — auto-selection under the Promise contract.  Picks the best available backend, and upgrades kernels to WebGPU at first call when an adapter actually answers.  Write `await kernel(...)` once; the same code runs on WebGPU, WebGL2, or CPU.
+* **Tighter WebGL2 readback** — single-precision scalar kernels now render to `R32F` and read back one float per value instead of four where the driver allows, cutting readback bandwidth to a quarter.  Applied automatically; no API change.
+
+## Supported Backends
+
+Representative performance factor: 1024×1024 matrix multiplication including readback, versus the CPU backend on the same machine (Apple M1 Max, Chromium; your hardware will vary — run `node scripts/benchmark-webgpu.mjs` for yours).
+
+| Backend | Environment | Technology | Perf factor | Notes |
+|---|---|---|---|---|
+| `webgpu` | Browser | WGSL compute shaders | **~370×** | Async API; opt-in via `mode: 'webgpu'` or automatic via `mode: 'async'` |
+| `webgl2` | Browser | GLSL ES 3.00 fragment shaders | ~127× | The default browser backend |
+| `webgl` | Browser | GLSL ES 1.00 fragment shaders | ~87× | Fallback for older browsers |
+| `headlessgl` | Node | GLSL ES 1.00 via ANGLE | ~123× | The default Node backend |
+| `cpu` | Anywhere | Plain JavaScript | 1× | Guaranteed fallback; also the reference for correctness |
+
+## v3 Will Be Async by Default
+
+**The next major version of GPU.js will make every kernel call return a `Promise`.**  This breaks the API you are using today, so it warrants both notice and an apology.
+
+We owe you the apology because the original synchronous design was not forward-thinking, and we should have started async in the first place.  A GPU is an asynchronous device: you hand it work, and the results are ready later.  WebGL let this library pretend otherwise — `readPixels` silently freezes the page until the GPU catches up, and we built our API on that pretense because it made the first example look like an ordinary function call.  The cost has been paid by every user since: every kernel readback blocks the main thread for its full duration (measurably ~96% of a readback-heavy loop frozen, in one stall as long as the whole loop), and WebGPU — which has no synchronous readback at all, correctly — cannot be offered under the synchronous contract except as a walled-off special mode.  An async-first API would have cost one `await` in the examples and none of this debt.
+
+v3 corrects the mistake: async everywhere, one contract, every backend.  The WebGL backends keep a synchronous escape hatch (`setAsyncMode(false)`) through the migration; WebGPU can never offer one.
+
+### Migrating a sync kernel to async
+
+The v3 contract is available today — opt in with `mode: 'async'` (or `asyncMode: true` per kernel) and your code is already v3-shaped:
+
+```js
+// v2 (sync)
+const gpu = new GPU();
+const kernel = gpu.createKernel(fn).setOutput([512, 512]);
+const result = kernel(a, b);
+
+// v3 (async) — works today with { mode: 'async' }
+const gpu = new GPU({ mode: 'async' });
+const kernel = gpu.createKernel(fn).setOutput([512, 512]);
+const result = await kernel(a, b);
+```
+
+1. **`await` every kernel call.**  The resolved value has exactly the shape the sync call returned — nothing else about your code changes.  Callers become `async` functions; at the top level, wrap in an async IIFE or use top-level `await`.
+2. **Sequential loops just gain the `await`:** `for (…) { total = await step(total); }` — iteration order and semantics are unchanged.
+3. **Pipeline results: `await result.toArray()`.**  `await` is harmless on the synchronous backends' textures, so this form is portable across all backends today.
+4. **Chains of kernels: keep `pipeline: true` and await only the end.**  Handles pass between kernels without readback, exactly as before; you pay one `await` at the final readback instead of a main-thread stall at every stage.
+5. **Library authors:** return the Promise; don't resolve it on your callers' behalf.  Code written against `mode: 'async'` in v2 will run unchanged on v3.
 
 ## Demos
 GPU.js in the wild, all around the net.  Add yours here!
