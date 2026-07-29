@@ -1,4 +1,5 @@
 const { utils } = require('./utils');
+const { Input } = require('./input');
 
 /**
  * Makes kernels easier for mortals (including me)
@@ -6,7 +7,7 @@ const { utils } = require('./utils');
  * @returns {function()}
  */
 function kernelRunShortcut(kernel) {
-  function syncRun(args) {
+  function syncBody(args) {
     // build() is guarded on kernel.built across every backend, so calling it
     // per run costs one boolean check and stays correct through replaceKernel
     kernel.build.apply(kernel, args);
@@ -17,6 +18,11 @@ function kernelRunShortcut(kernel) {
       shortcut.kernel = kernel = newKernel;
       result = newKernel.run.apply(newKernel, args);
     }
+    return result;
+  }
+
+  function syncRun(args) {
+    const result = syncBody(args);
     if (kernel.renderKernels) {
       return kernel.renderKernels();
     } else if (kernel.renderOutput) {
@@ -26,57 +32,103 @@ function kernelRunShortcut(kernel) {
     }
   }
 
+  // The async contract must not change WHEN arguments are read: every path
+  // below either executes synchronously at call time (deferring only the
+  // readback) or snapshots mutable arguments before its first await, so
+  // `const p = k(buf); buf[0] = 9;` still computes on the value buf held at
+  // the call, exactly like the sync contract.
   function asyncRun(args) {
-    return Promise.resolve().then(() => {
-      // mode 'async' upgrade opportunity: the probe for a natively-async
-      // backend resolves before anything on the proven kernel is built, and
-      // runs at most once. If the upgraded kernel fails its first run, the
-      // original kernel is still intact to retry on -- a genuine user error
-      // fails there too and propagates from the backend that owns the mode.
-      if (kernel.onAsyncModeUpgrade) {
-        const upgrade = kernel.onAsyncModeUpgrade;
-        const provenKernel = kernel;
-        kernel.onAsyncModeUpgrade = null;
-        return upgrade(args, kernel).then(upgradedKernel => {
-          if (!upgradedKernel) return asyncRun(args);
+    // mode 'async' upgrade opportunity, consumed exactly once: the adapter
+    // probe and the webgpu kernel's full async build resolve before anything
+    // on the proven kernel is built. Arguments are snapshotted across the
+    // probe. The hook only ever returns a kernel whose build succeeded, so
+    // there is no failed-first-run fallback to mask errors with; a declined
+    // upgrade logs its reason under debug inside the hook.
+    if (kernel.onAsyncModeUpgrade) {
+      const upgrade = kernel.onAsyncModeUpgrade;
+      kernel.onAsyncModeUpgrade = null;
+      const snapped = snapshotArguments(args);
+      return upgrade(snapped, kernel).then(upgradedKernel => {
+        if (upgradedKernel) {
           shortcut.replaceKernel(upgradedKernel);
-          return asyncRun(args).catch(() => {
-            shortcut.replaceKernel(provenKernel);
-            return asyncRun(args);
-          });
-        });
-      }
+        }
+        return asyncRun(snapped);
+      });
+    }
+    try {
       if (kernel.constructor.isAsync === true) {
+        // natively async: run() snapshots its arguments synchronously before
+        // any internal await
         kernel.build.apply(kernel, args);
-        return kernel.run.apply(kernel, args);
+        return Promise.resolve(kernel.run.apply(kernel, args));
       }
-      kernel.build.apply(kernel, args);
-      let result = kernel.run.apply(kernel, args);
-      if (kernel.switchingKernels) {
-        const reasons = kernel.resetSwitchingKernels();
-        const newKernel = kernel.onRequestSwitchKernel(reasons, args, kernel);
-        shortcut.kernel = kernel = newKernel;
-        result = newKernel.run.apply(newKernel, args);
+      // a webgpu pipeline handle can reach a GL/CPU kernel under mode
+      // 'async' when the producer upgraded and this kernel declined; the
+      // async contract already owns this call, so read the handle back and
+      // feed the values through
+      for (let i = 0; i < args.length; i++) {
+        if (isWebGPUHandle(args[i])) {
+          return resolveHandles(args).then(resolved => asyncRun(resolved));
+        }
       }
+      const result = syncBody(args);
       if (kernel.renderKernels) {
         // no non-blocking path for mapped outputs yet; resolving the
         // synchronous read keeps the contract uniform
-        return kernel.renderKernels();
+        return Promise.resolve(kernel.renderKernels());
       } else if (kernel.renderOutput) {
         if (kernel.renderOutputAsync) {
           return kernel.renderOutputAsync();
         }
-        return kernel.renderOutput();
+        return Promise.resolve(kernel.renderOutput());
       } else {
-        return result;
+        return Promise.resolve(result);
       }
-    });
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+
+  function isWebGPUHandle(value) {
+    return Boolean(value) && value.type === 'WebGPUBuffer';
+  }
+
+  function resolveHandles(args) {
+    // the handle readback forces an await, so mutable arguments are
+    // snapshotted first to keep call-time sampling
+    const snapped = snapshotArguments(args);
+    const pending = [];
+    for (let i = 0; i < snapped.length; i++) {
+      if (isWebGPUHandle(snapped[i])) {
+        const index = i;
+        pending.push(Promise.resolve(snapped[index].toArray()).then(value => {
+          snapped[index] = value;
+        }));
+      }
+    }
+    return Promise.all(pending).then(() => snapped);
+  }
+
+  function snapshotArguments(args) {
+    const copy = new Array(args.length);
+    for (let i = 0; i < args.length; i++) {
+      copy[i] = snapshotValue(args[i]);
+    }
+    return copy;
+  }
+
+  function snapshotValue(value) {
+    if (!value || typeof value !== 'object') return value;
+    // GPU-resident values cannot be mutated from JS between now and the run
+    if (isWebGPUHandle(value) || typeof value.delete === 'function') return value;
+    if (ArrayBuffer.isView(value)) return value.slice(0);
+    if (Array.isArray(value)) return value.map(snapshotValue);
+    if (value instanceof Input) return new Input(snapshotValue(value.value), value.size);
+    // canvases, images, videos: sampled when uploaded, nothing to copy
+    return value;
   }
 
   function run() {
-    // async backends (webgpu): build() stores its promise on the kernel and
-    // run() chains on it, so run's Promise is the entire result channel —
-    // none of the sync post-run machinery applies
     if (kernel.constructor.isAsync === true || kernel.asyncMode === true) {
       return asyncRun(arguments);
     }

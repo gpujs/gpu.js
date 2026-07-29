@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.9
- * @date Wed Jul 29 2026 10:08:13 GMT+0800 (Singapore Standard Time)
+ * @date Wed Jul 29 2026 21:39:25 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -8887,6 +8887,7 @@
       if (!precision) throw new Error("precision missing");
       if (value.type) type = value.type;
       const types = kernelValueMaps[precision][dynamic];
+      if (type === "WebGPUBuffer") throw new Error("this kernel runs on WebGL but received a WebGPU pipeline buffer; await handle.toArray() first, or give this kernel the async contract (asyncMode: true / mode: 'async') so the readback happens for you");
       if (types[type] === false) return null; else if (types[type] === void 0) throw new Error(`Could not find a KernelValue for ${type}`);
       return types[type];
     }
@@ -10634,6 +10635,7 @@
       if (!precision) throw new Error("precision missing");
       if (value.type) type = value.type;
       const types = kernelValueMaps[precision][dynamic];
+      if (type === "WebGPUBuffer") throw new Error("this kernel runs on WebGL but received a WebGPU pipeline buffer; await handle.toArray() first, or give this kernel the async contract (asyncMode: true / mode: 'async') so the readback happens for you");
       if (types[type] === false) return null; else if (types[type] === void 0) throw new Error(`Could not find a KernelValue for ${type}`);
       return types[type];
     }
@@ -11152,6 +11154,21 @@
         if (type === "WebGPUBuffer") return "Number";
         return super.getLookupType(type);
       }
+      astUpdateExpression(uNode, retArr) {
+        this.astGeneric(uNode.argument, retArr);
+        retArr.push(uNode.operator);
+        return retArr;
+      }
+      getType(ast) {
+        if (ast && ast.type === "ConditionalExpression") {
+          const consequentType = this.getType(ast.consequent);
+          if (consequentType === "Integer" || consequentType === "LiteralInteger") {
+            const alternateType = this.getType(ast.alternate);
+            if (alternateType === "Number" || alternateType === "Float") return "Number";
+          }
+        }
+        return super.getType(ast);
+      }
       astConditionalExpression(ast, retArr) {
         if (ast.type !== "ConditionalExpression") throw this.astErrorOutput("Not a conditional expression", ast);
         const consequentType = this.getType(ast.consequent);
@@ -11168,7 +11185,8 @@
           retArr.push("}");
           return retArr;
         }
-        const targetType = consequentType === "LiteralInteger" ? "Number" : consequentType;
+        let targetType = consequentType === "LiteralInteger" ? "Number" : consequentType;
+        if (targetType === "Integer" && (alternateType === "Number" || alternateType === "Float")) targetType = "Number";
         const emitBranch = branch => {
           const branchType = this.getType(branch);
           switch (targetType) {
@@ -11848,6 +11866,20 @@
           statements.push(consequent[i]);
         }
         for (let i = 0; i < statements.length; i++) {
+          const containsBreak = node => {
+            if (!node || typeof node !== "object") return false;
+            if (Array.isArray(node)) return node.some(containsBreak);
+            if (node.type === "BreakStatement") return true;
+            if (node.type === "ForStatement" || node.type === "WhileStatement" || node.type === "DoWhileStatement" || node.type === "SwitchStatement") return false;
+            for (const key in node) {
+              if (key === "loc" || key === "range" || key === "parent") continue;
+              if (containsBreak(node[key])) return true;
+            }
+            return false;
+          };
+          if (containsBreak(statements[i])) throw this.astErrorOutput("break inside a switch case is only supported as the case terminator", statements[i]);
+        }
+        for (let i = 0; i < statements.length; i++) {
           this.astGeneric(statements[i], retArr);
           retArr.push("\n");
         }
@@ -12091,15 +12123,17 @@
         const isMathFunction = this.isAstMathFunction(ast);
         if (isMathFunction || ast.callee.object && ast.callee.object.type === "ThisExpression") functionName = ast.callee.property.name; else if (ast.callee.type === "SequenceExpression" && ast.callee.expressions[0].type === "Literal" && !isNaN(ast.callee.expressions[0].raw)) functionName = ast.callee.expressions[1].property.name; else functionName = ast.callee.name;
         if (!functionName) throw this.astErrorOutput(`Unhandled function, couldn't find name`, ast);
+        let emitName = functionName;
         if (isMathFunction) {
           if (functionName === "random") throw this.astErrorOutput("WebGPU backend does not yet support Math.random", ast);
           if (mathFunctionRenames[functionName]) functionName = mathFunctionRenames[functionName];
-        } else functionName = this.mangleFunctionName(functionName);
+          emitName = functionName;
+        } else emitName = this.mangleFunctionName(functionName);
         if (this.calledFunctions.indexOf(functionName) < 0) this.calledFunctions.push(functionName);
         if (this.onFunctionCall) this.onFunctionCall(this.name, functionName, ast.arguments);
         const needsIntegerWrap = isMathFunction && integerResultMathFunctions[functionName] && this.isState("building-integer");
         if (needsIntegerWrap) retArr.push("i32(");
-        retArr.push(functionName);
+        retArr.push(emitName);
         retArr.push("(");
         if (isMathFunction) for (let i = 0; i < ast.arguments.length; ++i) {
           const argument = ast.arguments[i];
@@ -12302,18 +12336,26 @@
             if (!WebGPUContext.isSupported) throw new Error("WebGPU is not supported on this platform (navigator.gpu is missing)");
             const adapter = await navigator.gpu.requestAdapter();
             if (!adapter) throw new Error("WebGPU is present (navigator.gpu) but no adapter is available. On headless Chromium there is no adapter; run headed. Use `await GPU.isWebGPUAvailable()` to feature-detect.");
-            const device = await adapter.requestDevice();
+            const device = await adapter.requestDevice({
+              requiredLimits: {
+                maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
+                maxBufferSize: adapter.limits.maxBufferSize
+              }
+            });
+            const context = {
+              adapter: adapter,
+              device: device,
+              isLost: false
+            };
             device.lost.then(info => {
+              context.isLost = true;
               if (info.reason !== "destroyed") console.error(`gpu.js [webgpu]: device lost: ${info.message}`);
               if (contextPromise === promise) contextPromise = null;
             });
             device.onuncapturederror = e => {
               console.error(`gpu.js [webgpu]: ${e.error.message}`);
             };
-            return {
-              adapter: adapter,
-              device: device
-            };
+            return context;
           })();
           promise.catch(() => {
             if (contextPromise === promise) contextPromise = null;
@@ -12733,6 +12775,7 @@
           const value = this.constants[record.constantName];
           const dims = this.constantDimensions(value);
           const flatLength = dims[0] * dims[1] * dims[2];
+          this._checkBufferSize(flatLength * 4, `constant "${record.constantName}"`);
           const buffer = device.createBuffer({
             size: Math.max(flatLength * 4, 4),
             usage: USAGE_STORAGE,
@@ -12778,12 +12821,18 @@
         if (this.outputBuffer) {
           if (--this.outputBuffer._refs === 0) this.outputBuffer.destroy();
         }
+        this._checkBufferSize(byteLength, `output [${this.output.join(", ")}]`);
         this.outputBuffer = this._device.createBuffer({
           size: byteLength,
           usage: 132
         });
         this.outputBuffer._refs = 1;
         this.bindGroupDirty = true;
+      }
+      _checkBufferSize(byteLength, what) {
+        const limits = this._device.limits;
+        const max = Math.min(limits.maxStorageBufferBindingSize, limits.maxBufferSize);
+        if (byteLength > max) throw new Error(`WebGPU backend: ${what} needs ${byteLength} bytes but this device allows ${max} per storage buffer (maxStorageBufferBindingSize/maxBufferSize); reduce the output or split the work across kernels`);
       }
       _snapshotArguments(args) {
         const snapshot = new Array(args.length);
@@ -12856,6 +12905,7 @@
         return this._runInternal(snapshot);
       }
       _runInternal(snapshot) {
+        if (this.context && this.context.isLost) throw new Error("WebGPU device was lost; call kernel.destroy() (or gpu.destroy()) and run again to rebuild on a fresh device");
         const device = this._device;
         const queue = device.queue;
         const {arrayArgs: arrayArgs, scalarArgs: scalarArgs, bufferConstants: bufferConstants} = this.paramsLayout;
@@ -12890,6 +12940,7 @@
                 if (!this.dynamicArguments) throw new Error(`argument "${this.argumentNames[record.index]}" grew from ${record.buffer.size / 4} to ${snap.flat.length} values; use dynamicArguments: true for varying input sizes`);
                 record.buffer.destroy();
               }
+              this._checkBufferSize(byteLength, `argument "${this.argumentNames[record.index]}"`);
               record.buffer = device.createBuffer({
                 size: byteLength,
                 usage: 136
@@ -12984,6 +13035,9 @@
           staging.buffer.unmap();
           this._releaseStaging(staging);
           return this._shapeOutput(data, output, this.componentCount);
+        }, error => {
+          this._releaseStaging(staging);
+          throw error;
         });
       }
       _acquireStaging(byteLength) {
@@ -13053,6 +13107,7 @@
       readBufferResult(handle) {
         const device = this._device || handle.context && handle.context.device;
         if (!device) return Promise.reject(new Error("no WebGPU device available to read this buffer"));
+        if (handle.context && handle.context.isLost) return Promise.reject(new Error("WebGPU device was lost; this buffer no longer holds data \u2014 rebuild the producing kernel and run again"));
         const output = Array.from(handle.output);
         const dims = Array.from(output);
         while (dims.length < 3) dims.push(1);
@@ -13066,6 +13121,9 @@
           staging.buffer.unmap();
           this._releaseStaging(staging);
           return this._shapeOutput(data, output, handle.componentCount);
+        }, error => {
+          this._releaseStaging(staging);
+          throw error;
         });
       }
       destroy(removeCanvasReferences) {
@@ -13108,8 +13166,9 @@
   });
   var require_kernel_run_shortcut = __commonJSMin((exports, module) => {
     const {utils: utils} = require_utils();
+    const {Input: Input} = require_input();
     function kernelRunShortcut(kernel) {
-      function syncRun(args) {
+      function syncBody(args) {
         kernel.build.apply(kernel, args);
         let result = kernel.run.apply(kernel, args);
         if (kernel.switchingKernels) {
@@ -13118,40 +13177,63 @@
           shortcut.kernel = kernel = newKernel;
           result = newKernel.run.apply(newKernel, args);
         }
+        return result;
+      }
+      function syncRun(args) {
+        const result = syncBody(args);
         if (kernel.renderKernels) return kernel.renderKernels(); else if (kernel.renderOutput) return kernel.renderOutput(); else return result;
       }
       function asyncRun(args) {
-        return Promise.resolve().then(() => {
-          if (kernel.onAsyncModeUpgrade) {
-            const upgrade = kernel.onAsyncModeUpgrade;
-            const provenKernel = kernel;
-            kernel.onAsyncModeUpgrade = null;
-            return upgrade(args, kernel).then(upgradedKernel => {
-              if (!upgradedKernel) return asyncRun(args);
-              shortcut.replaceKernel(upgradedKernel);
-              return asyncRun(args).catch(() => {
-                shortcut.replaceKernel(provenKernel);
-                return asyncRun(args);
-              });
-            });
-          }
+        if (kernel.onAsyncModeUpgrade) {
+          const upgrade = kernel.onAsyncModeUpgrade;
+          kernel.onAsyncModeUpgrade = null;
+          const snapped = snapshotArguments(args);
+          return upgrade(snapped, kernel).then(upgradedKernel => {
+            if (upgradedKernel) shortcut.replaceKernel(upgradedKernel);
+            return asyncRun(snapped);
+          });
+        }
+        try {
           if (kernel.constructor.isAsync === true) {
             kernel.build.apply(kernel, args);
-            return kernel.run.apply(kernel, args);
+            return Promise.resolve(kernel.run.apply(kernel, args));
           }
-          kernel.build.apply(kernel, args);
-          let result = kernel.run.apply(kernel, args);
-          if (kernel.switchingKernels) {
-            const reasons = kernel.resetSwitchingKernels();
-            const newKernel = kernel.onRequestSwitchKernel(reasons, args, kernel);
-            shortcut.kernel = kernel = newKernel;
-            result = newKernel.run.apply(newKernel, args);
-          }
-          if (kernel.renderKernels) return kernel.renderKernels(); else if (kernel.renderOutput) {
+          for (let i = 0; i < args.length; i++) if (isWebGPUHandle(args[i])) return resolveHandles(args).then(resolved => asyncRun(resolved));
+          const result = syncBody(args);
+          if (kernel.renderKernels) return Promise.resolve(kernel.renderKernels()); else if (kernel.renderOutput) {
             if (kernel.renderOutputAsync) return kernel.renderOutputAsync();
-            return kernel.renderOutput();
-          } else return result;
-        });
+            return Promise.resolve(kernel.renderOutput());
+          } else return Promise.resolve(result);
+        } catch (e) {
+          return Promise.reject(e);
+        }
+      }
+      function isWebGPUHandle(value) {
+        return Boolean(value) && value.type === "WebGPUBuffer";
+      }
+      function resolveHandles(args) {
+        const snapped = snapshotArguments(args);
+        const pending = [];
+        for (let i = 0; i < snapped.length; i++) if (isWebGPUHandle(snapped[i])) {
+          const index = i;
+          pending.push(Promise.resolve(snapped[index].toArray()).then(value => {
+            snapped[index] = value;
+          }));
+        }
+        return Promise.all(pending).then(() => snapped);
+      }
+      function snapshotArguments(args) {
+        const copy = new Array(args.length);
+        for (let i = 0; i < args.length; i++) copy[i] = snapshotValue(args[i]);
+        return copy;
+      }
+      function snapshotValue(value) {
+        if (!value || typeof value !== "object") return value;
+        if (isWebGPUHandle(value) || typeof value.delete === "function") return value;
+        if (ArrayBuffer.isView(value)) return value.slice(0);
+        if (Array.isArray(value)) return value.map(snapshotValue);
+        if (value instanceof Input) return new Input(snapshotValue(value.value), value.size);
+        return value;
       }
       function run() {
         if (kernel.constructor.isAsync === true || kernel.asyncMode === true) return asyncRun(arguments);
@@ -13357,7 +13439,8 @@
             subKernels: kernelRun.subKernels,
             strictIntegers: kernelRun.strictIntegers,
             randomSeed: kernelRun.randomSeed,
-            debug: kernelRun.debug
+            debug: kernelRun.debug,
+            asyncMode: kernelRun.asyncMode
           });
           fallbackKernel.build.apply(fallbackKernel, args);
           const result = fallbackKernel.run.apply(fallbackKernel, args);
@@ -13403,6 +13486,7 @@
             strictIntegers: _kernel.strictIntegers,
             randomSeed: _kernel.randomSeed,
             debug: _kernel.debug,
+            asyncMode: _kernel.asyncMode,
             gpu: _kernel.gpu,
             validate: validate,
             returnType: _kernel.returnType,
@@ -13440,9 +13524,9 @@
               let webGPUKernel;
               try {
                 webGPUKernel = new WebGPUKernel(source, {
-                  functions: gpu.functions,
-                  nativeFunctions: gpu.nativeFunctions,
-                  injectedNative: gpu.injectedNative,
+                  functions: currentKernel.functions,
+                  nativeFunctions: currentKernel.nativeFunctions,
+                  injectedNative: currentKernel.injectedNative,
                   gpu: gpu,
                   validate: validate,
                   asyncMode: true,
@@ -13468,8 +13552,14 @@
                 if (currentKernel.debug) console.warn("webgpu upgrade declined: " + e.message);
                 return null;
               }
-              kernels.push(webGPUKernel);
-              return webGPUKernel;
+              return webGPUKernel._buildPromise.then(() => {
+                kernels.push(webGPUKernel);
+                return webGPUKernel;
+              }, e => {
+                if (currentKernel.debug) console.warn("webgpu upgrade declined: " + e.message);
+                webGPUKernel.destroy();
+                return null;
+              });
             }, () => null);
           };
         }
@@ -13525,6 +13615,7 @@
       combineKernels() {
         const firstKernel = arguments[0];
         const combinedKernel = arguments[arguments.length - 1];
+        if (this.mode === "async" || firstKernel.kernel.asyncMode) throw new Error(`mode 'async' does not yet support combineKernels; chain kernels with \`await\` and pipeline mode instead`);
         if (firstKernel.kernel.constructor.mode === "cpu") return combinedKernel;
         if (firstKernel.kernel.constructor.mode === "webgpu") throw new Error("WebGPU backend does not yet support combineKernels; chain kernels with `await` and pipeline mode instead");
         const canvas = arguments[0].canvas;

@@ -293,6 +293,7 @@ class GPU {
         strictIntegers: kernelRun.strictIntegers,
         randomSeed: kernelRun.randomSeed,
         debug: kernelRun.debug,
+        asyncMode: kernelRun.asyncMode,
       });
       fallbackKernel.build.apply(fallbackKernel, args);
       const result = fallbackKernel.run.apply(fallbackKernel, args);
@@ -356,6 +357,7 @@ class GPU {
         strictIntegers: _kernel.strictIntegers,
         randomSeed: _kernel.randomSeed,
         debug: _kernel.debug,
+        asyncMode: _kernel.asyncMode,
         gpu: _kernel.gpu,
         validate,
         returnType: _kernel.returnType,
@@ -401,9 +403,13 @@ class GPU {
           let webGPUKernel;
           try {
             webGPUKernel = new WebGPUKernel(source, {
-              functions: gpu.functions,
-              nativeFunctions: gpu.nativeFunctions,
-              injectedNative: gpu.injectedNative,
+              // from the kernel instance, not the GPU: per-kernel functions
+              // (createKernel settings, addFunction on the shortcut) live
+              // only on the kernel, and losing them here would silently
+              // decline the upgrade forever
+              functions: currentKernel.functions,
+              nativeFunctions: currentKernel.nativeFunctions,
+              injectedNative: currentKernel.injectedNative,
               gpu,
               validate,
               asyncMode: true,
@@ -439,8 +445,20 @@ class GPU {
             }
             return null;
           }
-          kernels.push(webGPUKernel);
-          return webGPUKernel;
+          // WGSL compilation and pipeline validation reject asynchronously;
+          // awaiting the full build here means the kernel only ever swaps to
+          // a webgpu kernel that is proven to build, and a declined upgrade
+          // keeps the real reason instead of masking it behind a re-run
+          return webGPUKernel._buildPromise.then(() => {
+            kernels.push(webGPUKernel);
+            return webGPUKernel;
+          }, (e) => {
+            if (currentKernel.debug) {
+              console.warn('webgpu upgrade declined: ' + e.message);
+            }
+            webGPUKernel.destroy();
+            return null;
+          });
         }, () => null);
       };
     }
@@ -571,6 +589,12 @@ class GPU {
   combineKernels() {
     const firstKernel = arguments[0];
     const combinedKernel = arguments[arguments.length - 1];
+    // before the cpu early-return: the cpu arm of mode 'async' is equally
+    // Promise-returning, and the combiner would feed those Promises into the
+    // next kernel as arguments
+    if (this.mode === 'async' || firstKernel.kernel.asyncMode) {
+      throw new Error(`mode 'async' does not yet support combineKernels; chain kernels with \`await\` and pipeline mode instead`);
+    }
     if (firstKernel.kernel.constructor.mode === 'cpu') return combinedKernel;
     if (firstKernel.kernel.constructor.mode === 'webgpu') {
       throw new Error('WebGPU backend does not yet support combineKernels; chain kernels with `await` and pipeline mode instead');

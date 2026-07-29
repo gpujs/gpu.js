@@ -225,6 +225,116 @@ function webgl2Compare(assert, build, args) {
   }).setOutput([256]).setPrecision('unsigned'), [new Float32Array(256).map((_, i) => i)]);
 });
 
+function samplingBackend(mode) {
+  return (assert) => {
+    // the async contract must not change WHEN arguments are read: mutating
+    // an input after the call but before the await cannot affect the result
+    const gpu = new GPU({ mode });
+    const kernel = gpu
+      .createKernel(function (v) {
+        return v[this.thread.x] * 2;
+      })
+      .setOutput([4])
+      .setAsyncMode(true);
+    const buf = new Float32Array([1, 2, 3, 4]);
+    const pending = kernel(buf);
+    buf[0] = 999;
+    return pending.then(result => {
+      assert.equal(result[0], 2, 'computed on the value held at call time');
+      gpu.destroy();
+    });
+  };
+}
+
+test('arguments are sampled at call time cpu', assert => samplingBackend('cpu')(assert));
+
+(GPU.isHeadlessGLSupported ? test : skip)('arguments are sampled at call time headlessgl', assert => samplingBackend('headlessgl')(assert));
+
+(GPU.isWebGL2Supported ? test : skip)('arguments are sampled at call time webgl2', assert => samplingBackend('webgl2')(assert));
+
+(GPU.isHeadlessGLSupported ? test : skip)('a kernel switch keeps the Promise contract', async assert => {
+  // argument-signature changes rebuild the kernel through
+  // onRequestSwitchKernel; the replacement must inherit asyncMode or the
+  // contract silently flip-flops per signature
+  const gpu = new GPU({ mode: 'headlessgl' });
+  const producer = gpu.createKernel(function () {
+    return this.thread.x;
+  }).setOutput([4]).setPipeline(true);
+  const texture = producer();
+  const kernel = gpu
+    .createKernel(function (v) {
+      return v[this.thread.x] + 1;
+    })
+    .setOutput([4])
+    .setAsyncMode(true)
+    .setDynamicArguments(true);
+  const first = kernel([1, 2, 3, 4]);
+  assert.ok(first instanceof Promise, 'array call is a Promise');
+  await first;
+  const second = kernel(texture);
+  assert.ok(second instanceof Promise, 'texture call (switched kernel) is a Promise');
+  await second;
+  const third = kernel([5, 6, 7, 8]);
+  assert.ok(third instanceof Promise, 'switching back is a Promise');
+  assert.deepEqual(Array.from(await third), [6, 7, 8, 9]);
+  gpu.destroy();
+});
+
+test('combineKernels refuses the async contract with a clear error', assert => {
+  const gpu = new GPU({ mode: 'async' });
+  const add = gpu.createKernel(function (a, b) {
+    return a[this.thread.x] + b[this.thread.x];
+  }).setOutput([4]);
+  const multiply = gpu.createKernel(function (a, b) {
+    return a[this.thread.x] * b[this.thread.x];
+  }).setOutput([4]);
+  assert.throws(() => {
+    gpu.combineKernels(add, multiply, function (a, b, c) {
+      return multiply(add(a, b), c);
+    });
+  }, /mode 'async' does not yet support combineKernels/);
+  return gpu.destroy();
+});
+
+test('mode async upgrades kernels that carry per-kernel functions', async assert => {
+  // the upgrade harvest must read functions off the kernel instance; reading
+  // the GPU instance's empty list makes the webgpu build fail and silently
+  // pins the kernel to the fallback forever
+  const gpu = new GPU({ mode: 'async' });
+  const kernel = gpu.createKernel(function (v) {
+    return twice(v[this.thread.x]);
+  }, {
+    output: [4],
+    functions: [function twice(x) { return x * 2; }],
+  });
+  const result = await kernel([1, 2, 3, 4]);
+  assert.deepEqual(Array.from(result), [2, 4, 6, 8]);
+  const adapterAnswered = GPU.isWebGPUSupported ? await GPU.isWebGPUAvailable() : false;
+  if (adapterAnswered) {
+    assert.equal(kernel.kernel.constructor.name, 'WebGPUKernel', 'helper did not block the upgrade');
+  } else {
+    assert.ok(true, 'no adapter here; upgrade path not reachable');
+  }
+  await gpu.destroy();
+});
+
+test('a webgpu pipeline handle feeds a kernel that declined its upgrade', async assert => {
+  // producer upgrades, consumer declines (Math.random is deferred); the
+  // async contract converts the handle transparently instead of crashing on
+  // an unknown KernelValue
+  const gpu = new GPU({ mode: 'async' });
+  const producer = gpu.createKernel(function () {
+    return this.thread.x * 10;
+  }).setOutput([4]).setPipeline(true);
+  const consumer = gpu.createKernel(function (v) {
+    return v[this.thread.x] + Math.random() * 0;
+  }).setOutput([4]);
+  const handle = await producer();
+  const result = await consumer(handle);
+  assert.deepEqual(Array.from(result), [0, 10, 20, 30]);
+  await gpu.destroy();
+});
+
 (GPU.isWebGL2Supported ? test : skip)('webgl2 asyncMode leaves the main thread free between issue and resolve', async assert => {
   // a wrapped-but-blocking read resolves within the task that issued it, so
   // an already-queued macrotask could never run first; the fence path yields
