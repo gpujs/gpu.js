@@ -546,6 +546,7 @@ class WebGPUKernel extends Kernel {
       const value = this.constants[record.constantName];
       const dims = this.constantDimensions(value);
       const flatLength = dims[0] * dims[1] * dims[2];
+      this._checkBufferSize(flatLength * 4, `constant "${ record.constantName }"`);
       const buffer = device.createBuffer({
         size: Math.max(flatLength * 4, 4),
         usage: USAGE_STORAGE,
@@ -615,12 +616,30 @@ class WebGPUKernel extends Kernel {
         this.outputBuffer.destroy();
       }
     }
+    this._checkBufferSize(byteLength, `output [${ this.output.join(', ') }]`);
     this.outputBuffer = this._device.createBuffer({
       size: byteLength,
       usage: USAGE_STORAGE | USAGE_COPY_SRC,
     });
     this.outputBuffer._refs = 1;
     this.bindGroupDirty = true;
+  }
+
+  /**
+   * Oversized bindings must throw here: past the device limit, bind-group
+   * validation fails asynchronously, the submit is dropped, and the zero-
+   * initialized staging buffer would resolve a fully-shaped all-zeros
+   * result — silent wrong data instead of an error.
+   */
+  _checkBufferSize(byteLength, what) {
+    const limits = this._device.limits;
+    const max = Math.min(limits.maxStorageBufferBindingSize, limits.maxBufferSize);
+    if (byteLength > max) {
+      throw new Error(
+        `WebGPU backend: ${ what } needs ${ byteLength } bytes but this device allows ` +
+        `${ max } per storage buffer (maxStorageBufferBindingSize/maxBufferSize); ` +
+        `reduce the output or split the work across kernels`);
+    }
   }
 
   /**
@@ -687,6 +706,12 @@ class WebGPUKernel extends Kernel {
    * buffer of its own.
    */
   _runInternal(snapshot) {
+    if (this.context && this.context.isLost) {
+      // without this check a lost device "succeeds": submits are no-ops and
+      // pipeline handles resolve over dead buffers
+      throw new Error(
+        'WebGPU device was lost; call kernel.destroy() (or gpu.destroy()) and run again to rebuild on a fresh device');
+    }
     const device = this._device;
     const queue = device.queue;
     const { arrayArgs, scalarArgs, bufferConstants } = this.paramsLayout;
@@ -736,6 +761,7 @@ class WebGPUKernel extends Kernel {
             }
             record.buffer.destroy();
           }
+          this._checkBufferSize(byteLength, `argument "${ this.argumentNames[record.index] }"`);
           record.buffer = device.createBuffer({
             size: byteLength,
             usage: USAGE_STORAGE | USAGE_COPY_DST,
@@ -821,6 +847,11 @@ class WebGPUKernel extends Kernel {
       staging.buffer.unmap();
       this._releaseStaging(staging);
       return this._shapeOutput(data, output, this.componentCount);
+    }, (error) => {
+      // a rejected map (device loss mid-read) must not strand the pooled
+      // staging entry as busy forever
+      this._releaseStaging(staging);
+      throw error;
     });
   }
 
@@ -920,6 +951,10 @@ class WebGPUKernel extends Kernel {
     if (!device) {
       return Promise.reject(new Error('no WebGPU device available to read this buffer'));
     }
+    if (handle.context && handle.context.isLost) {
+      return Promise.reject(new Error(
+        'WebGPU device was lost; this buffer no longer holds data — rebuild the producing kernel and run again'));
+    }
     const output = Array.from(handle.output);
     const dims = Array.from(output);
     while (dims.length < 3) dims.push(1);
@@ -933,6 +968,9 @@ class WebGPUKernel extends Kernel {
       staging.buffer.unmap();
       this._releaseStaging(staging);
       return this._shapeOutput(data, output, handle.componentCount);
+    }, (error) => {
+      this._releaseStaging(staging);
+      throw error;
     });
   }
 

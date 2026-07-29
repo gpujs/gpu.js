@@ -34,8 +34,20 @@ class WebGPUContext {
           'On headless Chromium there is no adapter; run headed. ' +
           'Use `await GPU.isWebGPUAvailable()` to feature-detect.');
       }
-      const device = await adapter.requestDevice();
+      // the spec defaults cap storage bindings at 128 MiB regardless of the
+      // hardware; ask for everything the adapter can actually give, so large
+      // outputs are limited by the device, not by a default
+      const device = await adapter.requestDevice({
+        requiredLimits: {
+          maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
+          maxBufferSize: adapter.limits.maxBufferSize,
+        },
+      });
+      const context = { adapter, device, isLost: false };
       device.lost.then(info => {
+        // every built kernel holds this context object; the flag is how they
+        // learn their device died instead of resolving empty results forever
+        context.isLost = true;
         if (info.reason !== 'destroyed') {
           console.error(`gpu.js [webgpu]: device lost: ${ info.message }`);
         }
@@ -46,7 +58,7 @@ class WebGPUContext {
       device.onuncapturederror = e => {
         console.error(`gpu.js [webgpu]: ${ e.error.message }`);
       };
-      return { adapter, device };
+      return context;
     })();
     promise.catch(() => {
       if (contextPromise === promise) {

@@ -184,3 +184,23 @@ async function webgpuAdapter(assert) {
   }
   assert.ok(error instanceof Error && /webgpu/i.test(error.message), `explains why: ${error && error.message}`);
 });
+
+(GPU.isWebGPUSupported ? test : skip)('an output past the device buffer limit throws, never zeros', async assert => {
+  if (!(await webgpuAdapter(assert))) return;
+  assert.expect(1);
+  // past the limit, bind-group validation fails asynchronously and the
+  // zero-initialized staging buffer would resolve an all-zeros result; the
+  // backend must throw before any of that
+  const gpu = new GPU({ mode: 'webgpu' });
+  const kernel = gpu.createKernel(function () {
+    return 1;
+  }, { output: [100000, 100000] });
+  let message = '';
+  try {
+    await kernel();
+  } catch (e) {
+    message = String(e && e.message || e);
+  }
+  assert.ok(/maxStorageBufferBindingSize/.test(message), `names the limit: ${ message.slice(0, 90) }`);
+  await gpu.destroy();
+});
