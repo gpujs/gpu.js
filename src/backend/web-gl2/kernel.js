@@ -290,6 +290,110 @@ class WebGL2Kernel extends WebGLKernel {
     return result;
   }
 
+  /**
+   * @desc The genuinely non-blocking readback: readPixels into a
+   * PIXEL_PACK_BUFFER returns immediately, a fence marks when the GPU has
+   * caught up, and getBufferSubData after the fence signals is a plain copy.
+   * The read is issued here, synchronously after the draw while the kernel's
+   * framebuffer is still bound -- later draws on the shared context cannot
+   * affect it, because pack reads are ordered with the commands before them.
+   */
+  renderOutputAsync() {
+    if (this.renderOutput !== this.renderValues) {
+      // pipeline textures (and inherited strategies) involve no transfer;
+      // resolving the synchronous render keeps the contract uniform
+      return Promise.resolve(this.renderOutput());
+    }
+    return this.renderValuesAsync();
+  }
+
+  renderValuesAsync() {
+    if (this._tightRead === undefined) {
+      this._detectTightRead();
+    }
+    const formatValues = this.formatValues;
+    const [x, y, z] = this.output;
+    return this.transferValuesAsync().then(pixels => formatValues(pixels, x, y, z));
+  }
+
+  transferValuesAsync() {
+    const { texSize, context: gl } = this;
+    const w = texSize[0];
+    const h = texSize[1];
+    let format, type, result;
+    if (this.precision === 'single') {
+      format = this._tightRead ? gl.RED : gl.RGBA;
+      type = gl.FLOAT;
+      result = new Float32Array(w * h * (this._tightRead ? 1 : 4));
+    } else {
+      format = gl.RGBA;
+      type = gl.UNSIGNED_BYTE;
+      result = new Uint8Array(w * h * 4);
+    }
+    const pbo = gl.createBuffer();
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+    gl.bufferData(gl.PIXEL_PACK_BUFFER, result.byteLength, gl.STREAM_READ);
+    gl.readPixels(0, 0, w, h, format, type, 0);
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+    const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    // fences are queued, not submitted; without a flush the poll can spin
+    // forever waiting on commands the driver never dispatched
+    gl.flush();
+    return this._pollFence(sync).then(() => {
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER, pbo);
+      gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, result);
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+      gl.deleteBuffer(pbo);
+      return this.precision === 'single' ? result : new Float32Array(result.buffer);
+    }, (error) => {
+      gl.deleteBuffer(pbo);
+      throw error;
+    });
+  }
+
+  _pollFence(sync) {
+    const gl = this.context;
+    return new Promise((resolve, reject) => {
+      // repolling through a MessageChannel task rather than setTimeout: each
+      // check is its own event-loop turn (other work interleaves freely) but
+      // skips the nested-timeout clamp, which would tax every readback with
+      // multiple 4 ms waits after the GPU had already finished
+      let schedule;
+      let channel = null;
+      if (typeof MessageChannel !== 'undefined') {
+        channel = new MessageChannel();
+        channel.port1.onmessage = () => poll();
+        schedule = () => channel.port2.postMessage(0);
+      } else {
+        schedule = () => setTimeout(poll, 0);
+      }
+      const settle = (fn, value) => {
+        gl.deleteSync(sync);
+        if (channel) {
+          channel.port1.close();
+          channel.port2.close();
+        }
+        fn(value);
+      };
+      const poll = () => {
+        if (gl.isContextLost()) {
+          return settle(reject, new Error('WebGL context lost while awaiting kernel result'));
+        }
+        // always zero timeout: a wait would block the very thread this exists
+        // to keep free
+        const status = gl.clientWaitSync(sync, 0, 0);
+        if (status === gl.ALREADY_SIGNALED || status === gl.CONDITION_SATISFIED) {
+          return settle(resolve);
+        }
+        if (status === gl.WAIT_FAILED) {
+          return settle(reject, new Error('clientWaitSync failed while awaiting kernel result'));
+        }
+        schedule();
+      };
+      poll();
+    });
+  }
+
   _detectTightRead() {
     const gl = this.context;
     this._tightRead = false;

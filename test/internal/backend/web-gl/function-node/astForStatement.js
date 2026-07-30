@@ -285,7 +285,7 @@ test('this.thread.x usage outside loop', () => {
   assert.equal(node.toString(), 'float kernel() {'
     + '\nfloat user_sum=0.0;'
     + '\nfloat user_x=float(threadId.x);'
-    + '\nfor (int user_i=0;(user_i<int(user_x));user_i++){'
+    + '\nfor (int user_i=0;(user_i<int(ceil(user_x)));user_i++){'
     + '\nuser_sum+=1.0;}'
     + '\n'
     + '\nreturn user_sum;'

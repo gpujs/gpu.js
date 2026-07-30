@@ -8,6 +8,9 @@ export class GPU {
   static isOffscreenCanvasSupported: boolean;
   static isGPUHTMLImageArraySupported: boolean;
   static isSinglePrecisionSupported: boolean;
+  /** WebGPU API surface exists (navigator.gpu); an adapter may still be absent — await isWebGPUAvailable() for the authoritative answer */
+  static isWebGPUSupported: boolean;
+  static isWebGPUAvailable(): Promise<boolean>;
   constructor(settings?: IGPUSettings);
   functions: GPUFunction<ThreadKernelVariable[]>[];
   nativeFunctions: IGPUNativeFunction[];
@@ -100,8 +103,8 @@ export interface INativeFunctionList {
   [name: string]: INativeFunction
 }
 
-export type GPUMode = 'gpu' | 'cpu' | 'dev';
-export type GPUInternalMode = 'webgl' | 'webgl2' | 'headlessgl';
+export type GPUMode = 'gpu' | 'cpu' | 'dev' | 'async';
+export type GPUInternalMode = 'webgl' | 'webgl2' | 'headlessgl' | 'webgpu';
 
 export interface IGPUSettings {
   mode?: GPUMode | GPUInternalMode;
@@ -209,6 +212,7 @@ export class Kernel {
   setPipeline(flag: boolean): this;
   setPrecision(flag: Precision): this;
   setImmutable(flag: boolean): this;
+  setAsyncMode(flag: boolean): this;
   setCanvas(flag: any): this;
   setContext(flag: any): this;
   addFunction<ArgTypes extends ThreadKernelVariable[]>(flag: GPUFunction<ArgTypes>, settings?: IFunctionSettings): this;
@@ -337,6 +341,8 @@ export interface IKernelSettings {
   pipeline?: boolean;
   immutable?: boolean;
   graphical?: boolean;
+  /** every call returns a Promise of the result; non-blocking readback where the backend supports it (webgl2, webgpu) */
+  asyncMode?: boolean;
   onRequestFallback?: () => Kernel;
   optimizeFloatMemory?: boolean;
   dynamicOutput?: boolean;

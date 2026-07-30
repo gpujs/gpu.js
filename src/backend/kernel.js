@@ -60,6 +60,15 @@ class Kernel {
     this.onRequestFallback = null;
 
     /**
+     * Supplied by GPU.createKernel; swaps in a kernel compiled for the
+     * arguments this one was handed. Declared here rather than on the GL
+     * kernel so mergeSettings carries it onto every backend -- the cpu
+     * kernel needs it for the same argument-type changes.
+     * @type {Function|null}
+     */
+    this.onRequestSwitchKernel = null;
+
+    /**
      * Name of the arguments found from parsing source argument
      * @type {String[]}
      */
@@ -199,6 +208,15 @@ class Kernel {
     this.pipeline = false;
 
     /**
+     * Makes the kernel return a Promise of its result on every backend.
+     * Backends with a genuinely non-blocking readback (webgl2 fences,
+     * webgpu natively) use it; the rest resolve their synchronous result,
+     * so the calling contract is uniform either way.
+     * @type {Boolean}
+     */
+    this.asyncMode = false;
+
+    /**
      * Make GPU use single precision or unsigned.  Acceptable values: 'single' or 'unsigned'
      * @type {String|null}
      * @enum 'single' | 'unsigned'
@@ -228,6 +246,13 @@ class Kernel {
     this.randomSeed = null;
     this.built = false;
     this.signature = null;
+
+    /**
+     * Reasons this kernel cannot serve the call it was handed, collected for
+     * the caller's switch; null when it can.
+     * @type {IReason[]|null}
+     */
+    this.switchingKernels = null;
   }
 
   /**
@@ -568,6 +593,16 @@ class Kernel {
   }
 
   /**
+   * Set Promise-returning mode on/off
+   * @param {Boolean} flag
+   * @return {this}
+   */
+  setAsyncMode(flag) {
+    this.asyncMode = flag;
+    return this;
+  }
+
+  /**
    * Set precision to 'unsigned' or 'single'
    * @param {String} flag 'unsigned' or 'single'
    * @return {this}
@@ -896,10 +931,17 @@ class Kernel {
           case 'Integer':
           case 'Float':
           case 'ArrayTexture(1)':
-            argumentTypes[i] = utils.getVariableType(arg);
+            argumentTypes[i] = utils.getVariableType(arg, kernel.strictIntegers);
             break;
           default:
-            argumentTypes[i] = type;
+            // The recorded type only describes this value while the value
+            // still fits it. Keeping it for a value it cannot describe gives
+            // the switched-to kernel the same signature as the one that just
+            // rejected the value, so the switch resolves to a kernel that
+            // rejects it too -- and the run ends with no result at all.
+            argumentTypes[i] = utils.typeFitsValue(type, arg) ?
+              type :
+              utils.getVariableType(arg, kernel.strictIntegers);
         }
       }
     }
@@ -950,6 +992,51 @@ class Kernel {
    * @abstract
    */
   onActivate(previousKernel) {}
+
+  /**
+   * @desc Flags that this kernel cannot serve the call it was just handed, so
+   * the caller swaps in one compiled for these arguments.
+   * @param {IReason} reason
+   */
+  switchKernels(reason) {
+    if (this.switchingKernels) {
+      this.switchingKernels.push(reason);
+    } else {
+      this.switchingKernels = [reason];
+    }
+  }
+
+  resetSwitchingKernels() {
+    const existingValue = this.switchingKernels;
+    this.switchingKernels = null;
+    return existingValue;
+  }
+
+  /**
+   * @desc A kernel is compiled for the argument types it first saw. Reusing
+   * the instance with a fundamentally different type (an Input where an array
+   * was, a number where an array was) needs a differently-compiled kernel, so
+   * ask for the switch before running rather than computing from a value the
+   * compiled code cannot read.
+   *
+   * The GL backends also detect this inside their kernel values, but only for
+   * the types that implement the check, and never on the cpu backend; this is
+   * the one place every backend passes through.
+   * @param {IArguments|Array} args
+   */
+  checkArgumentTypes(args) {
+    if (!this.argumentTypes) return;
+    const length = Math.min(args.length, this.argumentTypes.length);
+    for (let i = 0; i < length; i++) {
+      if (!utils.typeFitsValue(this.argumentTypes[i], args[i])) {
+        this.switchKernels({
+          type: 'argumentTypeMismatch',
+          index: i,
+          needed: utils.getVariableType(args[i], this.strictIntegers),
+        });
+      }
+    }
+  }
 }
 
 function splitArgumentTypes(argumentTypesObject) {

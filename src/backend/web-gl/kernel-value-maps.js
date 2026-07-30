@@ -188,6 +188,15 @@ function lookupKernelValueType(type, dynamic, precision, value) {
     type = value.type;
   }
   const types = kernelValueMaps[precision][dynamic];
+  if (type === 'WebGPUBuffer') {
+    // a webgpu pipeline handle reached a GL kernel: possible when backends
+    // mix (a webgpu producer feeding a kernel that stayed on GL). The async
+    // contract converts these transparently; the sync path cannot.
+    throw new Error(
+      `this kernel runs on WebGL but received a WebGPU pipeline buffer; ` +
+      `await handle.toArray() first, or give this kernel the async contract (asyncMode: true / mode: 'async') ` +
+      `so the readback happens for you`);
+  }
   if (types[type] === false) {
     return null;
   } else if (types[type] === undefined) {

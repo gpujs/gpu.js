@@ -66,7 +66,7 @@
   "bugs": {
     "url": "https://github.com/gpujs/gpu.js/issues"
   },
-  "homepage": "http://gpu.rocks/",
+  "homepage": "https://gpu.rocks/",
   "typings": "./src/index.d.ts",
   "overrides": {
     "gl": {

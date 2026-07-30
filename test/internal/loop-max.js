@@ -24,7 +24,7 @@ test('loop max output webgl', () => {
     '\nfloat user_sum=0.0;' +
     '\nint user_i=0;' +
     '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
-    '\nif (!(user_i<int(user_a))) break;' +
+    '\nif (!(user_i<int(ceil(user_a)))) break;' +
     '\nuser_sum+=get32(user_b, user_bSize, user_bDim, 0, threadId.x, user_i);' +
     '\nuser_i++;}' +
     '\n' +
@@ -53,7 +53,7 @@ test('loop max output webgl2', () => {
     '\nfloat user_sum=0.0;' +
     '\nint user_i=0;' +
     '\nfor (int safeI=0;safeI<LOOP_MAX;safeI++){' +
-    '\nif (!(user_i<int(user_a))) break;' +
+    '\nif (!(user_i<int(ceil(user_a)))) break;' +
     '\nuser_sum+=get32(user_b, user_bSize, user_bDim, 0, threadId.x, user_i);' +
     '\nuser_i++;}' +
     '\n' +

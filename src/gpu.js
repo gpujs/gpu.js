@@ -5,6 +5,7 @@ const { CPUKernel } = require('./backend/cpu/kernel');
 const { HeadlessGLKernel } = require('./backend/headless-gl/kernel');
 const { WebGL2Kernel } = require('./backend/web-gl2/kernel');
 const { WebGLKernel } = require('./backend/web-gl/kernel');
+const { WebGPUKernel } = require('./backend/web-gpu/kernel');
 const { kernelRunShortcut } = require('./kernel-run-shortcut');
 
 
@@ -24,6 +25,10 @@ const internalKernels = {
   'headlessgl': HeadlessGLKernel,
   'webgl2': WebGL2Kernel,
   'webgl': WebGLKernel,
+  // deliberately NOT in kernelOrder: the sync isSupported check
+  // (navigator.gpu presence) does not prove an adapter exists, so webgpu is
+  // explicit opt-in via `new GPU({ mode: 'webgpu' })` only
+  'webgpu': WebGPUKernel,
 };
 
 let validate = true;
@@ -80,6 +85,25 @@ class GPU {
    */
   static get isHeadlessGLSupported() {
     return HeadlessGLKernel.isSupported;
+  }
+
+  /**
+   * @desc TRUE if the WebGPU API surface exists (navigator.gpu). Optimistic:
+   * an adapter may still be unavailable — use `await GPU.isWebGPUAvailable()`
+   * for the authoritative answer.
+   */
+  static get isWebGPUSupported() {
+    return WebGPUKernel.isSupported;
+  }
+
+  /**
+   * @desc Actually requests an adapter; resolves whether a webgpu kernel
+   * could run here.
+   * @returns {Promise<boolean>}
+   */
+  static isWebGPUAvailable() {
+    if (!WebGPUKernel.isSupported) return Promise.resolve(false);
+    return navigator.gpu.requestAdapter().then(adapter => adapter !== null, () => false);
   }
 
   /**
@@ -178,6 +202,21 @@ class GPU {
             break;
           }
         }
+      } else if (this.mode === 'async') {
+        // auto-selection under the Promise contract: pick the best
+        // synchronously-provable backend now (its readback runs non-blocking
+        // where the platform allows), and let the first kernel call upgrade
+        // to webgpu once an adapter has actually answered -- the async
+        // contract is exactly what buys the room to probe
+        for (let i = 0; i < kernelOrder.length; i++) {
+          if (kernelOrder[i].isSupported) {
+            Kernel = kernelOrder[i];
+            break;
+          }
+        }
+        if (!Kernel) {
+          Kernel = CPUKernel;
+        }
       } else if (this.mode === 'cpu') {
         Kernel = CPUKernel;
       }
@@ -254,6 +293,7 @@ class GPU {
         strictIntegers: kernelRun.strictIntegers,
         randomSeed: kernelRun.randomSeed,
         debug: kernelRun.debug,
+        asyncMode: kernelRun.asyncMode,
       });
       fallbackKernel.build.apply(fallbackKernel, args);
       const result = fallbackKernel.run.apply(fallbackKernel, args);
@@ -317,6 +357,7 @@ class GPU {
         strictIntegers: _kernel.strictIntegers,
         randomSeed: _kernel.randomSeed,
         debug: _kernel.debug,
+        asyncMode: _kernel.asyncMode,
         gpu: _kernel.gpu,
         validate,
         returnType: _kernel.returnType,
@@ -343,9 +384,84 @@ class GPU {
       onRequestFallback,
       onRequestSwitchKernel
     }, settingsCopy);
+    if (this.mode === 'async') {
+      mergedSettings.asyncMode = true;
+    }
 
     const kernel = new this.Kernel(source, mergedSettings);
     const kernelRun = kernelRunShortcut(kernel);
+
+    if (this.mode === 'async' && WebGPUKernel.isSupported && !(kernel instanceof WebGPUKernel)) {
+      const gpu = this;
+      // consulted (and cleared) by the shortcut on the first call, before the
+      // chosen kernel builds; every setter chained onto the shortcut lands on
+      // the kernel instance first, so its settings are harvested here rather
+      // than from settingsCopy
+      kernel.onAsyncModeUpgrade = function onAsyncModeUpgrade(args, currentKernel) {
+        return GPU.isWebGPUAvailable().then(available => {
+          if (!available) return null;
+          let webGPUKernel;
+          try {
+            webGPUKernel = new WebGPUKernel(source, {
+              // from the kernel instance, not the GPU: per-kernel functions
+              // (createKernel settings, addFunction on the shortcut) live
+              // only on the kernel, and losing them here would silently
+              // decline the upgrade forever
+              functions: currentKernel.functions,
+              nativeFunctions: currentKernel.nativeFunctions,
+              injectedNative: currentKernel.injectedNative,
+              gpu,
+              validate,
+              asyncMode: true,
+              output: currentKernel.output,
+              pipeline: currentKernel.pipeline,
+              immutable: currentKernel.immutable,
+              dynamicOutput: currentKernel.dynamicOutput,
+              // always dynamic: the GL backends absorb argument-size changes
+              // by switching kernels, so a faithful harvest here would make
+              // the upgrade stricter than the backend it replaced. The WGSL
+              // side reads every array's dimensions from the params buffer
+              // regardless, so the leniency costs nothing.
+              dynamicArguments: true,
+              loopMaxIterations: currentKernel.loopMaxIterations,
+              constants: currentKernel.constants,
+              constantTypes: currentKernel.constantTypes,
+              argumentTypes: currentKernel.argumentTypes,
+              precision: currentKernel.precision,
+              tactic: currentKernel.tactic,
+              strictIntegers: currentKernel.strictIntegers,
+              fixIntegerDivisionAccuracy: currentKernel.fixIntegerDivisionAccuracy,
+              subKernels: currentKernel.subKernels,
+              graphical: currentKernel.graphical,
+              debug: currentKernel.debug,
+            });
+            // deferred features (graphical, kernel maps, unsigned precision,
+            // Math.random) throw synchronously here: the proven backend keeps
+            // the kernel and nothing was lost but the probe
+            webGPUKernel.build.apply(webGPUKernel, args);
+          } catch (e) {
+            if (currentKernel.debug) {
+              console.warn('webgpu upgrade declined: ' + e.message);
+            }
+            return null;
+          }
+          // WGSL compilation and pipeline validation reject asynchronously;
+          // awaiting the full build here means the kernel only ever swaps to
+          // a webgpu kernel that is proven to build, and a declined upgrade
+          // keeps the real reason instead of masking it behind a re-run
+          return webGPUKernel._buildPromise.then(() => {
+            kernels.push(webGPUKernel);
+            return webGPUKernel;
+          }, (e) => {
+            if (currentKernel.debug) {
+              console.warn('webgpu upgrade declined: ' + e.message);
+            }
+            webGPUKernel.destroy();
+            return null;
+          });
+        }, () => null);
+      };
+    }
 
     //if canvas didn't come from this, propagate from kernel
     if (!this.canvas) {
@@ -405,6 +521,9 @@ class GPU {
 
     if (this.mode !== 'dev') {
       if (!this.Kernel.isSupported || !this.Kernel.features.kernelMap) {
+        if (this.Kernel.mode === 'webgpu') {
+          throw new Error('WebGPU backend does not yet support createKernelMap');
+        }
         if (this.mode && kernelTypes.indexOf(this.mode) < 0) {
           throw new Error(`kernelMap not supported on ${this.Kernel.name}`);
         }
@@ -470,7 +589,16 @@ class GPU {
   combineKernels() {
     const firstKernel = arguments[0];
     const combinedKernel = arguments[arguments.length - 1];
+    // before the cpu early-return: the cpu arm of mode 'async' is equally
+    // Promise-returning, and the combiner would feed those Promises into the
+    // next kernel as arguments
+    if (this.mode === 'async' || firstKernel.kernel.asyncMode) {
+      throw new Error(`mode 'async' does not yet support combineKernels; chain kernels with \`await\` and pipeline mode instead`);
+    }
     if (firstKernel.kernel.constructor.mode === 'cpu') return combinedKernel;
+    if (firstKernel.kernel.constructor.mode === 'webgpu') {
+      throw new Error('WebGPU backend does not yet support combineKernels; chain kernels with `await` and pipeline mode instead');
+    }
     const canvas = arguments[0].canvas;
     const context = arguments[0].context;
     const max = arguments.length - 1;

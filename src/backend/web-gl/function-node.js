@@ -4,6 +4,16 @@ const { FunctionNode } = require('../function-node');
 /**
  * @desc [INTERNAL] Takes in a function node, and does all the AST voodoo required to toString its respective WebGL code
  */
+// An integer compared with a real number rounds the bound instead of the
+// integer, which is exact and keeps the integer bare -- see the comparison
+// branch of astBinaryExpression.
+const INTEGER_COMPARISON_ROUNDING = {
+  '<': 'ceil',
+  '>=': 'ceil',
+  '>': 'floor',
+  '<=': 'floor',
+};
+
 class WebGLFunctionNode extends FunctionNode {
   constructor(source, settings) {
     super(source, settings);
@@ -332,39 +342,41 @@ class WebGLFunctionNode extends FunctionNode {
         break;
 
       case 'Integer & Float':
-      case 'Integer & Number':
-        if (ast.operator === '>' || ast.operator === '<' && ast.right.type === 'Literal') {
-          // if right value is actually a float, don't loose that information, cast left to right rather than the usual right to left
-          if (!Number.isInteger(ast.right.value)) {
+      case 'Integer & Number': {
+        // Comparisons keep the integer bare on the left. GLSL ES 1.00 accepts
+        // only `index op bound` as a for condition (Appendix A), so promoting
+        // the index to float there is a compile error -- which is why this
+        // used to cast the bound down to int, silently truncating it. Rounding
+        // the bound the other way is exact for an integer left side:
+        // `i < f` is `i < ceil(f)`, `i <= f` is `i <= floor(f)`, and so on.
+        const roundToward = INTEGER_COMPARISON_ROUNDING[ast.operator];
+        if (roundToward) {
+          this.pushState('building-integer');
+          this.astGeneric(ast.left, retArr);
+          retArr.push(operatorMap[ast.operator] || ast.operator);
+          if (ast.right.type === 'Literal' && typeof ast.right.value === 'number') {
+            retArr.push(`${ Math[roundToward](ast.right.value) }`);
+          } else {
+            retArr.push(`int(${ roundToward }(`);
             this.pushState('building-float');
-            this.castValueToFloat(ast.left, retArr);
-            retArr.push(operatorMap[ast.operator] || ast.operator);
             this.astGeneric(ast.right, retArr);
             this.popState('building-float');
-            break;
+            retArr.push('))');
           }
+          this.popState('building-integer');
+          break;
         }
-        this.pushState('building-integer');
-        this.astGeneric(ast.left, retArr);
+        // Arithmetic promotes the way JavaScript does: an integer combined
+        // with a fractional value is fractional, whichever side it is on.
+        // Casting the fractional operand down to an integer instead rounded
+        // it away -- `x * 0.5` emitted `x * 1` and disagreed with `0.5 * x`.
+        this.pushState('building-float');
+        this.castValueToFloat(ast.left, retArr);
         retArr.push(operatorMap[ast.operator] || ast.operator);
-        this.pushState('casting-to-integer');
-        if (ast.right.type === 'Literal') {
-          const literalResult = [];
-          this.astGeneric(ast.right, literalResult);
-          const literalType = this.getType(ast.right);
-          if (literalType === 'Integer') {
-            retArr.push(literalResult.join(''));
-          } else {
-            throw this.astErrorOutput(`Unhandled binary expression with literal`, ast);
-          }
-        } else {
-          retArr.push('int(');
-          this.astGeneric(ast.right, retArr);
-          retArr.push(')');
-        }
-        this.popState('casting-to-integer');
-        this.popState('building-integer');
+        this.astGeneric(ast.right, retArr);
+        this.popState('building-float');
         break;
+      }
       case 'Integer & LiteralInteger':
         this.pushState('building-integer');
         this.astGeneric(ast.left, retArr);
