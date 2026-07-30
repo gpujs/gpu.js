@@ -7,18 +7,44 @@ const { Input } = require('./input');
  * @returns {function()}
  */
 function kernelRunShortcut(kernel) {
+  // A switch can legitimately cascade (an argument type change that also
+  // changes the output precision), but it must terminate: a kernel that keeps
+  // asking to switch would otherwise fall through with no result at all, and
+  // the GL backends answer that with whatever is still in the framebuffer --
+  // silently, the previous call's values.
+  const MAX_SWITCHES = 4;
+
   function syncBody(args) {
     // build() is guarded on kernel.built across every backend, so calling it
     // per run costs one boolean check and stays correct through replaceKernel
     kernel.build.apply(kernel, args);
-    let result = kernel.run.apply(kernel, args);
-    if (kernel.switchingKernels) {
+    kernel.checkArgumentTypes(args);
+    let result = kernel.switchingKernels ? undefined : kernel.run.apply(kernel, args);
+    for (let i = 0; kernel.switchingKernels; i++) {
+      if (i >= MAX_SWITCHES) {
+        const reasons = kernel.resetSwitchingKernels();
+        throw new Error(
+          `this kernel cannot run the arguments it was given (${ describeReasons(reasons) }); ` +
+          `it did not settle on a kernel for them after ${ MAX_SWITCHES } attempts. ` +
+          `Create a separate kernel for this call's argument types.`);
+      }
       const reasons = kernel.resetSwitchingKernels();
       const newKernel = kernel.onRequestSwitchKernel(reasons, args, kernel);
       shortcut.kernel = kernel = newKernel;
-      result = newKernel.run.apply(newKernel, args);
+      newKernel.checkArgumentTypes(args);
+      result = newKernel.switchingKernels ? undefined : newKernel.run.apply(newKernel, args);
     }
     return result;
+  }
+
+  function describeReasons(reasons) {
+    if (!reasons || !reasons.length) return 'unknown reason';
+    return reasons.map(reason => {
+      if (reason.type === 'argumentTypeMismatch') {
+        return `argument ${ reason.index } is now ${ reason.needed }`;
+      }
+      return reason.type;
+    }).join(', ');
   }
 
   function syncRun(args) {

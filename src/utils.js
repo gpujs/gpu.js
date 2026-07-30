@@ -122,6 +122,45 @@ const utils = {
    * @param {boolean} [strictIntegers]
    * @returns {String}  Argument type Array/Number/Float/Texture/Unknown
    */
+  /**
+   * @desc Can a value still be used as the argument type a kernel was built
+   * for? Deliberately loose: a declared type is often more specific than
+   * detection can be (Array1D(2) reads as a plain Array), so this only
+   * reports the fundamental mismatches -- a number where an array is
+   * expected, an Input where a plain array is, a plain array where a texture
+   * is. Those are the changes that need a differently-compiled kernel.
+   * @param {String} type
+   * @param {*} value
+   * @returns {Boolean}
+   */
+  typeFitsValue(type, value) {
+    if (typeof type !== 'string' || value === null || value === undefined) return true;
+    // a value that names its own type (textures, pipeline buffers) is already
+    // re-mapped over the declared type by the kernel-value lookup and by the
+    // GL backends' own mismatch detection; the declared type does not govern
+    // it and second-guessing that here only fights machinery that works
+    if (value.type) return true;
+    switch (type) {
+      case 'Input':
+        return value instanceof Input;
+      case 'Boolean':
+        return typeof value === 'boolean';
+      case 'Number':
+      case 'Integer':
+      case 'Float':
+        return typeof value === 'number';
+    }
+    if (type.indexOf('Texture') !== -1) {
+      return Boolean(value.type);
+    }
+    if (type.indexOf('Array') === 0) {
+      return utils.isArray(value);
+    }
+    // HTMLImage, HTMLVideo, ImageBitmap, OffscreenCanvas, Unknown: detection
+    // adds nothing the declared type does not already say
+    return true;
+  },
+
   getVariableType(value, strictIntegers) {
     if (utils.isArray(value)) {
       if (value.length > 0 && value[0].nodeName === 'IMG') {

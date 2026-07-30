@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.9
- * @date Thu Jul 30 2026 11:58:54 GMT+0800 (Singapore Standard Time)
+ * @date Thu Jul 30 2026 13:21:38 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -346,6 +346,25 @@
       },
       isArray(array) {
         return !isNaN(array.length);
+      },
+      typeFitsValue(type, value) {
+        if (typeof type !== "string" || value === null || value === void 0) return true;
+        if (value.type) return true;
+        switch (type) {
+         case "Input":
+          return value instanceof Input;
+
+         case "Boolean":
+          return typeof value === "boolean";
+
+         case "Number":
+         case "Integer":
+         case "Float":
+          return typeof value === "number";
+        }
+        if (type.indexOf("Texture") !== -1) return Boolean(value.type);
+        if (type.indexOf("Array") === 0) return utils.isArray(value);
+        return true;
       },
       getVariableType(value, strictIntegers) {
         if (utils.isArray(value)) {
@@ -1049,6 +1068,7 @@
         this.useLegacyEncoder = false;
         this.fallbackRequested = false;
         this.onRequestFallback = null;
+        this.onRequestSwitchKernel = null;
         this.argumentNames = typeof source === "string" ? utils.getArgumentNamesFromString(source) : null;
         this.argumentTypes = null;
         this.argumentSizes = null;
@@ -1090,6 +1110,7 @@
         this.randomSeed = null;
         this.built = false;
         this.signature = null;
+        this.switchingKernels = null;
       }
       mergeSettings(settings) {
         for (let p in settings) {
@@ -1420,11 +1441,11 @@
            case "Integer":
            case "Float":
            case "ArrayTexture(1)":
-            argumentTypes[i] = utils.getVariableType(arg);
+            argumentTypes[i] = utils.getVariableType(arg, kernel.strictIntegers);
             break;
 
            default:
-            argumentTypes[i] = type;
+            argumentTypes[i] = utils.typeFitsValue(type, arg) ? type : utils.getVariableType(arg, kernel.strictIntegers);
           }
         }
         return argumentTypes;
@@ -1445,6 +1466,23 @@
         };
       }
       onActivate(previousKernel) {}
+      switchKernels(reason) {
+        if (this.switchingKernels) this.switchingKernels.push(reason); else this.switchingKernels = [ reason ];
+      }
+      resetSwitchingKernels() {
+        const existingValue = this.switchingKernels;
+        this.switchingKernels = null;
+        return existingValue;
+      }
+      checkArgumentTypes(args) {
+        if (!this.argumentTypes) return;
+        const length = Math.min(args.length, this.argumentTypes.length);
+        for (let i = 0; i < length; i++) if (!utils.typeFitsValue(this.argumentTypes[i], args[i])) this.switchKernels({
+          type: "argumentTypeMismatch",
+          index: i,
+          needed: utils.getVariableType(args[i], this.strictIntegers)
+        });
+      }
     };
     function splitArgumentTypes(argumentTypesObject) {
       const argumentNames = Object.keys(argumentTypesObject);
@@ -5156,11 +5194,6 @@
         if (this.immutable) for (let i = 0; i < this.subKernels.length; i++) result[this.subKernels[i].property] = this.mappedTextures[i].clone(); else for (let i = 0; i < this.subKernels.length; i++) result[this.subKernels[i].property] = this.mappedTextures[i];
         return result;
       }
-      resetSwitchingKernels() {
-        const existingValue = this.switchingKernels;
-        this.switchingKernels = null;
-        return existingValue;
-      }
       setOutput(output) {
         const newOutput = this.toKernelOutput(output);
         if (this.program) {
@@ -5208,9 +5241,6 @@
       }
       renderValues() {
         return this.formatValues(this.transferValues(), this.output[0], this.output[1], this.output[2]);
-      }
-      switchKernels(reason) {
-        if (this.switchingKernels) this.switchingKernels.push(reason); else this.switchingKernels = [ reason ];
       }
       getVariablePrecisionString(textureSize = this.texSize, tactic = this.tactic, isInt = false) {
         if (!tactic) {
@@ -13168,16 +13198,30 @@
     const {utils: utils} = require_utils();
     const {Input: Input} = require_input();
     function kernelRunShortcut(kernel) {
+      const MAX_SWITCHES = 4;
       function syncBody(args) {
         kernel.build.apply(kernel, args);
-        let result = kernel.run.apply(kernel, args);
-        if (kernel.switchingKernels) {
+        kernel.checkArgumentTypes(args);
+        let result = kernel.switchingKernels ? void 0 : kernel.run.apply(kernel, args);
+        for (let i = 0; kernel.switchingKernels; i++) {
+          if (i >= MAX_SWITCHES) {
+            const reasons = kernel.resetSwitchingKernels();
+            throw new Error(`this kernel cannot run the arguments it was given (${describeReasons(reasons)}); it did not settle on a kernel for them after ${MAX_SWITCHES} attempts. Create a separate kernel for this call's argument types.`);
+          }
           const reasons = kernel.resetSwitchingKernels();
           const newKernel = kernel.onRequestSwitchKernel(reasons, args, kernel);
           shortcut.kernel = kernel = newKernel;
-          result = newKernel.run.apply(newKernel, args);
+          newKernel.checkArgumentTypes(args);
+          result = newKernel.switchingKernels ? void 0 : newKernel.run.apply(newKernel, args);
         }
         return result;
+      }
+      function describeReasons(reasons) {
+        if (!reasons || !reasons.length) return "unknown reason";
+        return reasons.map(reason => {
+          if (reason.type === "argumentTypeMismatch") return `argument ${reason.index} is now ${reason.needed}`;
+          return reason.type;
+        }).join(", ");
       }
       function syncRun(args) {
         const result = syncBody(args);

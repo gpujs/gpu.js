@@ -888,11 +888,6 @@ class GLKernel extends Kernel {
     return result;
   }
 
-  resetSwitchingKernels() {
-    const existingValue = this.switchingKernels;
-    this.switchingKernels = null;
-    return existingValue;
-  }
 
   setOutput(output) {
     const newOutput = this.toKernelOutput(output);
@@ -956,13 +951,6 @@ class GLKernel extends Kernel {
       this.output[1],
       this.output[2]
     );
-  }
-  switchKernels(reason) {
-    if (this.switchingKernels) {
-      this.switchingKernels.push(reason);
-    } else {
-      this.switchingKernels = [reason];
-    }
   }
   getVariablePrecisionString(textureSize = this.texSize, tactic = this.tactic, isInt = false) {
     if (!tactic) {
