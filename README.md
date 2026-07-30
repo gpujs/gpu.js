@@ -5,6 +5,8 @@ GPU.js automatically transpiles simple JavaScript functions into shader language
 In case a GPU is not available, the functions will still run in regular JavaScript.
 For some more quick concepts, see [Quick Concepts](https://github.com/gpujs/gpu.js/wiki/Quick-Concepts) on the wiki.
 
+**New to GPU programming?** [**Learn GPGPU in your browser**](https://gpu.rocks/learn) — a free, hands-on course that teaches the subject itself, not just this library. See [Learn GPGPU](#learn-gpgpu) below.
+
 
 [![CI](https://github.com/gpujs/gpu.js/actions/workflows/ci.yml/badge.svg)](https://github.com/gpujs/gpu.js/actions/workflows/ci.yml)
 [![BrowserStack](https://automate.browserstack.com/badge.svg?badge_key=RHFnb0dPTWdmUlZKRFdMb3lZWFdGSDcwU1dEL0tGZC9HT21BVVJPeGZ1az0tLW43V3JMeGtjdjlhWHlpZ2dZRk5ZclE9PQ%3D%3D--a13f87b6ab74da0caa0381873de301faed81c914)](https://automate.browserstack.com/public-build/RHFnb0dPTWdmUlZKRFdMb3lZWFdGSDcwU1dEL0tGZC9HT21BVVJPeGZ1az0tLW43V3JMeGtjdjlhWHlpZ2dZRk5ZclE9PQ%3D%3D--a13f87b6ab74da0caa0381873de301faed81c914)
@@ -15,7 +17,7 @@ For some more quick concepts, see [Quick Concepts](https://github.com/gpujs/gpu.
 
 Creates a GPU accelerated kernel transpiled from a javascript function that computes a single element in the 512 x 512 matrix (2D array).
 The kernel functions are ran in tandem on the GPU often resulting in very fast computations!
-You can run a benchmark of this [here](http://gpu.rocks). Typically, it will run 1-15x faster depending on your hardware.
+You can run a benchmark of this [here](https://gpu.rocks/). Typically, it will run 1-15x faster depending on your hardware.
 Matrix multiplication (perform matrix multiplication on 2 matrices of size 512 x 512) written in GPU.js:
 
 ## Browser
@@ -130,6 +132,7 @@ Notice documentation is off?  We do try our hardest, but if you find something,
   [please bring it to our attention](https://github.com/gpujs/gpu.js/issues), or _[become a contributor](#contributors)_!
 
 * [v3 Will Be Async by Default](#v3-will-be-async-by-default)
+* [Learn GPGPU](#learn-gpgpu)
 * [Supported Backends](#supported-backends)
 * [Demos](#demos)
 * [Installation](#installation)
@@ -170,6 +173,24 @@ Notice documentation is off?  We do try our hardest, but if you find something,
 * [Contributing](#contributing)
 * [Terms Explained](#terms-explained)
 * [License](#license)
+
+## Learn GPGPU
+
+**[Learn GPGPU in your browser](https://gpu.rocks/learn)** — a free, hands-on course built on GPU.js. Fifteen lessons across three modules, roughly ten hours, with no toolchain to install: you write real kernels in the page and run them on your own GPU, with the results in front of you.
+
+The point worth making is that **it teaches GPGPU, not just this library**. GPU.js is the vehicle, chosen because JavaScript in a browser is the shortest path from "no setup" to "code running on your GPU" — but what you take away is the subject itself, and it transfers:
+
+* **The mental model is universal.** A kernel is one function run across a grid of threads; `this.thread` is CUDA's `threadIdx`/`blockIdx`, WGSL's `global_invocation_id`, and OpenCL's `get_global_id()` wearing different clothes. Once you think in kernels, the syntax is a detail.
+* **The hard-won lessons are hardware lessons, not API lessons.** Why moving data usually costs more than computing on it, why keeping intermediate results on the device (pipelining) changes everything, why a parallel reduction is shaped the way it is, why float precision bites, and how to measure a GPU honestly instead of timing an unsynchronized queue — every one of those is as true in CUDA or Metal as it is here.
+* **The algorithms are the canonical ones.** Matrix multiply, reductions, convolution, Monte Carlo, N-body, cellular automata, reaction–diffusion, ray marching — the same worked examples you meet in any GPU course, just without a two-hour install first.
+
+| module | lessons |
+|---|---|
+| **1 — Fundamentals** | Hello, Kernel · Data In, Data Out · Thinking in Parallel · Pipelines & Textures · Measuring Speed Honestly |
+| **2 — Real algorithms** | Matrix Multiply · Reductions · Convolution & Filters · Monte Carlo Methods · N-Body Gravity |
+| **3 — Graphics** | Pixels from Scratch · Escape-Time Fractals · Cellular Automata · Reaction–Diffusion · Ray-Marched Metaballs |
+
+Start at [Hello, Kernel](https://gpu.rocks/learn/1-1) — if you can write a JavaScript `for` loop, you have the prerequisites.
 
 ## Supported Backends
 
@@ -213,7 +234,7 @@ GPU.js in the wild, all around the net.  Add yours here!
 * [Animated parallel raytracer in TypeScript and GPU.js](https://raytracer.crypt.sg)
 * [Bilinear interpolation on an image](https://jsfiddle.net/shadowwarriorpro/tndphL1f/)
 
-More examples with screenshots: [gpu.rocks examples gallery](https://gpu.rocks/#/examples)
+More examples with screenshots: [gpu.rocks examples gallery](https://gpu.rocks/examples)
 
 ### Community projects
 Libraries and tools built on GPU.js:

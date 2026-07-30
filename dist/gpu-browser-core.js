@@ -1,11 +1,11 @@
 /**
  * gpu.js
- * http://gpu.rocks/
+ * https://gpu.rocks/
  *
  * GPU Accelerated JavaScript
  *
  * @version 2.19.9
- * @date Wed Jul 29 2026 21:39:25 GMT+0800 (Singapore Standard Time)
+ * @date Thu Jul 30 2026 11:58:54 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
