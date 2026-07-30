@@ -22,9 +22,11 @@ Bundling is rolldown, minifying is terser. Two things there are load-bearing:
   bytes in the bundle. Serving that without a matching charset is #743/#744.
 
 The banner interpolates `new Date()`, so two builds are never byte-identical —
-compare `dist/` with the `@date` lines normalized. Note the minified bundles
-carry the banner twice: terser preserves the original because it contains
-`@license`, and the minify step prepends another.
+compare `dist/` with the `@date` lines normalized. All four bundles of one run
+share a timestamp: the minify step passes the banner through (terser keeps it
+via `output.comments`, since it carries `@license`) rather than prepending its
+own. Prepending is what used to put the banner in the minified files twice,
+seconds apart.
 
 Note `beautify` reformats `src/`, so `npm run make` can produce unrelated
 whitespace churn in files you did not touch. That is expected.
