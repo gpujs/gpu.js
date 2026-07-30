@@ -22,7 +22,7 @@ function testWebGLFunctionNode() {
   assert.equal(node.toString(), `float w(sampler2D user_t,ivec2 user_tSize,ivec3 user_tDim, sampler2D user_e,ivec2 user_eSize,ivec3 user_eDim) {
 float user_r=0.0;int user_i=0;
 for (int safeI=0;safeI<LOOP_MAX;safeI++){
-if (!(user_i<int(constants_size))) break;
+if (!(user_i<int(ceil(constants_size)))) break;
 user_r+=(get32(user_t, user_tSize, user_tDim, 0, threadId.y, user_i)*get32(user_e, user_eSize, user_eDim, 0, user_i, threadId.x));
 user_i++;}
 

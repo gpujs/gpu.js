@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.19.9
- * @date Thu Jul 30 2026 13:21:38 GMT+0800 (Singapore Standard Time)
+ * @date Thu Jul 30 2026 19:28:12 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -6617,6 +6617,10 @@
             if (rightType === "LiteralInteger") if (ast.left.value % 1 === 0) return "Integer"; else return "Float";
             return rightType;
           }
+          if (type === "Integer") {
+            const rightType = this.getType(ast.right);
+            if (rightType === "Number" || rightType === "Float") return rightType;
+          }
           return typeLookupMap[type] || type;
 
          case "UpdateExpression":
@@ -9519,6 +9523,12 @@
   var require_function_node$2 = __commonJSMin((exports, module) => {
     const {utils: utils} = require_utils();
     const {FunctionNode: FunctionNode} = require_function_node$4();
+    const INTEGER_COMPARISON_ROUNDING = {
+      "<": "ceil",
+      ">=": "ceil",
+      ">": "floor",
+      "<=": "floor"
+    };
     var WebGLFunctionNode = class extends FunctionNode {
       constructor(source, settings) {
         super(source, settings);
@@ -9754,32 +9764,29 @@
 
          case "Integer & Float":
          case "Integer & Number":
-          if (ast.operator === ">" || ast.operator === "<" && ast.right.type === "Literal") {
-            if (!Number.isInteger(ast.right.value)) {
-              this.pushState("building-float");
-              this.castValueToFloat(ast.left, retArr);
+          {
+            const roundToward = INTEGER_COMPARISON_ROUNDING[ast.operator];
+            if (roundToward) {
+              this.pushState("building-integer");
+              this.astGeneric(ast.left, retArr);
               retArr.push(operatorMap[ast.operator] || ast.operator);
-              this.astGeneric(ast.right, retArr);
-              this.popState("building-float");
+              if (ast.right.type === "Literal" && typeof ast.right.value === "number") retArr.push(`${Math[roundToward](ast.right.value)}`); else {
+                retArr.push(`int(${roundToward}(`);
+                this.pushState("building-float");
+                this.astGeneric(ast.right, retArr);
+                this.popState("building-float");
+                retArr.push("))");
+              }
+              this.popState("building-integer");
               break;
             }
-          }
-          this.pushState("building-integer");
-          this.astGeneric(ast.left, retArr);
-          retArr.push(operatorMap[ast.operator] || ast.operator);
-          this.pushState("casting-to-integer");
-          if (ast.right.type === "Literal") {
-            const literalResult = [];
-            this.astGeneric(ast.right, literalResult);
-            if (this.getType(ast.right) === "Integer") retArr.push(literalResult.join("")); else throw this.astErrorOutput(`Unhandled binary expression with literal`, ast);
-          } else {
-            retArr.push("int(");
+            this.pushState("building-float");
+            this.castValueToFloat(ast.left, retArr);
+            retArr.push(operatorMap[ast.operator] || ast.operator);
             this.astGeneric(ast.right, retArr);
-            retArr.push(")");
+            this.popState("building-float");
+            break;
           }
-          this.popState("casting-to-integer");
-          this.popState("building-integer");
-          break;
 
          case "Integer & LiteralInteger":
           this.pushState("building-integer");
@@ -15659,31 +15666,11 @@
 
          case "Integer & Float":
          case "Integer & Number":
-          if ((ast.operator === ">" || ast.operator === "<") && ast.right.type === "Literal") {
-            if (!Number.isInteger(ast.right.value)) {
-              this.pushState("building-float");
-              this.castValueToFloat(ast.left, retArr);
-              retArr.push(operatorMap[ast.operator] || ast.operator);
-              this.astGeneric(ast.right, retArr);
-              this.popState("building-float");
-              break;
-            }
-          }
-          this.pushState("building-integer");
-          this.astGeneric(ast.left, retArr);
+          this.pushState("building-float");
+          this.castValueToFloat(ast.left, retArr);
           retArr.push(operatorMap[ast.operator] || ast.operator);
-          this.pushState("casting-to-integer");
-          if (ast.right.type === "Literal") {
-            const literalResult = [];
-            this.astGeneric(ast.right, literalResult);
-            if (this.getType(ast.right) === "Integer") retArr.push(literalResult.join("")); else throw this.astErrorOutput(`Unhandled binary expression with literal`, ast);
-          } else {
-            retArr.push("i32(");
-            this.astGeneric(ast.right, retArr);
-            retArr.push(")");
-          }
-          this.popState("casting-to-integer");
-          this.popState("building-integer");
+          this.astGeneric(ast.right, retArr);
+          this.popState("building-float");
           break;
 
          case "Integer & LiteralInteger":

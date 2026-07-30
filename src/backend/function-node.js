@@ -523,6 +523,17 @@ class FunctionNode {
           }
           return rightType;
         }
+        if (type === 'Integer') {
+          // JavaScript promotes: an integer combined with a fractional value
+          // is fractional, whichever side the integer is on. Reporting the
+          // left operand's type made `x * 0.5` an integer expression that
+          // rounded the 0.5 away, so it disagreed with `0.5 * x` -- the same
+          // multiplication, not commutative.
+          const rightType = this.getType(ast.right);
+          if (rightType === 'Number' || rightType === 'Float') {
+            return rightType;
+          }
+        }
         return typeLookupMap[type] || type;
       case 'UpdateExpression':
         return this.getType(ast.argument);

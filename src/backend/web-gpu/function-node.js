@@ -422,37 +422,15 @@ class WGSLFunctionNode extends FunctionNode {
         break;
       case 'Integer & Float':
       case 'Integer & Number':
-        if ((ast.operator === '>' || ast.operator === '<') && ast.right.type === 'Literal') {
-          // a fractional literal must not truncate: cast left to float instead
-          if (!Number.isInteger(ast.right.value)) {
-            this.pushState('building-float');
-            this.castValueToFloat(ast.left, retArr);
-            retArr.push(operatorMap[ast.operator] || ast.operator);
-            this.astGeneric(ast.right, retArr);
-            this.popState('building-float');
-            break;
-          }
-        }
-        this.pushState('building-integer');
-        this.astGeneric(ast.left, retArr);
+        // JavaScript promotes an integer combined with a fractional value to
+        // fractional, whichever side the integer is on. Casting the float
+        // operand down to an integer instead rounded it away -- `x * 0.5`
+        // emitted `x * 1` and disagreed with `0.5 * x`.
+        this.pushState('building-float');
+        this.castValueToFloat(ast.left, retArr);
         retArr.push(operatorMap[ast.operator] || ast.operator);
-        this.pushState('casting-to-integer');
-        if (ast.right.type === 'Literal') {
-          const literalResult = [];
-          this.astGeneric(ast.right, literalResult);
-          const literalType = this.getType(ast.right);
-          if (literalType === 'Integer') {
-            retArr.push(literalResult.join(''));
-          } else {
-            throw this.astErrorOutput(`Unhandled binary expression with literal`, ast);
-          }
-        } else {
-          retArr.push('i32(');
-          this.astGeneric(ast.right, retArr);
-          retArr.push(')');
-        }
-        this.popState('casting-to-integer');
-        this.popState('building-integer');
+        this.astGeneric(ast.right, retArr);
+        this.popState('building-float');
         break;
       case 'Integer & LiteralInteger':
         this.pushState('building-integer');
