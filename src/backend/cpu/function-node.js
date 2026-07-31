@@ -136,7 +136,16 @@ class CPUFunctionNode extends FunctionNode {
         retArr.push('Infinity');
         break;
       default:
-        if (this.constants && this.constants.hasOwnProperty(idtNode.name)) {
+        // A local binding wins over a constant of the same name, the way it
+        // does in JavaScript. Classifying by spelling alone renamed a kernel
+        // local `n` to `constants_n` in its own declarator, so
+        // `const n = this.constants.n` emitted `const constants_n =
+        // constants_n` and died in the temporal dead zone. `this.constants.n`
+        // itself never reaches here -- astMemberExpression emits it.
+        if (
+          !this.getDeclaration(idtNode) &&
+          this.constants && this.constants.hasOwnProperty(idtNode.name)
+        ) {
           retArr.push('constants_' + idtNode.name);
         } else {
           retArr.push('user_' + idtNode.name);

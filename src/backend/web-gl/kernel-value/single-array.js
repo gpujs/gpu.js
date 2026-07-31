@@ -28,7 +28,12 @@ class WebGLKernelValueSingleArray extends WebGLKernelArray {
   }
 
   updateValue(value) {
-    if (value.constructor !== this.initialValueConstructor) {
+    // The container does not matter here: a plain Array and a Float32Array of
+    // the same numbers both flatten into the same upload buffer, so rejecting
+    // on constructor identity made two interchangeable values unusable on one
+    // kernel (#857). What must still switch is a value of a different kind --
+    // a texture, an Input -- which needs a kernel value built for it.
+    if (!utils.isArray(value)) {
       this.onUpdateValueMismatch(value.constructor);
       return;
     }

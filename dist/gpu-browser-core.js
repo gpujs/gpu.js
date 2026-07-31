@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.20.0
- * @date Fri Jul 31 2026 01:15:28 GMT+0800 (Singapore Standard Time)
+ * @date Fri Jul 31 2026 18:14:38 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -3264,7 +3264,7 @@
           break;
 
          default:
-          if (this.constants && this.constants.hasOwnProperty(idtNode.name)) retArr.push("constants_" + idtNode.name); else retArr.push("user_" + idtNode.name);
+          if (!this.getDeclaration(idtNode) && this.constants && this.constants.hasOwnProperty(idtNode.name)) retArr.push("constants_" + idtNode.name); else retArr.push("user_" + idtNode.name);
         }
         return retArr;
       }
@@ -8404,7 +8404,7 @@
         return utils.linesToString([ `uniform sampler2D ${this.id}`, `ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`, `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})` ]);
       }
       updateValue(value) {
-        if (value.constructor !== this.initialValueConstructor) {
+        if (!utils.isArray(value)) {
           this.onUpdateValueMismatch(value.constructor);
           return;
         }
@@ -8714,7 +8714,7 @@
         return utils.linesToString([ `uniform sampler2D ${this.id}`, `ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`, `ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})` ]);
       }
       updateValue(value) {
-        if (value.constructor !== this.initialValueConstructor) {
+        if (!utils.isArray(value)) {
           this.onUpdateValueMismatch(value.constructor);
           return;
         }
@@ -10291,7 +10291,7 @@
         return utils.linesToString([ `uniform ${variablePrecision} sampler2D ${this.id}`, `${variablePrecision} ivec2 ${this.sizeId} = ivec2(${this.textureSize[0]}, ${this.textureSize[1]})`, `${variablePrecision} ivec3 ${this.dimensionsId} = ivec3(${this.dimensions[0]}, ${this.dimensions[1]}, ${this.dimensions[2]})` ]);
       }
       updateValue(value) {
-        if (value.constructor !== this.initialValueConstructor) {
+        if (!utils.isArray(value)) {
           this.onUpdateValueMismatch(value.constructor);
           return;
         }
