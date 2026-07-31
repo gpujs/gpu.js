@@ -1435,7 +1435,11 @@ Create issues [here](https://github.com/gpujs/gpu.js/issues) and follow the temp
 ### Contributors
 
 This project exists thanks to all the people who contribute. [[Contribute](CONTRIBUTING.md)].
-<a href="https://github.com/gpujs/gpu.js/graphs/contributors"><img src="https://opencollective.com/gpujs/contributors.svg?width=890&button=false" /></a>
+<!-- Was opencollective.com/gpujs/contributors.svg, which now returns HTTP 500
+     for every collective — their image generator queries a GraphQL field
+     ("githubContributors") that their own API no longer has. The backers and
+     sponsor images below still work, so only this one moved. -->
+<a href="https://github.com/gpujs/gpu.js/graphs/contributors"><img src="https://contrib.rocks/image?repo=gpujs/gpu.js" /></a>
 
 
 ### Backers
