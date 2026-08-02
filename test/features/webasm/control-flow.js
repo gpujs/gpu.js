@@ -141,3 +141,66 @@ test('modulo stays float like the GL backends webasm', assert => {
     return a[this.thread.x] % 2.5;
   }, [4], {}, [[5, 6.25, -3, 7.5]]);
 });
+
+// Three shapes where the cpu backend disagrees with plain JavaScript (the
+// review caught cpu returning wrong numbers on all three) -- so these compare
+// against a per-cell PLAIN JS reference, never against mode: 'cpu'.
+
+test('early return inside a loop matches plain JavaScript', () => {
+  const source = function (x) {
+    for (let i = 0; i < 20; i++) {
+      if (i * i > x) {
+        return i * 100 + x;
+      }
+    }
+    return -1;
+  };
+  const expected = [0, 1, 2, 3, 4, 5].map(x => source(x));
+  const gpu = new GPU({ mode: 'webasm' });
+  const kernel = gpu.createKernel(function () {
+    for (let i = 0; i < 20; i++) {
+      if (i * i > this.thread.x) {
+        return i * 100 + this.thread.x;
+      }
+    }
+    return -1;
+  }, { output: [6], loopMaxIterations: 30 });
+  assert.deepEqual(Array.from(kernel()), expected);
+  gpu.destroy();
+});
+
+test('do-while with continue matches plain JavaScript', () => {
+  const reference = (() => {
+    let i = 0;
+    let acc = 0;
+    do {
+      i++;
+      if (i % 3 === 0) continue;
+      acc += i;
+    } while (i < 12);
+    return acc;
+  })();
+  const gpu = new GPU({ mode: 'webasm' });
+  const kernel = gpu.createKernel(function () {
+    let i = 0;
+    let acc = 0;
+    do {
+      i++;
+      if (i % 3 === 0) continue;
+      acc += i;
+    } while (i < 12);
+    return acc;
+  }, { output: [4], loopMaxIterations: 30 });
+  assert.deepEqual(Array.from(kernel()), [reference, reference, reference, reference]);
+  gpu.destroy();
+});
+
+test('assigning to a scalar argument stays per-cell, like plain JavaScript', () => {
+  const gpu = new GPU({ mode: 'webasm' });
+  const kernel = gpu.createKernel(function (base) {
+    base = base + this.thread.x;
+    return base;
+  }, { output: [4] });
+  assert.deepEqual(Array.from(kernel(10)), [10, 11, 12, 13], 'a fresh binding per cell');
+  gpu.destroy();
+});

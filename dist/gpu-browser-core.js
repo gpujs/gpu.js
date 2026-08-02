@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.21.0
- * @date Mon Aug 03 2026 03:25:37 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 04:00:48 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -14738,6 +14738,7 @@
         } else if (!local && this.isRootKernel && this.argumentNames.indexOf(name) !== -1) {
           const gtype = this.argumentTypes[this.argumentNames.indexOf(name)];
           const slot = this.assembler ? this.assembler.layout.scalars[name] : null;
+          if (this.assembler && !slot) throw this.astErrorOutput(`WebAssembly backend does not yet support assigning to the array argument "${name}"`, assNode);
           const offset = slot ? slot.offset : 0;
           wtype = gtype === "Integer" || gtype === "Boolean" ? "i32" : "f32";
           this.em.i32Const(0);
@@ -15859,6 +15860,7 @@
             const argumentIndex = this.argumentNames.indexOf(name);
             const gtype = this.argumentTypes[argumentIndex];
             const slot = assembler.layout.scalars[name];
+            if (!slot) throw this.astErrorOutput(`WebAssembly backend does not yet support assigning to the array argument "${name}"`, this.getJsAST());
             const isInt = gtype === "Integer" || gtype === "Boolean";
             const index = em.addLocal("v128");
             em.i32Const(0);
@@ -15963,7 +15965,7 @@
 
            case "LogicalExpression":
             scanExprTaints(node.left, cv);
-            return scanExprTaints(node.right, cv || exprVarying(node.left));
+            return scanExprTaints(node.right, true);
 
            default:
             for (const key in node) {
@@ -18001,19 +18003,33 @@
         this._taskId = 0;
       }
       get liveWorkerCount() {
-        return this.workers.length;
+        let count = 0;
+        for (const worker of this.workers) if (!worker.dead) count++;
+        return count;
       }
       _spawn() {
-        const state = {
-          setup: new Set,
-          settingUp: new Map,
-          pending: new Map
+        const worker = {
+          handle: null,
+          dead: false,
+          state: {
+            setup: new Set,
+            settingUp: new Map,
+            pending: new Map
+          },
+          fail: null,
+          die: null
         };
-        const fail = error => {
+        const state = worker.state;
+        worker.fail = error => {
           for (const wait of state.settingUp.values()) wait.reject(error);
           state.settingUp.clear();
           for (const task of state.pending.values()) task.reject(error);
           state.pending.clear();
+        };
+        worker.die = error => {
+          if (worker.dead) return;
+          worker.dead = true;
+          worker.fail(error);
         };
         const onMessage = message => {
           if (message.type === "ready") {
@@ -18021,12 +18037,14 @@
             if (wait) {
               state.settingUp.delete(message.id);
               state.setup.add(message.id);
+              this._updateRef(worker);
               wait.resolve();
             }
           } else if (message.type === "done") {
             const task = state.pending.get(message.taskId);
             if (task) {
               state.pending.delete(message.taskId);
+              this._updateRef(worker);
               task.resolve();
             }
           }
@@ -18039,24 +18057,30 @@
           handle = new Worker(url);
           URL.revokeObjectURL(url);
           handle.onmessage = event => onMessage(event.data);
-          handle.onerror = event => fail(new Error(event.message || "WebAssembly worker error"));
+          handle.onerror = event => worker.die(new Error(event.message || "WebAssembly worker error"));
         } else {
           const {Worker: NodeWorker} = require_empty_module();
           handle = new NodeWorker(WORKER_SOURCE, {
             eval: true
           });
           handle.on("message", onMessage);
-          handle.on("error", fail);
+          handle.on("error", error => worker.die(error));
+          handle.on("exit", code => {
+            worker.die(new Error(`WebAssembly worker exited with code ${code}`));
+          });
+          handle.unref();
         }
-        return {
-          handle: handle,
-          state: state,
-          fail: fail
-        };
+        worker.handle = handle;
+        return worker;
       }
       _worker(index) {
         while (this.workers.length <= index) this.workers.push(this._spawn());
+        if (this.workers[index].dead) this.workers[index] = this._spawn();
         return this.workers[index];
+      }
+      _updateRef(worker) {
+        if (worker.dead || !worker.handle || typeof worker.handle.ref !== "function") return;
+        if (worker.state.settingUp.size + worker.state.pending.size > 0) worker.handle.ref(); else worker.handle.unref();
       }
       _ensureSetup(worker, entry) {
         if (worker.state.setup.has(entry.id)) return Promise.resolve();
@@ -18068,6 +18092,7 @@
             wait.reject = reject;
           });
           worker.state.settingUp.set(entry.id, wait);
+          this._updateRef(worker);
           worker.handle.postMessage({
             type: "setup",
             id: entry.id,
@@ -18089,11 +18114,16 @@
         const runs = tasks.map((task, index) => {
           const worker = this._worker(index);
           return this._ensureSetup(worker, entry).then(() => new Promise((resolve, reject) => {
+            if (worker.dead) {
+              reject(new Error("WebAssembly worker died before the task could run"));
+              return;
+            }
             const taskId = ++this._taskId;
             worker.state.pending.set(taskId, {
               resolve: resolve,
               reject: reject
             });
+            this._updateRef(worker);
             worker.handle.postMessage({
               type: "run",
               id: entry.id,
@@ -18111,6 +18141,7 @@
         this.destroyed = true;
         const error = new Error("WebAssembly worker pool has been destroyed");
         for (const worker of this.workers) {
+          worker.dead = true;
           worker.fail(error);
           worker.handle.terminate();
         }
@@ -18228,6 +18259,7 @@
           this._threadedTail = Promise.resolve();
         }
         initCanvas() {
+          if (this.graphical && typeof document !== "undefined") return document.createElement("canvas");
           return null;
         }
         initContext() {
@@ -18247,6 +18279,7 @@
         }
         build() {
           if (this.built) return;
+          if (this.gpu && this.gpu.kernels && this.gpu.kernels.indexOf(this) === -1) this.gpu.kernels.push(this);
           if (this.graphical) return this.requestFallback(arguments);
           if (this.subKernels && this.subKernels.length > 0) return this.requestFallback(arguments);
           if (this.pipeline) return this.requestFallback(arguments);
@@ -19065,6 +19098,7 @@
         const switchableKernels = {};
         const settingsCopy = upgradeDeprecatedCreateKernelSettings(settings) || {};
         if (settings && typeof settings.argumentTypes === "object") settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(argumentName => settings.argumentTypes[argumentName]);
+        const gpuInstance = this;
         function onRequestFallback(args) {
           console.warn("Falling back to CPU");
           const fallbackKernel = new CPUKernel(source, {
@@ -19088,11 +19122,14 @@
             strictIntegers: kernelRun.strictIntegers,
             randomSeed: kernelRun.randomSeed,
             debug: kernelRun.debug,
-            asyncMode: kernelRun.asyncMode
+            asyncMode: kernelRun.asyncMode,
+            canvas: kernelRun.graphical && !kernelRun.context ? kernelRun.canvas : null
           });
           fallbackKernel.build.apply(fallbackKernel, args);
           const result = fallbackKernel.run.apply(fallbackKernel, args);
           kernelRun.replaceKernel(fallbackKernel);
+          if (!gpuInstance.canvas && fallbackKernel.canvas) gpuInstance.canvas = fallbackKernel.canvas;
+          if (!gpuInstance.context && fallbackKernel.context) gpuInstance.context = fallbackKernel.context;
           return result;
         }
         function onRequestSwitchKernel(reasons, args, _kernel) {
@@ -19246,7 +19283,7 @@
         if (this.mode !== "dev") {
           if (!this.Kernel.isSupported || !this.Kernel.features.kernelMap) {
             if (this.Kernel.mode === "webgpu") throw new Error("WebGPU backend does not yet support createKernelMap");
-            if (this.mode && kernelTypes.indexOf(this.mode) < 0) throw new Error(`kernelMap not supported on ${this.Kernel.name}`);
+            if (this.mode && kernelTypes.indexOf(this.mode) < 0 && this.Kernel.mode !== "webasm") throw new Error(`kernelMap not supported on ${this.Kernel.name}`);
           }
         }
         const settingsCopy = upgradeDeprecatedCreateKernelSettings(settings);

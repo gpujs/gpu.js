@@ -85,9 +85,18 @@ if (typeof self !== 'undefined' && typeof postMessage === 'function') {
  * boundary exactly once per worker.
  *
  * The main thread never blocks: dispatch returns a Promise resolved by the
- * workers' completion acks — no Atomics.wait anywhere. Nothing here retires
- * workers on error; a failed task rejects everything in flight on that
- * worker and the pool stays usable (wasm traps don't poison an instance).
+ * workers' completion acks — no Atomics.wait anywhere.
+ *
+ * Lifecycle rules the runtime review demanded:
+ * - A worker that dies (wasm trap, OOM, eviction) rejects its in-flight
+ *   tasks AND is retired from the pool; the next dispatch that needs its
+ *   slot spawns a replacement with fresh setup state. A dead worker can
+ *   never be handed a task — that message would vanish and the task's
+ *   Promise would hang forever.
+ * - Node workers are unref'd while idle and ref'd only while tasks are in
+ *   flight, so a script that runs a threaded kernel and ends actually
+ *   exits — without letting a fully-unref'd pool drop the process mid
+ *   dispatch.
  */
 class WebAssemblyWorkerPool {
   constructor(size) {
@@ -102,20 +111,40 @@ class WebAssemblyWorkerPool {
   }
 
   get liveWorkerCount() {
-    return this.workers.length;
+    let count = 0;
+    for (const worker of this.workers) {
+      if (!worker.dead) count++;
+    }
+    return count;
   }
 
   _spawn() {
-    const state = {
-      setup: new Set(),
-      settingUp: new Map(),
-      pending: new Map(),
+    const worker = {
+      handle: null,
+      dead: false,
+      state: {
+        setup: new Set(),
+        settingUp: new Map(),
+        pending: new Map(),
+      },
+      fail: null,
+      die: null,
     };
-    const fail = error => {
+    const state = worker.state;
+    worker.fail = error => {
       for (const wait of state.settingUp.values()) wait.reject(error);
       state.settingUp.clear();
-      for (const task of state.pending.values()) task.reject(error);
+      for (const task of state.pending.values()) {
+        task.reject(error);
+      }
       state.pending.clear();
+    };
+    // death retires the worker: its instantiations and setup cache died with
+    // the thread, and a message posted to a corpse never answers
+    worker.die = error => {
+      if (worker.dead) return;
+      worker.dead = true;
+      worker.fail(error);
     };
     const onMessage = message => {
       if (message.type === 'ready') {
@@ -123,12 +152,14 @@ class WebAssemblyWorkerPool {
         if (wait) {
           state.settingUp.delete(message.id);
           state.setup.add(message.id);
+          this._updateRef(worker);
           wait.resolve();
         }
       } else if (message.type === 'done') {
         const task = state.pending.get(message.taskId);
         if (task) {
           state.pending.delete(message.taskId);
+          this._updateRef(worker);
           task.resolve();
         }
       }
@@ -140,21 +171,46 @@ class WebAssemblyWorkerPool {
       handle = new Worker(url);
       URL.revokeObjectURL(url);
       handle.onmessage = event => onMessage(event.data);
-      handle.onerror = event => fail(new Error(event.message || 'WebAssembly worker error'));
+      handle.onerror = event => worker.die(new Error(event.message || 'WebAssembly worker error'));
     } else {
       const { Worker: NodeWorker } = require('worker_threads');
       handle = new NodeWorker(WORKER_SOURCE, { eval: true });
       handle.on('message', onMessage);
-      handle.on('error', fail);
+      handle.on('error', error => worker.die(error));
+      handle.on('exit', code => {
+        worker.die(new Error(`WebAssembly worker exited with code ${ code }`));
+      });
+      // idle by default; _taskStarted refs while work is in flight
+      handle.unref();
     }
-    return { handle, state, fail };
+    worker.handle = handle;
+    return worker;
   }
 
   _worker(index) {
     while (this.workers.length <= index) {
       this.workers.push(this._spawn());
     }
+    if (this.workers[index].dead) {
+      this.workers[index] = this._spawn();
+    }
     return this.workers[index];
+  }
+
+  /**
+   * Event-loop handle accounting, per worker: ref'd while it has a setup OR
+   * a task in flight, unref'd when idle. The setup window matters -- a
+   * pending Promise does not hold Node's event loop, so a pool unref'd
+   * during module setup lets the process exit silently mid-dispatch.
+   * Browser workers have no ref/unref and need none.
+   */
+  _updateRef(worker) {
+    if (worker.dead || !worker.handle || typeof worker.handle.ref !== 'function') return;
+    if (worker.state.settingUp.size + worker.state.pending.size > 0) {
+      worker.handle.ref();
+    } else {
+      worker.handle.unref();
+    }
   }
 
   /**
@@ -171,6 +227,7 @@ class WebAssemblyWorkerPool {
         wait.reject = reject;
       });
       worker.state.settingUp.set(entry.id, wait);
+      this._updateRef(worker);
       worker.handle.postMessage({
         type: 'setup',
         id: entry.id,
@@ -199,8 +256,13 @@ class WebAssemblyWorkerPool {
     const runs = tasks.map((task, index) => {
       const worker = this._worker(index);
       return this._ensureSetup(worker, entry).then(() => new Promise((resolve, reject) => {
+        if (worker.dead) {
+          reject(new Error('WebAssembly worker died before the task could run'));
+          return;
+        }
         const taskId = ++this._taskId;
         worker.state.pending.set(taskId, { resolve, reject });
+        this._updateRef(worker);
         worker.handle.postMessage({
           type: 'run',
           id: entry.id,
@@ -219,6 +281,7 @@ class WebAssemblyWorkerPool {
     this.destroyed = true;
     const error = new Error('WebAssembly worker pool has been destroyed');
     for (const worker of this.workers) {
+      worker.dead = true;
       worker.fail(error);
       worker.handle.terminate();
     }

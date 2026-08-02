@@ -24,6 +24,11 @@ function divergentSource(a) {
   return sum;
 }
 
+// the threaded path needs SharedArrayBuffer, which browsers only expose under
+// cross-origin isolation (the dev server sends the headers; BrowserStack
+// targets may not) -- Node always has it, so the thread tests always run there
+const THREADS_AVAILABLE = typeof SharedArrayBuffer !== 'undefined';
+
 test('every module exports run_simd webasm', assert => {
   assert.expect(3);
   const gpu = new GPU({ mode: 'webasm' });
@@ -78,7 +83,7 @@ test('non-multiple-of-4 rows take the scalar tail and still match cpu webasm', a
   cpu.destroy();
 });
 
-test('asyncMode with a large output runs on the pool webasm', async assert => {
+(THREADS_AVAILABLE ? test : skip)('asyncMode with a large output runs on the pool webasm', async assert => {
   const gpu = new GPU({ mode: 'webasm' });
   const sync = new GPU({ mode: 'webasm' });
   const source = function(a) {
@@ -112,7 +117,7 @@ test('asyncMode with a large output runs on the pool webasm', async assert => {
   sync.destroy();
 });
 
-test('poolSize setting caps the split webasm', async assert => {
+(THREADS_AVAILABLE ? test : skip)('poolSize setting caps the split webasm', async assert => {
   assert.expect(2);
   const gpu = new GPU({ mode: 'webasm' });
   const kernel = gpu.createKernel(function() {
@@ -125,7 +130,7 @@ test('poolSize setting caps the split webasm', async assert => {
   gpu.destroy();
 });
 
-test('seeded random is identical however the work splits webasm', async assert => {
+(THREADS_AVAILABLE ? test : skip)('seeded random is identical however the work splits webasm', async assert => {
   assert.expect(1);
   const gpu = new GPU({ mode: 'webasm' });
   const sync = new GPU({ mode: 'webasm' });
@@ -141,7 +146,7 @@ test('seeded random is identical however the work splits webasm', async assert =
   sync.destroy();
 });
 
-test('threaded arguments are sampled at call time webasm', async assert => {
+(THREADS_AVAILABLE ? test : skip)('threaded arguments are sampled at call time webasm', async assert => {
   assert.expect(1);
   const gpu = new GPU({ mode: 'webasm' });
   const kernel = gpu.createKernel(function(a) {
@@ -169,7 +174,7 @@ test('asyncMode below the threading threshold resolves the sync result webasm', 
   gpu.destroy();
 });
 
-test('destroy terminates the pool webasm', async assert => {
+(THREADS_AVAILABLE ? test : skip)('destroy terminates the pool webasm', async assert => {
   assert.expect(2);
   const gpu = new GPU({ mode: 'webasm' });
   const kernel = gpu.createKernel(function() {

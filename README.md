@@ -298,7 +298,7 @@ Settings are an object used to create an instance of `GPU`.  Example: `new GPU(s
   * 'cpu': Use the `CPUKernel` for transpiling a kernel
   * 'webgpu' **New!**: Use the `WebGPUKernel` — kernels compile to WGSL compute shaders over storage buffers.  Explicit opt-in only, never auto-selected, because every kernel call returns a `Promise` of its result (WebGPU readback is inherently asynchronous).  Check `GPU.isWebGPUSupported` (synchronous, `navigator.gpu` presence) or `await GPU.isWebGPUAvailable()` (requests an actual adapter).
   * 'webasm' **New!**: Use the `WebAssemblyKernel` — kernels compile to WebAssembly bytecode with f32x4 SIMD, and split across a worker pool under the async contract.  Last in the automatic fallback chain, one step above `cpu`.  See [WebAssembly](#webassembly).
-  * 'async' **New!**: Auto-selection under the Promise contract.  Picks the best available backend (webgl2 → webgl → cpu), turns `asyncMode` on for every kernel, and upgrades a kernel to webgpu on its first call if an adapter answers — falling back to the proven backend if the upgraded kernel cannot handle it.  Write `await kernel(...)` once and the same code runs everywhere:
+  * 'async' **New!**: Auto-selection under the Promise contract.  Picks the best available backend (headlessgl → webgl2 → webgl → webasm → cpu), turns `asyncMode` on for every kernel, and upgrades a kernel to webgpu on its first call if an adapter answers — falling back to the proven backend if the upgraded kernel cannot handle it.  Write `await kernel(...)` once and the same code runs everywhere:
   ```js
   const gpu = new GPU({ mode: 'async' });
   const kernel = gpu.createKernel(function(a) {
@@ -1349,7 +1349,7 @@ const kernel = gpu.createKernel(function(a, b) {
 const c = kernel(a, b);        // synchronous, SIMD
 ```
 
-`GPU.isWebAssemblySupported` reports the platform answer.  Not yet supported (kernels degrade to the cpu backend, or throw where noted): graphical mode, kernel maps, pipeline, texture/image arguments, `toString()` (throws).  `precision: 'unsigned'` is accepted and computed as single precision — wasm has no packed storage to be lossy in.
+`GPU.isWebAssemblySupported` reports the platform answer.  Not yet supported: graphical mode, kernel maps, pipeline, and texture/image arguments all **degrade to the cpu backend** — in auto modes and under explicit `mode: 'webasm'` alike — and a graphical fallback renders into the kernel's own canvas; `toString()` throws.  Threaded runs accept a `poolSize` setting to cap the worker pool (defaults to `hardwareConcurrency`, or 4 when it cannot be read).  `precision: 'unsigned'` is accepted and computed as single precision — wasm has no packed storage to be lossy in.
 
 ## Asynchronous Kernels
 
@@ -1368,7 +1368,7 @@ What that buys depends on the backend, but the contract never changes:
 * **webgpu** — kernels are natively asynchronous; `asyncMode` is always on.
 * **cpu, webgl, headlessgl** — the synchronous result is resolved, so the calling contract stays uniform and your code stays portable.
 
-`mode: 'async'` puts the whole `GPU` instance under this contract and picks the backend for you — the best synchronously-provable one immediately (webgl2 → webgl → cpu), upgraded to WebGPU on a kernel's first call if an adapter actually answers.  **Graphical kernels bind at creation instead**: a canvas is permanently committed to its first context type, so the backend is decided before `kernel.canvas` is ever exposed — `await GPU.isWebGPUAvailable()` before `createKernel` to guarantee the probe has settled; a kernel created before it settles stays on the proven backend, and either way the canvas never changes identity.  The Promise contract is exactly what buys the room for that probe.  A kernel the WebGPU backend cannot take yet (a kernel map, say) simply stays on the proven backend:
+`mode: 'async'` puts the whole `GPU` instance under this contract and picks the backend for you — the best synchronously-provable one immediately (headlessgl → webgl2 → webgl → webasm → cpu), upgraded to WebGPU on a kernel's first call if an adapter actually answers.  On a GL-less platform that means webasm, where the async contract also unlocks its worker-pool threading — see the WebAssembly section for the SharedArrayBuffer caveat.  **Graphical kernels bind at creation instead**: a canvas is permanently committed to its first context type, so the backend is decided before `kernel.canvas` is ever exposed — `await GPU.isWebGPUAvailable()` before `createKernel` to guarantee the probe has settled; a kernel created before it settles stays on the proven backend, and either way the canvas never changes identity.  The Promise contract is exactly what buys the room for that probe.  A kernel the WebGPU backend cannot take yet (a kernel map, say) simply stays on the proven backend:
 
 ```js
 const gpu = new GPU({ mode: 'async' });

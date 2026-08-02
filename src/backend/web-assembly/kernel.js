@@ -145,6 +145,14 @@ class WebAssemblyKernel extends Kernel {
   }
 
   initCanvas() {
+    // graphical kernels degrade to cpu at build, but kernel.canvas must be a
+    // real element from creation -- the house contract on every backend, and
+    // the fallback renders into this same canvas so its identity never
+    // changes. In Node this stays null and the cpu fallback's 'no canvas
+    // available' throw is exact parity with mode: 'cpu'.
+    if (this.graphical && typeof document !== 'undefined') {
+      return document.createElement('canvas');
+    }
     return null;
   }
 
@@ -171,6 +179,12 @@ class WebAssemblyKernel extends Kernel {
 
   build() {
     if (this.built) return;
+    // a destroyed kernel that gets called again rebuilds -- including a fresh
+    // worker pool. gpu.destroy() must be able to reach that pool, so a
+    // revived kernel re-registers with the GPU that spliced it out.
+    if (this.gpu && this.gpu.kernels && this.gpu.kernels.indexOf(this) === -1) {
+      this.gpu.kernels.push(this);
+    }
     if (this.graphical) {
       return this.requestFallback(arguments);
     }

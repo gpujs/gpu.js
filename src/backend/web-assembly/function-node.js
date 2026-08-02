@@ -700,6 +700,13 @@ class WebAssemblyFunctionNode extends FunctionNode {
       // scalar kernel arguments live in memory; JS allows assigning to them
       const gtype = this.argumentTypes[this.argumentNames.indexOf(name)];
       const slot = this.assembler ? this.assembler.layout.scalars[name] : null;
+      // an array-typed argument has no scalar slot; defaulting its offset
+      // would emit a store into the args region's base -- a silent clobber
+      // of the first argument's first element
+      if (this.assembler && !slot) {
+        throw this.astErrorOutput(
+          `WebAssembly backend does not yet support assigning to the array argument "${ name }"`, assNode);
+      }
       const offset = slot ? slot.offset : 0;
       wtype = gtype === 'Integer' || gtype === 'Boolean' ? 'i32' : 'f32';
       this.em.i32Const(0); // store address before the value
@@ -2014,6 +2021,11 @@ class WebAssemblyFunctionNode extends FunctionNode {
         const argumentIndex = this.argumentNames.indexOf(name);
         const gtype = this.argumentTypes[argumentIndex];
         const slot = assembler.layout.scalars[name];
+        if (!slot) {
+          throw this.astErrorOutput(
+            `WebAssembly backend does not yet support assigning to the array argument "${ name }"`,
+            this.getJsAST());
+        }
         const isInt = gtype === 'Integer' || gtype === 'Boolean';
         const index = em.addLocal('v128');
         em.i32Const(0);
@@ -2125,7 +2137,13 @@ class WebAssemblyFunctionNode extends FunctionNode {
         }
         case 'LogicalExpression': {
           scanExprTaints(node.left, cv);
-          return scanExprTaints(node.right, cv || exprVarying(node.left));
+          // the RHS of && / || is conditionally executed no matter whether
+          // the left operand varies per lane -- with a lane-uniform left the
+          // vector emitter still evaluates the RHS for all lanes under the
+          // combined mask, so an untainted (scalar) update target there would
+          // write unmasked and run when JS short-circuiting skips it. Taint
+          // unconditionally; the blend machinery does the rest.
+          return scanExprTaints(node.right, true);
         }
         default: {
           for (const key in node) {

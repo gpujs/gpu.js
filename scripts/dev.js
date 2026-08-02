@@ -31,6 +31,11 @@ http.createServer((req, res) => {
     }
     res.writeHead(200, {
       'Content-Type': MIME[path.extname(filePath).toLowerCase()] || 'application/octet-stream',
+      // cross-origin isolation: without these two headers browsers hide
+      // SharedArrayBuffer and the webasm backend's threaded path can never
+      // run in the browser suite. Everything served here is same-origin.
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
       'Cache-Control': 'no-store',
     });
     res.end(data);

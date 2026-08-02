@@ -344,6 +344,8 @@ export interface IKernelSettings {
   graphical?: boolean;
   /** every call returns a Promise of the result; non-blocking readback where the backend supports it (webgl2, webgpu) */
   asyncMode?: boolean;
+  /** webasm only: caps the worker pool for threaded runs; defaults to hardwareConcurrency (or 4 when unreadable) */
+  poolSize?: number;
   onRequestFallback?: () => Kernel;
   optimizeFloatMemory?: boolean;
   dynamicOutput?: boolean;

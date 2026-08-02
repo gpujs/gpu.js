@@ -301,6 +301,8 @@ class GPU {
       settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(argumentName => settings.argumentTypes[argumentName]);
     }
 
+    const gpuInstance = this;
+
     function onRequestFallback(args) {
       console.warn('Falling back to CPU');
       const fallbackKernel = new CPUKernel(source, {
@@ -325,10 +327,25 @@ class GPU {
         randomSeed: kernelRun.randomSeed,
         debug: kernelRun.debug,
         asyncMode: kernelRun.asyncMode,
+        // ONLY a graphical fallback whose canvas is still uncommitted (webasm
+        // creates the element but never touches a context) inherits it, so
+        // the element the user appended keeps rendering. Any canvas that
+        // already has a rendering context -- every GL kernel's -- is
+        // permanently committed to it and would break the cpu kernel's 2d
+        // context instead.
+        canvas: kernelRun.graphical && !kernelRun.context ? kernelRun.canvas : null,
       });
       fallbackKernel.build.apply(fallbackKernel, args);
       const result = fallbackKernel.run.apply(fallbackKernel, args);
       kernelRun.replaceKernel(fallbackKernel);
+      // gpu.canvas was sampled once at createKernel, possibly from a kernel
+      // with no canvas; the fallback may be the first to have one
+      if (!gpuInstance.canvas && fallbackKernel.canvas) {
+        gpuInstance.canvas = fallbackKernel.canvas;
+      }
+      if (!gpuInstance.context && fallbackKernel.context) {
+        gpuInstance.context = fallbackKernel.context;
+      }
       return result;
     }
 
@@ -593,7 +610,13 @@ class GPU {
         if (this.Kernel.mode === 'webgpu') {
           throw new Error('WebGPU backend does not yet support createKernelMap');
         }
-        if (this.mode && kernelTypes.indexOf(this.mode) < 0) {
+        // webasm sits in the auto chain one step above cpu; its build()
+        // degrades kernel maps to cpu via requestFallback, so throwing here
+        // would remove the cpu fallback from exactly the GL-less environments
+        // the backend exists for. chooseKernel rewrites this.mode to the
+        // chosen backend's name, so the mode check alone cannot tell an
+        // explicit request from auto-selection -- let webasm fall through.
+        if (this.mode && kernelTypes.indexOf(this.mode) < 0 && this.Kernel.mode !== 'webasm') {
           throw new Error(`kernelMap not supported on ${this.Kernel.name}`);
         }
       }
