@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.20.0
- * @date Fri Jul 31 2026 18:14:38 GMT+0800 (Singapore Standard Time)
+ * @date Sun Aug 02 2026 23:03:10 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -6433,6 +6433,7 @@
       getJsAST(inParser) {
         if (this.ast) return this.ast;
         if (typeof this.source === "object") {
+          normalizeMinifiedStatements(this.source);
           this.traceFunctionAST(this.source);
           return this.ast = this.source;
         }
@@ -6443,6 +6444,7 @@
           ecmaVersion: 2020
         }));
         const functionAST = ast.body[0].declarations[0].init;
+        normalizeMinifiedStatements(functionAST);
         this.traceFunctionAST(functionAST);
         if (!ast) throw new Error("Failed to parse JS code");
         return this.ast = functionAST;
@@ -7388,6 +7390,133 @@
       "ArrayTexture(3)": "Array(3)",
       "ArrayTexture(4)": "Array(4)"
     };
+    let minifiedSyntheticId = 536870912;
+    function stampSynthetic(node, source) {
+      node.start = minifiedSyntheticId++;
+      node.end = minifiedSyntheticId++;
+      if (source && source.loc) node.loc = source.loc;
+      return node;
+    }
+    function normalizeMinifiedStatements(functionAST) {
+      if (!functionAST || !functionAST.body || functionAST.body.type !== "BlockStatement") return functionAST;
+      normalizeMinifiedBlock(functionAST.body);
+      return functionAST;
+    }
+    function normalizeMinifiedBlock(block) {
+      block.body = flattenMinified(block.body);
+    }
+    function flattenMinified(statements) {
+      const result = [];
+      for (let i = 0; i < statements.length; i++) {
+        const normalized = normalizeMinifiedStatement(statements[i]);
+        for (let j = 0; j < normalized.length; j++) result.push(normalized[j]);
+      }
+      return result;
+    }
+    function normalizeMinifiedStatement(statement) {
+      switch (statement.type) {
+       case "ExpressionStatement":
+        return unfoldExpressionStatement(statement);
+
+       case "ReturnStatement":
+        if (statement.argument && statement.argument.type === "SequenceExpression") {
+          const expressions = statement.argument.expressions;
+          const result = [];
+          for (let i = 0; i < expressions.length - 1; i++) pushAll(result, unfoldExpressionStatement(toExpressionStatement(expressions[i])));
+          statement.argument = expressions[expressions.length - 1];
+          result.push(statement);
+          return result;
+        }
+        return [ statement ];
+
+       case "BlockStatement":
+        normalizeMinifiedBlock(statement);
+        return [ statement ];
+
+       case "IfStatement":
+        statement.consequent = normalizeMinifiedNested(statement.consequent);
+        if (statement.alternate) statement.alternate = normalizeMinifiedNested(statement.alternate);
+        return [ statement ];
+
+       case "ForStatement":
+       case "WhileStatement":
+       case "DoWhileStatement":
+        if (statement.body) statement.body = normalizeMinifiedNested(statement.body);
+        return [ statement ];
+
+       case "SwitchStatement":
+        for (let i = 0; i < statement.cases.length; i++) statement.cases[i].consequent = flattenMinified(statement.cases[i].consequent);
+        return [ statement ];
+
+       default:
+        return [ statement ];
+      }
+    }
+    function normalizeMinifiedNested(statement) {
+      const normalized = normalizeMinifiedStatement(statement);
+      if (normalized.length === 1) return normalized[0];
+      return stampSynthetic({
+        type: "BlockStatement",
+        body: normalized
+      }, statement);
+    }
+    function unfoldExpressionStatement(statement) {
+      const expression = statement.expression;
+      switch (expression.type) {
+       case "SequenceExpression":
+        {
+          const result = [];
+          for (let i = 0; i < expression.expressions.length; i++) {
+            const operand = expression.expressions[i];
+            if (operand.type === "Identifier" || operand.type === "Literal") continue;
+            pushAll(result, unfoldExpressionStatement(toExpressionStatement(operand)));
+          }
+          return result;
+        }
+
+       case "LogicalExpression":
+        return [ stampSynthetic({
+          type: "IfStatement",
+          test: expression.operator === "&&" ? expression.left : stampSynthetic({
+            type: "UnaryExpression",
+            operator: "!",
+            prefix: true,
+            argument: expression.left
+          }, expression.left),
+          consequent: stampSynthetic({
+            type: "BlockStatement",
+            body: unfoldExpressionStatement(toExpressionStatement(expression.right))
+          }, expression.right),
+          alternate: null
+        }, expression) ];
+
+       case "ConditionalExpression":
+        return [ stampSynthetic({
+          type: "IfStatement",
+          test: expression.test,
+          consequent: stampSynthetic({
+            type: "BlockStatement",
+            body: unfoldExpressionStatement(toExpressionStatement(expression.consequent))
+          }, expression.consequent),
+          alternate: stampSynthetic({
+            type: "BlockStatement",
+            body: unfoldExpressionStatement(toExpressionStatement(expression.alternate))
+          }, expression.alternate)
+        }, expression) ];
+
+       default:
+        return [ statement ];
+      }
+    }
+    function toExpressionStatement(expression) {
+      return stampSynthetic({
+        type: "ExpressionStatement",
+        expression: expression
+      }, expression);
+    }
+    function pushAll(target, items) {
+      for (let i = 0; i < items.length; i++) target.push(items[i]);
+    }
     module.exports = {
       FunctionNode: FunctionNode
     };

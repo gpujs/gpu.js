@@ -257,6 +257,7 @@ class FunctionNode {
       return this.ast;
     }
     if (typeof this.source === 'object') {
+      normalizeMinifiedStatements(this.source);
       this.traceFunctionAST(this.source);
       return this.ast = this.source;
     }
@@ -272,6 +273,9 @@ class FunctionNode {
     }));
     // take out the function object, outside the var declarations
     const functionAST = ast.body[0].declarations[0].init;
+    // minifiers fold statements into expressions; unfold them before the
+    // tracer records anything, so every backend sees plain statements
+    normalizeMinifiedStatements(functionAST);
     this.traceFunctionAST(functionAST);
 
     if (!ast) {
@@ -1519,6 +1523,173 @@ const typeLookupMap = {
   'ArrayTexture(3)': 'Array(3)',
   'ArrayTexture(4)': 'Array(4)',
 };
+
+/**
+ * De-minification: minifiers (esbuild, terser) fold statements into
+ * expressions -- `if (c) { x = 1; }` becomes `c && (x = 1)`, statement
+ * sequences become comma expressions, if/else becomes a ternary of
+ * assignments. In statement position the folded expression's VALUE is
+ * discarded, so unfolding back into statements is always
+ * semantics-preserving, no side-effect analysis required. Runs on the parsed
+ * AST before FunctionTracer records anything, so every backend sees plain
+ * statements; on webgl it also runs before the FXC hoisting normalization,
+ * which only understands statement shapes.
+ *
+ * Synthetic nodes are stamped with unique start/end: astKey and the
+ * literal-type cache are keyed by position. The 0x20000000 base is disjoint
+ * from real acorn offsets and from the 0x40000000 base the webgl hoisting
+ * machinery stamps its own synthetic nodes with.
+ */
+let minifiedSyntheticId = 0x20000000;
+
+function stampSynthetic(node, source) {
+  node.start = minifiedSyntheticId++;
+  node.end = minifiedSyntheticId++;
+  if (source && source.loc) node.loc = source.loc;
+  return node;
+}
+
+function normalizeMinifiedStatements(functionAST) {
+  if (!functionAST || !functionAST.body || functionAST.body.type !== 'BlockStatement') {
+    return functionAST;
+  }
+  normalizeMinifiedBlock(functionAST.body);
+  return functionAST;
+}
+
+function normalizeMinifiedBlock(block) {
+  block.body = flattenMinified(block.body);
+}
+
+function flattenMinified(statements) {
+  const result = [];
+  for (let i = 0; i < statements.length; i++) {
+    const normalized = normalizeMinifiedStatement(statements[i]);
+    for (let j = 0; j < normalized.length; j++) {
+      result.push(normalized[j]);
+    }
+  }
+  return result;
+}
+
+function normalizeMinifiedStatement(statement) {
+  switch (statement.type) {
+    case 'ExpressionStatement':
+      return unfoldExpressionStatement(statement);
+    case 'ReturnStatement':
+      // `return a && (x = 1), x` -- everything before the last comma operand
+      // is statements, the last is the actual return value
+      if (statement.argument && statement.argument.type === 'SequenceExpression') {
+        const expressions = statement.argument.expressions;
+        const result = [];
+        for (let i = 0; i < expressions.length - 1; i++) {
+          pushAll(result, unfoldExpressionStatement(toExpressionStatement(expressions[i])));
+        }
+        statement.argument = expressions[expressions.length - 1];
+        result.push(statement);
+        return result;
+      }
+      return [statement];
+    case 'BlockStatement':
+      normalizeMinifiedBlock(statement);
+      return [statement];
+    case 'IfStatement':
+      statement.consequent = normalizeMinifiedNested(statement.consequent);
+      if (statement.alternate) {
+        statement.alternate = normalizeMinifiedNested(statement.alternate);
+      }
+      return [statement];
+    case 'ForStatement':
+    case 'WhileStatement':
+    case 'DoWhileStatement':
+      if (statement.body) {
+        statement.body = normalizeMinifiedNested(statement.body);
+      }
+      return [statement];
+    case 'SwitchStatement':
+      for (let i = 0; i < statement.cases.length; i++) {
+        statement.cases[i].consequent = flattenMinified(statement.cases[i].consequent);
+      }
+      return [statement];
+    default:
+      return [statement];
+  }
+}
+
+/**
+ * A single-statement position (an unbraced loop body or if branch) that
+ * unfolds into several statements needs a block around them.
+ */
+function normalizeMinifiedNested(statement) {
+  const normalized = normalizeMinifiedStatement(statement);
+  if (normalized.length === 1) {
+    return normalized[0];
+  }
+  return stampSynthetic({ type: 'BlockStatement', body: normalized }, statement);
+}
+
+function unfoldExpressionStatement(statement) {
+  const expression = statement.expression;
+  switch (expression.type) {
+    case 'SequenceExpression': {
+      const result = [];
+      for (let i = 0; i < expression.expressions.length; i++) {
+        const operand = expression.expressions[i];
+        // a discarded bare identifier or literal is a no-op, and not even a
+        // legal statement on every backend
+        if (operand.type === 'Identifier' || operand.type === 'Literal') continue;
+        pushAll(result, unfoldExpressionStatement(toExpressionStatement(operand)));
+      }
+      return result;
+    }
+    case 'LogicalExpression': {
+      // `a && b` as a statement is `if (a) { b; }`; `a || b` is `if (!a) { b; }`
+      const test = expression.operator === '&&' ?
+        expression.left :
+        stampSynthetic({
+          type: 'UnaryExpression',
+          operator: '!',
+          prefix: true,
+          argument: expression.left,
+        }, expression.left);
+      return [stampSynthetic({
+        type: 'IfStatement',
+        test,
+        consequent: stampSynthetic({
+          type: 'BlockStatement',
+          body: unfoldExpressionStatement(toExpressionStatement(expression.right)),
+        }, expression.right),
+        alternate: null,
+      }, expression)];
+    }
+    case 'ConditionalExpression':
+      // `c ? (x = 1) : (x = 2)` as a statement is an if/else
+      return [stampSynthetic({
+        type: 'IfStatement',
+        test: expression.test,
+        consequent: stampSynthetic({
+          type: 'BlockStatement',
+          body: unfoldExpressionStatement(toExpressionStatement(expression.consequent)),
+        }, expression.consequent),
+        alternate: stampSynthetic({
+          type: 'BlockStatement',
+          body: unfoldExpressionStatement(toExpressionStatement(expression.alternate)),
+        }, expression.alternate),
+      }, expression)];
+    default:
+      return [statement];
+  }
+}
+
+function toExpressionStatement(expression) {
+  return stampSynthetic({ type: 'ExpressionStatement', expression }, expression);
+}
+
+function pushAll(target, items) {
+  for (let i = 0; i < items.length; i++) {
+    target.push(items[i]);
+  }
+}
 
 module.exports = {
   FunctionNode

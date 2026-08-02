@@ -1284,6 +1284,7 @@ Transpilation doesn't do the best job of keeping code beautiful.  To aid in this
 Here is a list of a few things that GPU.js does to fix transpilation:
 
 * When a transpiler such as [Babel](https://babeljs.io/) changes `myCall()` to `(0, _myCall.myCall)`, it is gracefully handled.
+* When a minifier such as [esbuild](https://esbuild.github.io/) or terser folds statements into expressions — `if (c) { x = 1; }` into `c && (x = 1)`, statement sequences into comma expressions, if/else into a ternary of assignments — the kernel compiles anyway: the statements are unfolded back before translation, on every backend.  So kernels that reach `createKernel` through a minified bundle work the same as in development.
 
 ## WebGPU
 
