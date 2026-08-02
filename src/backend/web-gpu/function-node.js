@@ -1278,6 +1278,37 @@ class WGSLFunctionNode extends FunctionNode {
       throw this.astErrorOutput('Unknown CallExpression', ast);
     }
 
+    if (ast.callee.type === 'MemberExpression' && this.getVariableSignature(ast.callee, true) === 'this.color') {
+      // lowers to the kernelColor helper the assembler injects for graphical
+      // kernels; data_index only exists in the entry function's scope
+      if (!this.isRootKernel) {
+        throw this.astErrorOutput('this.color is only usable in the kernel function on the webgpu backend', ast);
+      }
+      if (ast.arguments.length < 3 || ast.arguments.length > 4) {
+        throw this.astErrorOutput('this.color takes (r, g, b) or (r, g, b, a)', ast);
+      }
+      retArr.push('kernelColor(data_index');
+      for (let i = 0; i < ast.arguments.length; i++) {
+        retArr.push(', ');
+        const argument = ast.arguments[i];
+        switch (this.getType(argument)) {
+          case 'Integer':
+            this.castValueToFloat(argument, retArr);
+            break;
+          case 'LiteralInteger':
+            this.castLiteralToFloat(argument, retArr);
+            break;
+          default:
+            this.astGeneric(argument, retArr);
+        }
+      }
+      if (ast.arguments.length === 3) {
+        retArr.push(', 1.0');
+      }
+      retArr.push(')');
+      return retArr;
+    }
+
     let functionName = null;
     const isMathFunction = this.isAstMathFunction(ast);
 

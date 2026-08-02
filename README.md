@@ -1316,7 +1316,7 @@ await GPU.isWebGPUAvailable(); // async: an adapter actually answered
 
 `pipeline: true` resolves to a GPU-resident buffer handle that passes straight into downstream kernels with no readback, and `await handle.toArray()` reads it back when you want the values.  Large 1D outputs dispatch past the 65,535-workgroup limit automatically.
 
-The mode is explicit opt-in and is never auto-selected — a synchronous caller handed a Promise would fail in silent, confusing ways.  If you want automatic selection, that is exactly what [`mode: 'async'`](#asynchronous-kernels) is for.  Not yet supported (each throws a clear error): kernel maps, `graphical`, `toString()`, `precision: 'unsigned'`, `Math.random`.
+The mode is explicit opt-in and is never auto-selected — a synchronous caller handed a Promise would fail in silent, confusing ways.  If you want automatic selection, that is exactly what [`mode: 'async'`](#asynchronous-kernels) is for.  Graphical mode works: the kernel writes `this.color(...)` into a storage buffer and a fixed render pass presents it to the kernel's canvas — with one API difference, `getPixels()` returns a **Promise** (WebGPU readback is asynchronous). Since presentation needs no readback, an un-awaited `kernel()` per animation frame works.  Not yet supported (each throws a clear error): kernel maps, `toString()`, `precision: 'unsigned'`, `Math.random`.
 
 ## Asynchronous Kernels
 

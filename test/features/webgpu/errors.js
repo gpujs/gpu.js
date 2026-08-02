@@ -44,7 +44,7 @@ async function webgpuAdapter(assert) {
   await gpu.destroy();
 });
 
-(GPU.isWebGPUSupported ? test : skip)('graphical throws deferred webgpu', async assert => {
+(GPU.isWebGPUSupported ? test : skip)('graphical with a non-2D output throws webgpu', async assert => {
   if (!(await webgpuAdapter(assert))) return;
   assert.expect(1);
   const gpu = new GPU({ mode: 'webgpu' });
@@ -52,12 +52,29 @@ async function webgpuAdapter(assert) {
   try {
     const kernel = gpu.createKernel(function() {
       this.color(1, 0, 0, 1);
-    }, { output: [4, 4], graphical: true });
+    }, { output: [16], graphical: true });
     await kernel();
   } catch (e) {
     error = e;
   }
-  assert.ok(error && DEFERRED.test(error.message), `deferred prefix, got: ${error && error.message}`);
+  assert.ok(error && /2 dimensions/.test(error.message), `explains the constraint, got: ${error && error.message}`);
+  await gpu.destroy();
+});
+
+(GPU.isWebGPUSupported ? test : skip)('graphical with pipeline throws webgpu', async assert => {
+  if (!(await webgpuAdapter(assert))) return;
+  assert.expect(1);
+  const gpu = new GPU({ mode: 'webgpu' });
+  let error = null;
+  try {
+    const kernel = gpu.createKernel(function() {
+      this.color(1, 0, 0, 1);
+    }, { output: [4, 4], graphical: true, pipeline: true });
+    await kernel();
+  } catch (e) {
+    error = e;
+  }
+  assert.ok(error && /mutually exclusive/.test(error.message), `explains, got: ${error && error.message}`);
   await gpu.destroy();
 });
 

@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.20.0
- * @date Mon Aug 03 2026 00:03:09 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 00:18:42 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -12377,6 +12377,30 @@
       }
       astCallExpression(ast, retArr) {
         if (!ast.callee) throw this.astErrorOutput("Unknown CallExpression", ast);
+        if (ast.callee.type === "MemberExpression" && this.getVariableSignature(ast.callee, true) === "this.color") {
+          if (!this.isRootKernel) throw this.astErrorOutput("this.color is only usable in the kernel function on the webgpu backend", ast);
+          if (ast.arguments.length < 3 || ast.arguments.length > 4) throw this.astErrorOutput("this.color takes (r, g, b) or (r, g, b, a)", ast);
+          retArr.push("kernelColor(data_index");
+          for (let i = 0; i < ast.arguments.length; i++) {
+            retArr.push(", ");
+            const argument = ast.arguments[i];
+            switch (this.getType(argument)) {
+             case "Integer":
+              this.castValueToFloat(argument, retArr);
+              break;
+
+             case "LiteralInteger":
+              this.castLiteralToFloat(argument, retArr);
+              break;
+
+             default:
+              this.astGeneric(argument, retArr);
+            }
+          }
+          if (ast.arguments.length === 3) retArr.push(", 1.0");
+          retArr.push(")");
+          return retArr;
+        }
         let functionName = null;
         const isMathFunction = this.isAstMathFunction(ast);
         if (isMathFunction || ast.callee.object && ast.callee.object.type === "ThisExpression") functionName = ast.callee.property.name; else if (ast.callee.type === "SequenceExpression" && ast.callee.expressions[0].type === "Literal" && !isNaN(ast.callee.expressions[0].raw)) functionName = ast.callee.expressions[1].property.name; else functionName = ast.callee.name;
@@ -12725,12 +12749,11 @@
       constructor(source, settings) {
         super(source, settings);
         if (settings) {
-          if (settings.graphical) throw new Error("WebGPU backend does not yet support graphical mode; use the webgl backend");
-          if (settings.precision === "unsigned") throw new Error(`WebGPU backend does not yet support precision: 'unsigned'; it is single precision only`);
+          if (settings.precision === "unsigned" && !settings.graphical) throw new Error(`WebGPU backend does not yet support precision: 'unsigned'; it is single precision only`);
           if (settings.subKernels) throw new Error("WebGPU backend does not yet support createKernelMap");
         }
         this.mergeSettings(source.settings || settings);
-        if (this.precision === null) this.precision = "single";
+        if (this.precision === null || this.graphical) this.precision = "single";
         this.asyncMode = true;
         this.threadDim = null;
         this.componentCount = 1;
@@ -12750,8 +12773,14 @@
         this.argumentBuffers = null;
         this.constantBuffers = null;
         this.stagingPool = [];
+        this._canvasContext = null;
+        this._blitPipeline = null;
+        this._blitParamsBuffer = null;
+        this._blitBindGroup = null;
+        this._blitBoundOutputBuffer = null;
       }
       initCanvas() {
+        if (this.graphical && typeof document !== "undefined") return document.createElement("canvas");
         return null;
       }
       initContext() {
@@ -12759,10 +12788,6 @@
       }
       initPlugins(settings) {
         return [];
-      }
-      setGraphical(flag) {
-        if (flag) throw new Error("WebGPU backend does not yet support graphical mode; use the webgl backend");
-        return super.setGraphical(flag);
       }
       setOutput(output) {
         const newOutput = this.toKernelOutput(output);
@@ -12777,7 +12802,11 @@
         throw new Error("WebGPU backend does not yet support toString");
       }
       validateSettings(args) {
-        if (this.graphical) throw new Error("WebGPU backend does not yet support graphical mode; use the webgl backend");
+        if (this.graphical) {
+          if (!this.output || this.output.length !== 2) throw new Error("Output must have 2 dimensions on graphical mode");
+          if (this.pipeline) throw new Error("graphical mode and pipeline mode are mutually exclusive");
+          if (!this.canvas) throw new Error("graphical mode requires a canvas (none could be created; pass one in settings)");
+        }
         if (this.precision === "unsigned") throw new Error(`WebGPU backend does not yet support precision: 'unsigned'; it is single precision only`);
         this.precision = "single";
         if (this.subKernels && this.subKernels.length > 0) throw new Error("WebGPU backend does not yet support createKernelMap");
@@ -12845,6 +12874,10 @@
         const prototypes = functionBuilder.getPrototypes("kernel");
         this.translatedBody = prototypes[prototypes.length - 1];
         this.translatedFunctions = prototypes.slice(0, -1).join("\n");
+        if (this.graphical) {
+          this.componentCount = 4;
+          return;
+        }
         if (!this.returnType) this.returnType = functionBuilder.getKernelResultType();
         switch (this.returnType) {
          case "Number":
@@ -12938,6 +12971,7 @@
         for (let i = 0; i < arrayArgs.length; i++) wgsl.push(`@group(0) @binding(${1 + i}) var<storage, read> user_${arrayArgs[i].name} : array<f32>;`);
         const outBinding = 1 + arrayArgs.length;
         wgsl.push(`@group(0) @binding(${outBinding}) var<storage, read_write> result : array<f32>;`);
+        if (this.graphical) wgsl.push("fn kernelColor(index : i32, r : f32, g : f32, b : f32, a : f32) {\n  result[index * 4] = r;\n  result[index * 4 + 1] = g;\n  result[index * 4 + 2] = b;\n  result[index * 4 + 3] = a;\n}");
         for (let i = 0; i < bufferConstants.length; i++) wgsl.push(`@group(0) @binding(${outBinding + 1 + i}) var<storage, read> constants_${bufferConstants[i].name} : array<f32>;`);
         wgsl.push("var<private> threadGid : vec3<u32>;");
         const translated = `${this.translatedFunctions}\n${this.translatedBody}`;
@@ -13018,6 +13052,7 @@
         });
         const pipelineError = await device.popErrorScope();
         if (pipelineError) throw new Error(`Error creating WebGPU compute pipeline for kernel: ${pipelineError.message}`);
+        if (this.graphical) await this._buildBlitPipeline(device);
         this.paramsBuffer = device.createBuffer({
           size: byteLength,
           usage: 72
@@ -13065,6 +13100,61 @@
           groups: groups,
           dispatchWidth: dispatchWidth
         };
+      }
+      async _buildBlitPipeline(device) {
+        this.canvas.width = this.output[0];
+        this.canvas.height = this.output[1];
+        this._canvasContext = this.canvas.getContext("webgpu");
+        if (!this._canvasContext) throw new Error("could not get a webgpu context from the canvas");
+        const format = navigator.gpu.getPreferredCanvasFormat();
+        this._canvasContext.configure({
+          device: device,
+          format: format,
+          alphaMode: "premultiplied"
+        });
+        const blitModule = device.createShaderModule({
+          code: "struct BlitParams { width : u32, height : u32, pad0 : u32, pad1 : u32 }\n@group(0) @binding(0) var<uniform> blit : BlitParams;\n@group(0) @binding(1) var<storage, read> pixels : array<f32>;\n@vertex fn vs(@builtin(vertex_index) vi : u32) -> @builtin(position) vec4<f32> {\n  var pos = array<vec2<f32>, 3>(vec2<f32>(-1.0, -1.0), vec2<f32>(3.0, -1.0), vec2<f32>(-1.0, 3.0));\n  return vec4<f32>(pos[vi], 0.0, 1.0);\n}\n@fragment fn fs(@builtin(position) pos : vec4<f32>) -> @location(0) vec4<f32> {\n  let x = u32(pos.x);\n  let y = u32(pos.y);\n  let row = blit.height - 1u - y;\n  let i = (row * blit.width + x) * 4u;\n  let a = pixels[i + 3u];\n  return vec4<f32>(pixels[i] * a, pixels[i + 1u] * a, pixels[i + 2u] * a, a);\n}"
+        });
+        const errors = (await blitModule.getCompilationInfo()).messages.filter(message => message.type === "error");
+        if (errors.length > 0) throw new Error("Error compiling the graphical blit shader:\n" + errors.map(message => `  ${message.lineNum}:${message.linePos} ${message.message}`).join("\n"));
+        this._blitBindGroupLayout = device.createBindGroupLayout({
+          entries: [ {
+            binding: 0,
+            visibility: 2,
+            buffer: {
+              type: "uniform"
+            }
+          }, {
+            binding: 1,
+            visibility: 2,
+            buffer: {
+              type: "read-only-storage"
+            }
+          } ]
+        });
+        this._blitPipeline = device.createRenderPipeline({
+          layout: device.createPipelineLayout({
+            bindGroupLayouts: [ this._blitBindGroupLayout ]
+          }),
+          vertex: {
+            module: blitModule,
+            entryPoint: "vs"
+          },
+          fragment: {
+            module: blitModule,
+            entryPoint: "fs",
+            targets: [ {
+              format: format
+            } ]
+          },
+          primitive: {
+            topology: "triangle-list"
+          }
+        });
+        this._blitParamsBuffer = device.createBuffer({
+          size: 16,
+          usage: 72
+        });
       }
       _ensureOutputBuffer() {
         const [tx, ty, tz] = this.threadDim;
@@ -13273,6 +13363,49 @@
         pass.setBindGroup(0, this.bindGroup);
         pass.dispatchWorkgroups(groups[0], groups[1], groups[2]);
         pass.end();
+        if (this.graphical) {
+          if (this.canvas.width !== this.output[0] || this.canvas.height !== this.output[1]) {
+            this.canvas.width = this.output[0];
+            this.canvas.height = this.output[1];
+          }
+          queue.writeBuffer(this._blitParamsBuffer, 0, new Uint32Array([ this.output[0], this.output[1], 0, 0 ]));
+          if (this._blitBoundOutputBuffer !== this.outputBuffer) {
+            this._blitBindGroup = device.createBindGroup({
+              layout: this._blitBindGroupLayout,
+              entries: [ {
+                binding: 0,
+                resource: {
+                  buffer: this._blitParamsBuffer
+                }
+              }, {
+                binding: 1,
+                resource: {
+                  buffer: this.outputBuffer
+                }
+              } ]
+            });
+            this._blitBoundOutputBuffer = this.outputBuffer;
+          }
+          const renderPass = encoder.beginRenderPass({
+            colorAttachments: [ {
+              view: this._canvasContext.getCurrentTexture().createView(),
+              loadOp: "clear",
+              storeOp: "store",
+              clearValue: {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0
+              }
+            } ]
+          });
+          renderPass.setPipeline(this._blitPipeline);
+          renderPass.setBindGroup(0, this._blitBindGroup);
+          renderPass.draw(3);
+          renderPass.end();
+          queue.submit([ encoder.finish() ]);
+          return Promise.resolve();
+        }
         if (this.pipeline) {
           queue.submit([ encoder.finish() ]);
           return Promise.resolve(new WebGPUBufferResult({
@@ -13383,7 +13516,49 @@
           throw error;
         });
       }
+      getPixels(flip) {
+        if (!this.graphical) return Promise.reject(new Error("getPixels only works on a graphical kernel"));
+        if (!this.outputBuffer) return Promise.reject(new Error("run the kernel before reading its pixels"));
+        const [width, height] = this.output;
+        const byteLength = width * height * 4 * 4;
+        const staging = this._acquireStaging(byteLength);
+        const encoder = this._device.createCommandEncoder();
+        encoder.copyBufferToBuffer(this.outputBuffer, 0, staging.buffer, 0, byteLength);
+        this._device.queue.submit([ encoder.finish() ]);
+        return staging.buffer.mapAsync(MAP_MODE_READ, 0, byteLength).then(() => {
+          const floats = new Float32Array(staging.buffer.getMappedRange(0, byteLength).slice(0));
+          staging.buffer.unmap();
+          this._releaseStaging(staging);
+          const pixels = new Uint8ClampedArray(width * height * 4);
+          for (let y = 0; y < height; y++) {
+            const sourceRow = flip ? y : height - 1 - y;
+            for (let x = 0; x < width; x++) {
+              const from = (sourceRow * width + x) * 4;
+              const to = (y * width + x) * 4;
+              pixels[to] = floats[from] * 255;
+              pixels[to + 1] = floats[from + 1] * 255;
+              pixels[to + 2] = floats[from + 2] * 255;
+              pixels[to + 3] = floats[from + 3] * 255;
+            }
+          }
+          return pixels;
+        }, error => {
+          this._releaseStaging(staging);
+          throw error;
+        });
+      }
       destroy(removeCanvasReferences) {
+        if (this._blitParamsBuffer) {
+          this._blitParamsBuffer.destroy();
+          this._blitParamsBuffer = null;
+        }
+        if (this._canvasContext) {
+          this._canvasContext.unconfigure();
+          this._canvasContext = null;
+        }
+        this._blitPipeline = null;
+        this._blitBindGroup = null;
+        this._blitBoundOutputBuffer = null;
         if (this.paramsBuffer) {
           this.paramsBuffer.destroy();
           this.paramsBuffer = null;
@@ -13792,6 +13967,10 @@
           kernel.onAsyncModeUpgrade = function onAsyncModeUpgrade(args, currentKernel) {
             return GPU.isWebGPUAvailable().then(available => {
               if (!available) return null;
+              if (currentKernel.graphical) {
+                if (currentKernel.debug) console.warn("webgpu upgrade declined: graphical kernels keep their canvas");
+                return null;
+              }
               let webGPUKernel;
               try {
                 webGPUKernel = new WebGPUKernel(source, {

@@ -400,6 +400,15 @@ class GPU {
       kernel.onAsyncModeUpgrade = function onAsyncModeUpgrade(args, currentKernel) {
         return GPU.isWebGPUAvailable().then(available => {
           if (!available) return null;
+          if (currentKernel.graphical) {
+            // the webgpu backend can render, but upgrading would swap in a
+            // different canvas element -- one the user may already have in
+            // the DOM -- so graphical kernels stay where they started
+            if (currentKernel.debug) {
+              console.warn('webgpu upgrade declined: graphical kernels keep their canvas');
+            }
+            return null;
+          }
           let webGPUKernel;
           try {
             webGPUKernel = new WebGPUKernel(source, {

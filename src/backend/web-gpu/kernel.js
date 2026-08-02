@@ -100,10 +100,7 @@ class WebGPUKernel extends Kernel {
   constructor(source, settings) {
     super(source, settings);
     if (settings) {
-      if (settings.graphical) {
-        throw new Error('WebGPU backend does not yet support graphical mode; use the webgl backend');
-      }
-      if (settings.precision === 'unsigned') {
+      if (settings.precision === 'unsigned' && !settings.graphical) {
         throw new Error(`WebGPU backend does not yet support precision: 'unsigned'; it is single precision only`);
       }
       if (settings.subKernels) {
@@ -111,7 +108,10 @@ class WebGPUKernel extends Kernel {
       }
     }
     this.mergeSettings(source.settings || settings);
-    if (this.precision === null) {
+    if (this.precision === null || this.graphical) {
+      // graphical too: the base graphical default of 'unsigned' describes the
+      // GL RGBA8 render target; here colors are f32s in a storage buffer and
+      // only the presented canvas is 8-bit
       this.precision = 'single';
     }
     // natively async: every run returns a Promise regardless of the setting
@@ -136,9 +136,17 @@ class WebGPUKernel extends Kernel {
     this.argumentBuffers = null;
     this.constantBuffers = null;
     this.stagingPool = [];
+    this._canvasContext = null;
+    this._blitPipeline = null;
+    this._blitParamsBuffer = null;
+    this._blitBindGroup = null;
+    this._blitBoundOutputBuffer = null;
   }
 
   initCanvas() {
+    if (this.graphical && typeof document !== 'undefined') {
+      return document.createElement('canvas');
+    }
     return null;
   }
 
@@ -150,13 +158,6 @@ class WebGPUKernel extends Kernel {
 
   initPlugins(settings) {
     return [];
-  }
-
-  setGraphical(flag) {
-    if (flag) {
-      throw new Error('WebGPU backend does not yet support graphical mode; use the webgl backend');
-    }
-    return super.setGraphical(flag);
   }
 
   setOutput(output) {
@@ -179,7 +180,15 @@ class WebGPUKernel extends Kernel {
 
   validateSettings(args) {
     if (this.graphical) {
-      throw new Error('WebGPU backend does not yet support graphical mode; use the webgl backend');
+      if (!this.output || this.output.length !== 2) {
+        throw new Error('Output must have 2 dimensions on graphical mode');
+      }
+      if (this.pipeline) {
+        throw new Error('graphical mode and pipeline mode are mutually exclusive');
+      }
+      if (!this.canvas) {
+        throw new Error('graphical mode requires a canvas (none could be created; pass one in settings)');
+      }
     }
     if (this.precision === 'unsigned') {
       throw new Error(`WebGPU backend does not yet support precision: 'unsigned'; it is single precision only`);
@@ -276,6 +285,11 @@ class WebGPUKernel extends Kernel {
     const prototypes = functionBuilder.getPrototypes('kernel');
     this.translatedBody = prototypes[prototypes.length - 1];
     this.translatedFunctions = prototypes.slice(0, -1).join('\n');
+    if (this.graphical) {
+      // no return value: this.color() writes four components per pixel
+      this.componentCount = 4;
+      return;
+    }
     if (!this.returnType) {
       this.returnType = functionBuilder.getKernelResultType();
     }
@@ -393,6 +407,17 @@ class WebGPUKernel extends Kernel {
     }
     const outBinding = 1 + arrayArgs.length;
     wgsl.push(`@group(0) @binding(${ outBinding }) var<storage, read_write> result : array<f32>;`);
+    if (this.graphical) {
+      // this.color() lowers to this; a helper rather than inline writes so
+      // each channel expression is evaluated exactly once
+      wgsl.push(
+        'fn kernelColor(index : i32, r : f32, g : f32, b : f32, a : f32) {\n' +
+        '  result[index * 4] = r;\n' +
+        '  result[index * 4 + 1] = g;\n' +
+        '  result[index * 4 + 2] = b;\n' +
+        '  result[index * 4 + 3] = a;\n' +
+        '}');
+    }
     for (let i = 0; i < bufferConstants.length; i++) {
       wgsl.push(`@group(0) @binding(${ outBinding + 1 + i }) var<storage, read> constants_${ bufferConstants[i].name } : array<f32>;`);
     }
@@ -529,6 +554,10 @@ class WebGPUKernel extends Kernel {
       throw new Error(`Error creating WebGPU compute pipeline for kernel: ${ pipelineError.message }`);
     }
 
+    if (this.graphical) {
+      await this._buildBlitPipeline(device);
+    }
+
     this.paramsBuffer = device.createBuffer({
       size: byteLength,
       usage: USAGE_UNIFORM | USAGE_COPY_DST,
@@ -594,6 +623,64 @@ class WebGPUKernel extends Kernel {
       }
     }
     return { groups, dispatchWidth };
+  }
+
+  /**
+   * The presentation half of graphical mode: the kernel is still a compute
+   * pass writing RGBA floats to the storage buffer; this fixed pipeline draws
+   * one fullscreen triangle whose fragment stage indexes that buffer and
+   * writes the swapchain. Row 0 of the buffer (thread.y = 0) lands at the
+   * BOTTOM of the canvas, exactly as on the GL backends.
+   */
+  async _buildBlitPipeline(device) {
+    this.canvas.width = this.output[0];
+    this.canvas.height = this.output[1];
+    this._canvasContext = this.canvas.getContext('webgpu');
+    if (!this._canvasContext) {
+      throw new Error('could not get a webgpu context from the canvas');
+    }
+    const format = navigator.gpu.getPreferredCanvasFormat();
+    this._canvasContext.configure({ device, format, alphaMode: 'premultiplied' });
+
+    const blitSource =
+      'struct BlitParams { width : u32, height : u32, pad0 : u32, pad1 : u32 }\n' +
+      '@group(0) @binding(0) var<uniform> blit : BlitParams;\n' +
+      '@group(0) @binding(1) var<storage, read> pixels : array<f32>;\n' +
+      '@vertex fn vs(@builtin(vertex_index) vi : u32) -> @builtin(position) vec4<f32> {\n' +
+      '  var pos = array<vec2<f32>, 3>(vec2<f32>(-1.0, -1.0), vec2<f32>(3.0, -1.0), vec2<f32>(-1.0, 3.0));\n' +
+      '  return vec4<f32>(pos[vi], 0.0, 1.0);\n' +
+      '}\n' +
+      '@fragment fn fs(@builtin(position) pos : vec4<f32>) -> @location(0) vec4<f32> {\n' +
+      '  let x = u32(pos.x);\n' +
+      '  let y = u32(pos.y);\n' +
+      '  let row = blit.height - 1u - y;\n' +
+      '  let i = (row * blit.width + x) * 4u;\n' +
+      '  let a = pixels[i + 3u];\n' +
+      '  return vec4<f32>(pixels[i] * a, pixels[i + 1u] * a, pixels[i + 2u] * a, a);\n' +
+      '}';
+    const blitModule = device.createShaderModule({ code: blitSource });
+    const info = await blitModule.getCompilationInfo();
+    const errors = info.messages.filter(message => message.type === 'error');
+    if (errors.length > 0) {
+      throw new Error('Error compiling the graphical blit shader:\n' +
+        errors.map(message => `  ${ message.lineNum }:${ message.linePos } ${ message.message }`).join('\n'));
+    }
+    this._blitBindGroupLayout = device.createBindGroupLayout({
+      entries: [
+        { binding: 0, visibility: 2, buffer: { type: 'uniform' } }, // FRAGMENT
+        { binding: 1, visibility: 2, buffer: { type: 'read-only-storage' } },
+      ],
+    });
+    this._blitPipeline = device.createRenderPipeline({
+      layout: device.createPipelineLayout({ bindGroupLayouts: [this._blitBindGroupLayout] }),
+      vertex: { module: blitModule, entryPoint: 'vs' },
+      fragment: { module: blitModule, entryPoint: 'fs', targets: [{ format }] },
+      primitive: { topology: 'triangle-list' },
+    });
+    this._blitParamsBuffer = device.createBuffer({
+      size: 16,
+      usage: USAGE_UNIFORM | USAGE_COPY_DST,
+    });
   }
 
   _ensureOutputBuffer() {
@@ -825,6 +912,40 @@ class WebGPUKernel extends Kernel {
     pass.dispatchWorkgroups(groups[0], groups[1], groups[2]);
     pass.end();
 
+    if (this.graphical) {
+      // presentation is fire-and-forget: no readback, so the promise resolves
+      // at submit and an un-awaited call per animation frame works
+      if (this.canvas.width !== this.output[0] || this.canvas.height !== this.output[1]) {
+        this.canvas.width = this.output[0];
+        this.canvas.height = this.output[1];
+      }
+      queue.writeBuffer(this._blitParamsBuffer, 0, new Uint32Array([this.output[0], this.output[1], 0, 0]));
+      if (this._blitBoundOutputBuffer !== this.outputBuffer) {
+        this._blitBindGroup = device.createBindGroup({
+          layout: this._blitBindGroupLayout,
+          entries: [
+            { binding: 0, resource: { buffer: this._blitParamsBuffer } },
+            { binding: 1, resource: { buffer: this.outputBuffer } },
+          ],
+        });
+        this._blitBoundOutputBuffer = this.outputBuffer;
+      }
+      const renderPass = encoder.beginRenderPass({
+        colorAttachments: [{
+          view: this._canvasContext.getCurrentTexture().createView(),
+          loadOp: 'clear',
+          storeOp: 'store',
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+        }],
+      });
+      renderPass.setPipeline(this._blitPipeline);
+      renderPass.setBindGroup(0, this._blitBindGroup);
+      renderPass.draw(3);
+      renderPass.end();
+      queue.submit([encoder.finish()]);
+      return Promise.resolve();
+    }
+
     if (this.pipeline) {
       queue.submit([encoder.finish()]);
       return Promise.resolve(new WebGPUBufferResult({
@@ -974,7 +1095,64 @@ class WebGPUKernel extends Kernel {
     });
   }
 
+  /**
+   * @desc Pixels of the last graphical run, as RGBA bytes. Row order matches
+   * the GL backends: image order (top row first) by default, the raw
+   * bottom-up buffer with flip = true. WebGPU readback is asynchronous, so
+   * unlike the GL backends this returns a Promise.
+   * @param {Boolean} [flip]
+   * @returns {Promise<Uint8ClampedArray>}
+   */
+  getPixels(flip) {
+    if (!this.graphical) {
+      return Promise.reject(new Error('getPixels only works on a graphical kernel'));
+    }
+    if (!this.outputBuffer) {
+      return Promise.reject(new Error('run the kernel before reading its pixels'));
+    }
+    const [width, height] = this.output;
+    const byteLength = width * height * 4 * 4;
+    const staging = this._acquireStaging(byteLength);
+    const encoder = this._device.createCommandEncoder();
+    encoder.copyBufferToBuffer(this.outputBuffer, 0, staging.buffer, 0, byteLength);
+    this._device.queue.submit([encoder.finish()]);
+    return staging.buffer.mapAsync(MAP_MODE_READ, 0, byteLength).then(() => {
+      const floats = new Float32Array(staging.buffer.getMappedRange(0, byteLength).slice(0));
+      staging.buffer.unmap();
+      this._releaseStaging(staging);
+      const pixels = new Uint8ClampedArray(width * height * 4);
+      for (let y = 0; y < height; y++) {
+        // buffer row 0 is the bottom of the canvas; default output is image
+        // order, exactly like the GL getPixels
+        const sourceRow = flip ? y : height - 1 - y;
+        for (let x = 0; x < width; x++) {
+          const from = (sourceRow * width + x) * 4;
+          const to = (y * width + x) * 4;
+          pixels[to] = floats[from] * 255;
+          pixels[to + 1] = floats[from + 1] * 255;
+          pixels[to + 2] = floats[from + 2] * 255;
+          pixels[to + 3] = floats[from + 3] * 255;
+        }
+      }
+      return pixels;
+    }, (error) => {
+      this._releaseStaging(staging);
+      throw error;
+    });
+  }
+
   destroy(removeCanvasReferences) {
+    if (this._blitParamsBuffer) {
+      this._blitParamsBuffer.destroy();
+      this._blitParamsBuffer = null;
+    }
+    if (this._canvasContext) {
+      this._canvasContext.unconfigure();
+      this._canvasContext = null;
+    }
+    this._blitPipeline = null;
+    this._blitBindGroup = null;
+    this._blitBoundOutputBuffer = null;
     // tolerate a kernel that was never built (or is mid-build)
     if (this.paramsBuffer) {
       this.paramsBuffer.destroy();
