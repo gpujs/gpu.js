@@ -299,6 +299,39 @@ class FunctionNode {
     return this.ast = functionAST;
   }
 
+  /**
+   * @desc Argument names the function body assigns to. Backends whose
+   * arguments are not plain per-invocation locals (the cpu backend's
+   * run-wide bindings, the GL backends' uniforms) use this to decide which
+   * arguments need a per-cell shadow local (#865, #867).
+   * @returns {Set<String>} original (unsanitized) argument names
+   */
+  getAssignedArguments() {
+    if (this._assignedArguments) return this._assignedArguments;
+    const assigned = new Set();
+    const names = this.argumentNames || [];
+    const walk = node => {
+      if (!node || typeof node !== 'object') return;
+      if (Array.isArray(node)) {
+        for (const child of node) walk(child);
+        return;
+      }
+      if (node.type === 'AssignmentExpression' && node.left.type === 'Identifier' && names.indexOf(node.left.name) !== -1) {
+        assigned.add(node.left.name);
+      }
+      if (node.type === 'UpdateExpression' && node.argument.type === 'Identifier' && names.indexOf(node.argument.name) !== -1) {
+        assigned.add(node.argument.name);
+      }
+      for (const key in node) {
+        if (key === 'loc' || key === 'range' || key === 'parent') continue;
+        const child = node[key];
+        if (child && typeof child === 'object') walk(child);
+      }
+    };
+    walk(this.getJsAST());
+    return this._assignedArguments = assigned;
+  }
+
   traceFunctionAST(ast) {
     const { contexts, declarations, functions, identifiers, functionCalls } = new FunctionTracer(ast);
     this.contexts = contexts;

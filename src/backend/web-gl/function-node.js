@@ -121,6 +121,23 @@ class WebGLFunctionNode extends FunctionNode {
     // Function opening
     retArr.push(') {\n');
 
+    if (this.isRootKernel) {
+      // Scalar arguments are uniforms, and GLSL rejects assignment to a
+      // uniform outright. Assigned scalar arguments get a per-invocation
+      // shadow local instead, mirroring the cpu backend's `user_X$cell`
+      // shadows (#867). The `cellShadow_` namespace cannot collide: every
+      // user identifier emits with a `user_` prefix.
+      const assignedArguments = this.getAssignedArguments();
+      for (let i = 0; i < this.argumentNames.length; ++i) {
+        const argumentName = this.argumentNames[i];
+        if (!assignedArguments.has(argumentName)) continue;
+        const type = typeMap[this.argumentTypes[i]];
+        if (type !== 'float' && type !== 'int' && type !== 'bool') continue;
+        const name = utils.sanitizeName(argumentName);
+        retArr.push(`${type} cellShadow_user_${name}=user_${name};\n`);
+      }
+    }
+
     // Body statement iteration
     for (let i = 0; i < ast.body.body.length; ++i) {
       this.astStatementWithHoisting(ast.body.body[i], retArr);
@@ -628,15 +645,33 @@ class WebGLFunctionNode extends FunctionNode {
       retArr.push('3.402823466e+38');
     } else if (type === 'Boolean') {
       if (this.argumentNames.indexOf(name) > -1) {
-        retArr.push(`bool(user_${name})`);
+        retArr.push(`bool(${this.markupUserName(idtNode.name)})`);
       } else {
         retArr.push(`user_${name}`);
       }
     } else {
-      retArr.push(`user_${name}`);
+      retArr.push(this.markupUserName(idtNode.name));
     }
 
     return retArr;
+  }
+
+  /**
+   * @desc Emitted name for a user identifier. Assigned scalar arguments in
+   * the root kernel route through their per-invocation `cellShadow_` local
+   * (declared in astFunction) because the argument itself is an unassignable
+   * uniform (#867).
+   */
+  markupUserName(name) {
+    const sanitized = utils.sanitizeName(name);
+    if (this.isRootKernel && this.getAssignedArguments().has(name)) {
+      const index = this.argumentNames.indexOf(name);
+      const type = index === -1 ? null : typeMap[this.argumentTypes[index]];
+      if (type === 'float' || type === 'int' || type === 'bool') {
+        return `cellShadow_user_${sanitized}`;
+      }
+    }
+    return `user_${sanitized}`;
   }
 
   /**
@@ -761,6 +796,55 @@ class WebGLFunctionNode extends FunctionNode {
     retArr.push('}\n');
 
     return retArr;
+  }
+
+  /**
+   * @desc do-while is emulated as a for loop with the exit test at the end
+   * of the body, so a bare `continue` would skip the test and rerun the body
+   * unconditionally (#867). In JavaScript, continue in a do-while jumps to
+   * the test — so each loop-level continue gains a copy of the exit check in
+   * front of it, the same transform normalizeLoopHeader applies to
+   * hoist-affected loops. Continues belonging to nested loops keep theirs.
+   * Runs from normalizeBlock, before tracing, so the cloned test nodes are
+   * traced like the original.
+   * @returns {Object} the loop body, rewritten only if it contains a
+   * loop-level continue
+   */
+  rewriteDoWhileContinues(doWhileNode) {
+    const test = doWhileNode.test;
+    if (!test) return doWhileNode.body;
+    let found = false;
+    const breakCheck = () => ({
+      type: 'IfStatement',
+      test: { type: 'UnaryExpression', operator: '!', prefix: true, argument: JSON.parse(JSON.stringify(test)) },
+      consequent: { type: 'BlockStatement', body: [{ type: 'BreakStatement', label: null }] },
+      alternate: null,
+    });
+    const visit = node => {
+      if (!node || typeof node !== 'object') return node;
+      if (Array.isArray(node)) return node.map(visit);
+      switch (node.type) {
+        case 'ContinueStatement':
+          found = true;
+          return { type: 'BlockStatement', body: [breakCheck(), node] };
+        case 'ForStatement':
+        case 'WhileStatement':
+        case 'DoWhileStatement':
+          return node;
+        case 'IfStatement':
+          return { ...node, consequent: visit(node.consequent), alternate: visit(node.alternate) };
+        case 'BlockStatement':
+          return { ...node, body: node.body.map(visit) };
+        case 'SwitchStatement':
+          return { ...node, cases: node.cases.map(c => ({ ...c, consequent: c.consequent.map(visit) })) };
+        default:
+          return node;
+      }
+    };
+    const body = visit(doWhileNode.body);
+    if (!found) return doWhileNode.body;
+    this.stampSyntheticNodes(body);
+    return body;
   }
 
 
@@ -952,6 +1036,9 @@ class WebGLFunctionNode extends FunctionNode {
             i--;
             break;
           }
+          if (statement.type === 'DoWhileStatement') {
+            statement.body = this.rewriteDoWhileContinues(statement);
+          }
           this.normalizeBranch(statement, 'body');
           break;
         }
@@ -1101,7 +1188,16 @@ class WebGLFunctionNode extends FunctionNode {
       ],
     };
 
-    // synthetic nodes need the unique positions the type cache expects
+    this.stampSyntheticNodes(replacement);
+
+    return replacement;
+  }
+
+  /**
+   * @desc Synthetic nodes need the unique positions the type cache expects;
+   * cloned nodes keep their original positions and are left alone.
+   */
+  stampSyntheticNodes(root) {
     let syntheticId = this.syntheticNodeId || 0x40000000;
     const stamp = node => {
       if (!node || typeof node !== 'object') return;
@@ -1119,10 +1215,8 @@ class WebGLFunctionNode extends FunctionNode {
         stamp(node[key]);
       }
     };
-    stamp(replacement);
+    stamp(root);
     this.syntheticNodeId = syntheticId;
-
-    return replacement;
   }
 
   linearizeStatement(statement) {

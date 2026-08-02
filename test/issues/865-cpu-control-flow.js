@@ -43,18 +43,7 @@ eachMode('early return inside a loop returns that cell\'s value', (assert, mode)
   gpu.destroy();
 });
 
-// the GL backends fail this shape too -- their for-wrapped do-while
-// emulation (GLSL ES 1.00 has no do-while) skips the test on continue, the
-// same mechanism cpu had. Filed separately; this row runs where the fix is.
-const JS_EXACT_MODES = MODES.filter(([mode]) => mode === 'cpu' || mode === 'webasm');
-
-function eachJsExactMode(name, run) {
-  for (const [mode, supported] of JS_EXACT_MODES) {
-    (supported ? test : skip)(`Issue #865 - ${ name } ${ mode }`, assert => run(assert, mode));
-  }
-}
-
-eachJsExactMode('do-while continue jumps to the test', (assert, mode) => {
+eachMode('do-while continue jumps to the test', (assert, mode) => {
   const reference = (() => {
     let i = 0;
     let acc = 0;
@@ -80,9 +69,9 @@ eachJsExactMode('do-while continue jumps to the test', (assert, mode) => {
   gpu.destroy();
 });
 
-// GL scalar arguments are uniforms; assignment is a loud GLSL compile error
-// there (filed with the do-while divergence) -- cpu and webasm bind per cell
-eachJsExactMode('assigning to a scalar argument stays per-cell', (assert, mode) => {
+// GL scalar arguments are uniforms; assignment routes through a
+// per-invocation shadow local there (#867) -- cpu and webasm bind per cell
+eachMode('assigning to a scalar argument stays per-cell', (assert, mode) => {
   const gpu = new GPU({ mode });
   const kernel = gpu.createKernel(function (base) {
     base = base + this.thread.x;

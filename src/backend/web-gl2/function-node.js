@@ -30,12 +30,12 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
       retArr.push('intBitsToFloat(2139095039)');
     } else if (type === 'Boolean') {
       if (this.argumentNames.indexOf(name) > -1) {
-        retArr.push(`bool(user_${name})`);
+        retArr.push(`bool(${this.markupUserName(idtNode.name)})`);
       } else {
         retArr.push(`user_${name}`);
       }
     } else {
-      retArr.push(`user_${name}`);
+      retArr.push(this.markupUserName(idtNode.name));
     }
 
     return retArr;

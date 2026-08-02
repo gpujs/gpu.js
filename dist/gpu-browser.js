@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.21.0
- * @date Mon Aug 03 2026 07:33:13 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 07:49:45 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -6458,6 +6458,27 @@
         if (!ast) throw new Error("Failed to parse JS code");
         return this.ast = functionAST;
       }
+      getAssignedArguments() {
+        if (this._assignedArguments) return this._assignedArguments;
+        const assigned = new Set;
+        const names = this.argumentNames || [];
+        const walk = node => {
+          if (!node || typeof node !== "object") return;
+          if (Array.isArray(node)) {
+            for (const child of node) walk(child);
+            return;
+          }
+          if (node.type === "AssignmentExpression" && node.left.type === "Identifier" && names.indexOf(node.left.name) !== -1) assigned.add(node.left.name);
+          if (node.type === "UpdateExpression" && node.argument.type === "Identifier" && names.indexOf(node.argument.name) !== -1) assigned.add(node.argument.name);
+          for (const key in node) {
+            if (key === "loc" || key === "range" || key === "parent") continue;
+            const child = node[key];
+            if (child && typeof child === "object") walk(child);
+          }
+        };
+        walk(this.getJsAST());
+        return this._assignedArguments = assigned;
+      }
       traceFunctionAST(ast) {
         const {contexts: contexts, declarations: declarations, functions: functions, identifiers: identifiers, functionCalls: functionCalls} = new FunctionTracer(ast);
         this.contexts = contexts;
@@ -7626,27 +7647,6 @@
   var require_function_node$4 = __commonJSMin((exports, module) => {
     const {FunctionNode: FunctionNode} = require_function_node$5();
     var CPUFunctionNode = class extends FunctionNode {
-      getAssignedArguments() {
-        if (this._assignedArguments) return this._assignedArguments;
-        const assigned = new Set;
-        const names = this.argumentNames || [];
-        const walk = node => {
-          if (!node || typeof node !== "object") return;
-          if (Array.isArray(node)) {
-            for (const child of node) walk(child);
-            return;
-          }
-          if (node.type === "AssignmentExpression" && node.left.type === "Identifier" && names.indexOf(node.left.name) !== -1) assigned.add(node.left.name);
-          if (node.type === "UpdateExpression" && node.argument.type === "Identifier" && names.indexOf(node.argument.name) !== -1) assigned.add(node.argument.name);
-          for (const key in node) {
-            if (key === "loc" || key === "range" || key === "parent") continue;
-            const child = node[key];
-            if (child && typeof child === "object") walk(child);
-          }
-        };
-        walk(this.getJsAST());
-        return this._assignedArguments = assigned;
-      }
       markupUserName(name) {
         if (this.isRootKernel && this.getAssignedArguments().has(name)) return `user_${name}$cell`;
         return `user_${name}`;
@@ -9851,6 +9851,17 @@
           if (type === "sampler2D" || type === "sampler2DArray") retArr.push(`${type} user_${name},ivec2 user_${name}Size,ivec3 user_${name}Dim`); else retArr.push(`${type} user_${name}`);
         }
         retArr.push(") {\n");
+        if (this.isRootKernel) {
+          const assignedArguments = this.getAssignedArguments();
+          for (let i = 0; i < this.argumentNames.length; ++i) {
+            const argumentName = this.argumentNames[i];
+            if (!assignedArguments.has(argumentName)) continue;
+            const type = typeMap[this.argumentTypes[i]];
+            if (type !== "float" && type !== "int" && type !== "bool") continue;
+            const name = utils.sanitizeName(argumentName);
+            retArr.push(`${type} cellShadow_user_${name}=user_${name};\n`);
+          }
+        }
         for (let i = 0; i < ast.body.body.length; ++i) {
           this.astStatementWithHoisting(ast.body.body[i], retArr);
           retArr.push("\n");
@@ -10259,8 +10270,17 @@
         if (idtNode.type !== "Identifier") throw this.astErrorOutput("IdentifierExpression - not an Identifier", idtNode);
         const type = this.getType(idtNode);
         const name = utils.sanitizeName(idtNode.name);
-        if (idtNode.name === "Infinity") retArr.push("3.402823466e+38"); else if (type === "Boolean") if (this.argumentNames.indexOf(name) > -1) retArr.push(`bool(user_${name})`); else retArr.push(`user_${name}`); else retArr.push(`user_${name}`);
+        if (idtNode.name === "Infinity") retArr.push("3.402823466e+38"); else if (type === "Boolean") if (this.argumentNames.indexOf(name) > -1) retArr.push(`bool(${this.markupUserName(idtNode.name)})`); else retArr.push(`user_${name}`); else retArr.push(this.markupUserName(idtNode.name));
         return retArr;
+      }
+      markupUserName(name) {
+        const sanitized = utils.sanitizeName(name);
+        if (this.isRootKernel && this.getAssignedArguments().has(name)) {
+          const index = this.argumentNames.indexOf(name);
+          const type = index === -1 ? null : typeMap[this.argumentTypes[index]];
+          if (type === "float" || type === "int" || type === "bool") return `cellShadow_user_${sanitized}`;
+        }
+        return `user_${sanitized}`;
       }
       astForStatement(forNode, retArr) {
         if (forNode.type !== "ForStatement") throw this.astErrorOutput("Invalid for statement", forNode);
@@ -10324,6 +10344,74 @@
         retArr.push(") break;\n");
         retArr.push("}\n");
         return retArr;
+      }
+      rewriteDoWhileContinues(doWhileNode) {
+        const test = doWhileNode.test;
+        if (!test) return doWhileNode.body;
+        let found = false;
+        const breakCheck = () => ({
+          type: "IfStatement",
+          test: {
+            type: "UnaryExpression",
+            operator: "!",
+            prefix: true,
+            argument: JSON.parse(JSON.stringify(test))
+          },
+          consequent: {
+            type: "BlockStatement",
+            body: [ {
+              type: "BreakStatement",
+              label: null
+            } ]
+          },
+          alternate: null
+        });
+        const visit = node => {
+          if (!node || typeof node !== "object") return node;
+          if (Array.isArray(node)) return node.map(visit);
+          switch (node.type) {
+           case "ContinueStatement":
+            found = true;
+            return {
+              type: "BlockStatement",
+              body: [ breakCheck(), node ]
+            };
+
+           case "ForStatement":
+           case "WhileStatement":
+           case "DoWhileStatement":
+            return node;
+
+           case "IfStatement":
+            return {
+              ...node,
+              consequent: visit(node.consequent),
+              alternate: visit(node.alternate)
+            };
+
+           case "BlockStatement":
+            return {
+              ...node,
+              body: node.body.map(visit)
+            };
+
+           case "SwitchStatement":
+            return {
+              ...node,
+              cases: node.cases.map(c => ({
+                ...c,
+                consequent: c.consequent.map(visit)
+              }))
+            };
+
+           default:
+            return node;
+          }
+        };
+        const body = visit(doWhileNode.body);
+        if (!found) return doWhileNode.body;
+        this.stampSyntheticNodes(body);
+        return body;
       }
       astAssignmentExpression(assNode, retArr) {
         const isStatement = this.isState("assignment-as-statement");
@@ -10435,6 +10523,7 @@
                 i--;
                 break;
               }
+              if (statement.type === "DoWhileStatement") statement.body = this.rewriteDoWhileContinues(statement);
               this.normalizeBranch(statement, "body");
               break;
             }
@@ -10593,6 +10682,10 @@
             }
           } ]
         };
+        this.stampSyntheticNodes(replacement);
+        return replacement;
+      }
+      stampSyntheticNodes(root) {
         let syntheticId = this.syntheticNodeId || 1073741824;
         const stamp = node => {
           if (!node || typeof node !== "object") return;
@@ -10610,9 +10703,8 @@
             stamp(node[key]);
           }
         };
-        stamp(replacement);
+        stamp(root);
         this.syntheticNodeId = syntheticId;
-        return replacement;
       }
       linearizeStatement(statement) {
         const statements = [];
@@ -14472,7 +14564,7 @@
         if (idtNode.type !== "Identifier") throw this.astErrorOutput("IdentifierExpression - not an Identifier", idtNode);
         const type = this.getType(idtNode);
         const name = utils.sanitizeName(idtNode.name);
-        if (idtNode.name === "Infinity") retArr.push("intBitsToFloat(2139095039)"); else if (type === "Boolean") if (this.argumentNames.indexOf(name) > -1) retArr.push(`bool(user_${name})`); else retArr.push(`user_${name}`); else retArr.push(`user_${name}`);
+        if (idtNode.name === "Infinity") retArr.push("intBitsToFloat(2139095039)"); else if (type === "Boolean") if (this.argumentNames.indexOf(name) > -1) retArr.push(`bool(${this.markupUserName(idtNode.name)})`); else retArr.push(`user_${name}`); else retArr.push(this.markupUserName(idtNode.name));
         return retArr;
       }
     };

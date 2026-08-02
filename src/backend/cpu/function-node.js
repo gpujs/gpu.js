@@ -13,38 +13,11 @@ class CPUFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   /**
-   * @desc Argument names the kernel body assigns to. The generated cell loop
-   * binds arguments once for the whole run, so an assignment would leak into
-   * every later cell (#865); assigned arguments get a per-cell shadow local
-   * instead. `$` cannot appear in sanitized user names, so the shadow name
-   * cannot collide.
+   * @desc The generated cell loop binds arguments once for the whole run, so
+   * an assignment would leak into every later cell (#865); assigned arguments
+   * get a per-cell shadow local instead. `$` cannot appear in sanitized user
+   * names, so the shadow name cannot collide.
    */
-  getAssignedArguments() {
-    if (this._assignedArguments) return this._assignedArguments;
-    const assigned = new Set();
-    const names = this.argumentNames || [];
-    const walk = node => {
-      if (!node || typeof node !== 'object') return;
-      if (Array.isArray(node)) {
-        for (const child of node) walk(child);
-        return;
-      }
-      if (node.type === 'AssignmentExpression' && node.left.type === 'Identifier' && names.indexOf(node.left.name) !== -1) {
-        assigned.add(node.left.name);
-      }
-      if (node.type === 'UpdateExpression' && node.argument.type === 'Identifier' && names.indexOf(node.argument.name) !== -1) {
-        assigned.add(node.argument.name);
-      }
-      for (const key in node) {
-        if (key === 'loc' || key === 'range' || key === 'parent') continue;
-        const child = node[key];
-        if (child && typeof child === 'object') walk(child);
-      }
-    };
-    walk(this.getJsAST());
-    return this._assignedArguments = assigned;
-  }
-
   markupUserName(name) {
     if (this.isRootKernel && this.getAssignedArguments().has(name)) {
       return `user_${ name }$cell`;
