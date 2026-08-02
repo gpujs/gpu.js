@@ -15,6 +15,10 @@ const { FunctionNode } = require('../function-node');
  * `LOOP_MAX`.
  */
 class WGSLFunctionNode extends FunctionNode {
+  get requiresSequenceFreeForInit() {
+    return true;
+  }
+
   /**
    * WGSL rejects float literals that overflow f32 (GLSL forgave them), and
    * JS toString of an integral double has no decimal point. Every float

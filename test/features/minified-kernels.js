@@ -73,6 +73,22 @@ const FIXTURES = [
   },
 ];
 
+const LOOP_FIXTURES = [
+  {
+    name: 'comma in the for-update clause moves into the body',
+    source: 'function(a){let s=0;let j=0;for(let i=0;i<4;i++,j+=2)s+=a[j];return s}',
+    args: [[1, 2, 3, 4, 5, 6, 7, 8]],
+    expected: [16, 16, 16, 16],
+  },
+  {
+    name: 'comma update still runs on the continue path',
+    source: 'function(a){let s=0;for(let i=0,j=0;i<6;i++,j++){if(a[j]>3)continue;s+=a[j];}return s}',
+    args: [[1, 2, 9, 3, 9, 1]],
+    expected: [7, 7, 7, 7],
+  },
+];
+FIXTURES.push(...LOOP_FIXTURES);
+
 const MODES = [
   ['cpu', true],
   ['webgl', GPU.isWebGLSupported],

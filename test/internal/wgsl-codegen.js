@@ -114,3 +114,35 @@ test('helper argument types still infer through the original name', t => {
   });
   t.ok(/fn fn_cross\(user_a : f32, user_b : f32\)/.test(wgsl), 'both parameters typed f32');
 });
+
+test('a comma for-update moves into the body, continue included', t => {
+  // WGSL takes one statement per for clause; the loop simplification moves
+  // the comma update to the body's end and copies it ahead of continues
+  const wgsl = translate(function (a) {
+    let s = 0;
+    for (let i = 0, j = 0; i < 6; i++, j++) {
+      if (a[j] > 3) continue;
+      s += a[j];
+    }
+    return s;
+  }, { argumentTypes: ['Array'], args: [[1, 2, 3, 4, 5, 6]] });
+  t.ok(/continue;/.test(wgsl), 'continue survives');
+  const beforeContinue = wgsl.split('continue;')[0];
+  t.ok(/user_i\+\+/.test(beforeContinue) && /user_j\+\+/.test(beforeContinue),
+    'both updates run before the continue');
+});
+
+test('a comma for-init hoists to statements ahead of the loop', t => {
+  const wgsl = translate(function (a) {
+    let s = 0;
+    let i = 0;
+    let j = 0;
+    for (i = 0, j = 1; i < 4; i++) {
+      s += a[j];
+    }
+    return s;
+  }, { argumentTypes: ['Array'], args: [[1, 2, 3, 4, 5]] });
+  t.ok(/user_i = 0;/.test(wgsl.replace(/\s+/g, ' ')) || /user_i=0;/.test(wgsl.replace(/ /g, '')),
+    'init assignments became statements');
+  t.notOk(/for \([^;]*,/.test(wgsl), 'no comma survives in a for clause');
+});

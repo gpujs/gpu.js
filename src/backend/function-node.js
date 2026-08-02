@@ -252,12 +252,22 @@ class FunctionNode {
    *
    * @returns {Object} The function AST Object, note that result is cached under this.ast;
    */
+  /**
+   * Whether this backend needs `for (a, b; ...)` inits hoisted to statements
+   * before the loop -- WGSL cannot express the comma; GLSL and JS take it
+   * natively.
+   * @returns {Boolean}
+   */
+  get requiresSequenceFreeForInit() {
+    return false;
+  }
+
   getJsAST(inParser) {
     if (this.ast) {
       return this.ast;
     }
     if (typeof this.source === 'object') {
-      normalizeMinifiedStatements(this.source);
+      normalizeMinifiedStatements(this.source, this.requiresSequenceFreeForInit);
       this.traceFunctionAST(this.source);
       return this.ast = this.source;
     }
@@ -275,7 +285,7 @@ class FunctionNode {
     const functionAST = ast.body[0].declarations[0].init;
     // minifiers fold statements into expressions; unfold them before the
     // tracer records anything, so every backend sees plain statements
-    normalizeMinifiedStatements(functionAST);
+    normalizeMinifiedStatements(functionAST, this.requiresSequenceFreeForInit);
     this.traceFunctionAST(functionAST);
 
     if (!ast) {
@@ -1549,22 +1559,22 @@ function stampSynthetic(node, source) {
   return node;
 }
 
-function normalizeMinifiedStatements(functionAST) {
+function normalizeMinifiedStatements(functionAST, hoistSequenceForInit) {
   if (!functionAST || !functionAST.body || functionAST.body.type !== 'BlockStatement') {
     return functionAST;
   }
-  normalizeMinifiedBlock(functionAST.body);
+  normalizeMinifiedBlock(functionAST.body, hoistSequenceForInit);
   return functionAST;
 }
 
-function normalizeMinifiedBlock(block) {
-  block.body = flattenMinified(block.body);
+function normalizeMinifiedBlock(block, hoistSequenceForInit) {
+  block.body = flattenMinified(block.body, hoistSequenceForInit);
 }
 
-function flattenMinified(statements) {
+function flattenMinified(statements, hoistSequenceForInit) {
   const result = [];
   for (let i = 0; i < statements.length; i++) {
-    const normalized = normalizeMinifiedStatement(statements[i]);
+    const normalized = normalizeMinifiedStatement(statements[i], hoistSequenceForInit);
     for (let j = 0; j < normalized.length; j++) {
       result.push(normalized[j]);
     }
@@ -1572,7 +1582,7 @@ function flattenMinified(statements) {
   return result;
 }
 
-function normalizeMinifiedStatement(statement) {
+function normalizeMinifiedStatement(statement, hoistSequenceForInit) {
   switch (statement.type) {
     case 'ExpressionStatement':
       return unfoldExpressionStatement(statement);
@@ -1591,24 +1601,34 @@ function normalizeMinifiedStatement(statement) {
       }
       return [statement];
     case 'BlockStatement':
-      normalizeMinifiedBlock(statement);
+      normalizeMinifiedBlock(statement, hoistSequenceForInit);
       return [statement];
     case 'IfStatement':
-      statement.consequent = normalizeMinifiedNested(statement.consequent);
+      statement.consequent = normalizeMinifiedNested(statement.consequent, hoistSequenceForInit);
       if (statement.alternate) {
-        statement.alternate = normalizeMinifiedNested(statement.alternate);
+        statement.alternate = normalizeMinifiedNested(statement.alternate, hoistSequenceForInit);
       }
       return [statement];
-    case 'ForStatement':
+    case 'ForStatement': {
+      const before = normalizeMinifiedForHeader(statement, hoistSequenceForInit);
+      if (statement.body) {
+        statement.body = normalizeMinifiedNested(statement.body, hoistSequenceForInit);
+      }
+      if (before.length > 0) {
+        before.push(statement);
+        return before;
+      }
+      return [statement];
+    }
     case 'WhileStatement':
     case 'DoWhileStatement':
       if (statement.body) {
-        statement.body = normalizeMinifiedNested(statement.body);
+        statement.body = normalizeMinifiedNested(statement.body, hoistSequenceForInit);
       }
       return [statement];
     case 'SwitchStatement':
       for (let i = 0; i < statement.cases.length; i++) {
-        statement.cases[i].consequent = flattenMinified(statement.cases[i].consequent);
+        statement.cases[i].consequent = flattenMinified(statement.cases[i].consequent, hoistSequenceForInit);
       }
       return [statement];
     default:
@@ -1620,8 +1640,8 @@ function normalizeMinifiedStatement(statement) {
  * A single-statement position (an unbraced loop body or if branch) that
  * unfolds into several statements needs a block around them.
  */
-function normalizeMinifiedNested(statement) {
-  const normalized = normalizeMinifiedStatement(statement);
+function normalizeMinifiedNested(statement, hoistSequenceForInit) {
+  const normalized = normalizeMinifiedStatement(statement, hoistSequenceForInit);
   if (normalized.length === 1) {
     return normalized[0];
   }
@@ -1689,6 +1709,119 @@ function pushAll(target, items) {
   for (let i = 0; i < items.length; i++) {
     target.push(items[i]);
   }
+}
+
+/**
+ * Loop simplification for minified for-headers. `for (i = 0, j = 0; test;
+ * i++, j++)` cannot be expressed on every backend (WGSL takes one statement
+ * per clause), so a comma INIT hoists to statements before the loop and a
+ * comma UPDATE moves to the end of the body -- with a copy ahead of every
+ * `continue` that belongs to this loop, preserving per-iteration timing.
+ * Returns the statements to place before the loop. A labeled continue makes
+ * the update rewrite unsafe, so such a loop is left exactly as written.
+ */
+function normalizeMinifiedForHeader(statement, hoistSequenceForInit) {
+  const before = [];
+  // GLSL takes a comma init natively, and hoisting it to assignment
+  // statements trips a pre-existing GL bug: a variable the tracer types as a
+  // loop counter (int) receives a float literal from the generic assignment
+  // path. WGSL cannot express the comma at all -- and crashes on it -- so
+  // only backends that require the hoist (webgpu) opt in.
+  if (hoistSequenceForInit && statement.init && statement.init.type === 'SequenceExpression') {
+    const expressions = statement.init.expressions;
+    for (let i = 0; i < expressions.length; i++) {
+      pushAll(before, unfoldExpressionStatement(toExpressionStatement(expressions[i])));
+    }
+    statement.init = null;
+  }
+  if (statement.update && statement.update.type === 'SequenceExpression') {
+    const updateStatements = [];
+    const expressions = statement.update.expressions;
+    for (let i = 0; i < expressions.length; i++) {
+      pushAll(updateStatements, unfoldExpressionStatement(toExpressionStatement(expressions[i])));
+    }
+    const body = statement.body && statement.body.type === 'BlockStatement' ?
+      statement.body :
+      stampSynthetic({ type: 'BlockStatement', body: statement.body ? [statement.body] : [] }, statement);
+    const rewritten = prependBeforeContinues(body, updateStatements);
+    if (rewritten !== null) {
+      statement.update = null;
+      statement.body = rewritten;
+      pushAll(rewritten.body, updateStatements);
+    }
+    // null: a labeled continue -- leave the loop as written rather than
+    // retime it wrongly
+  }
+  return before;
+}
+
+/**
+ * A deep copy with fresh synthetic positions on every node: the same update
+ * lands both at the body's end and ahead of each continue, and position-keyed
+ * caches must see distinct nodes.
+ */
+function cloneWithSyntheticPositions(node) {
+  if (!node || typeof node !== 'object') return node;
+  if (Array.isArray(node)) return node.map(cloneWithSyntheticPositions);
+  const copy = {};
+  for (const key in node) {
+    if (key === 'parent') continue;
+    copy[key] = cloneWithSyntheticPositions(node[key]);
+  }
+  if (typeof copy.start === 'number') {
+    copy.start = minifiedSyntheticId++;
+    copy.end = minifiedSyntheticId++;
+  }
+  return copy;
+}
+
+/**
+ * Puts a copy of `prefix` ahead of every continue belonging to this loop.
+ * Nested loops keep their own continues. Returns the rewritten block, or
+ * null when a labeled continue makes the rewrite unsafe.
+ */
+function prependBeforeContinues(block, prefix) {
+  let unsafe = false;
+  const visit = node => {
+    if (!node || typeof node !== 'object' || unsafe) return node;
+    if (Array.isArray(node)) return node.map(visit);
+    switch (node.type) {
+      case 'ContinueStatement':
+        if (node.label) {
+          unsafe = true;
+          return node;
+        }
+        return stampSynthetic({
+          type: 'BlockStatement',
+          body: [...cloneWithSyntheticPositions(prefix), node],
+        }, node);
+      case 'ForStatement':
+      case 'WhileStatement':
+      case 'DoWhileStatement':
+      case 'FunctionExpression':
+      case 'FunctionDeclaration':
+      case 'ArrowFunctionExpression':
+        return node;
+      case 'IfStatement':
+        node.consequent = visit(node.consequent);
+        if (node.alternate) node.alternate = visit(node.alternate);
+        return node;
+      case 'BlockStatement':
+        node.body = node.body.map(visit);
+        return node;
+      case 'SwitchStatement':
+        for (let i = 0; i < node.cases.length; i++) {
+          node.cases[i].consequent = node.cases[i].consequent.map(visit);
+        }
+        return node;
+      default:
+        return node;
+    }
+  };
+  const body = block.body.map(visit);
+  if (unsafe) return null;
+  block.body = body;
+  return block;
 }
 
 module.exports = {

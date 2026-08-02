@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.20.0
- * @date Sun Aug 02 2026 23:03:10 GMT+0800 (Singapore Standard Time)
+ * @date Sun Aug 02 2026 23:11:14 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -6430,10 +6430,13 @@
         }
         throw this.astErrorOutput("Unknown astMemberExpressionUnroll", ast);
       }
+      get requiresSequenceFreeForInit() {
+        return false;
+      }
       getJsAST(inParser) {
         if (this.ast) return this.ast;
         if (typeof this.source === "object") {
-          normalizeMinifiedStatements(this.source);
+          normalizeMinifiedStatements(this.source, this.requiresSequenceFreeForInit);
           this.traceFunctionAST(this.source);
           return this.ast = this.source;
         }
@@ -6444,7 +6447,7 @@
           ecmaVersion: 2020
         }));
         const functionAST = ast.body[0].declarations[0].init;
-        normalizeMinifiedStatements(functionAST);
+        normalizeMinifiedStatements(functionAST, this.requiresSequenceFreeForInit);
         this.traceFunctionAST(functionAST);
         if (!ast) throw new Error("Failed to parse JS code");
         return this.ast = functionAST;
@@ -7397,23 +7400,23 @@
       if (source && source.loc) node.loc = source.loc;
       return node;
     }
-    function normalizeMinifiedStatements(functionAST) {
+    function normalizeMinifiedStatements(functionAST, hoistSequenceForInit) {
       if (!functionAST || !functionAST.body || functionAST.body.type !== "BlockStatement") return functionAST;
-      normalizeMinifiedBlock(functionAST.body);
+      normalizeMinifiedBlock(functionAST.body, hoistSequenceForInit);
       return functionAST;
     }
-    function normalizeMinifiedBlock(block) {
-      block.body = flattenMinified(block.body);
+    function normalizeMinifiedBlock(block, hoistSequenceForInit) {
+      block.body = flattenMinified(block.body, hoistSequenceForInit);
     }
-    function flattenMinified(statements) {
+    function flattenMinified(statements, hoistSequenceForInit) {
       const result = [];
       for (let i = 0; i < statements.length; i++) {
-        const normalized = normalizeMinifiedStatement(statements[i]);
+        const normalized = normalizeMinifiedStatement(statements[i], hoistSequenceForInit);
         for (let j = 0; j < normalized.length; j++) result.push(normalized[j]);
       }
       return result;
     }
-    function normalizeMinifiedStatement(statement) {
+    function normalizeMinifiedStatement(statement, hoistSequenceForInit) {
       switch (statement.type) {
        case "ExpressionStatement":
         return unfoldExpressionStatement(statement);
@@ -7430,30 +7433,40 @@
         return [ statement ];
 
        case "BlockStatement":
-        normalizeMinifiedBlock(statement);
+        normalizeMinifiedBlock(statement, hoistSequenceForInit);
         return [ statement ];
 
        case "IfStatement":
-        statement.consequent = normalizeMinifiedNested(statement.consequent);
-        if (statement.alternate) statement.alternate = normalizeMinifiedNested(statement.alternate);
+        statement.consequent = normalizeMinifiedNested(statement.consequent, hoistSequenceForInit);
+        if (statement.alternate) statement.alternate = normalizeMinifiedNested(statement.alternate, hoistSequenceForInit);
         return [ statement ];
 
        case "ForStatement":
+        {
+          const before = normalizeMinifiedForHeader(statement, hoistSequenceForInit);
+          if (statement.body) statement.body = normalizeMinifiedNested(statement.body, hoistSequenceForInit);
+          if (before.length > 0) {
+            before.push(statement);
+            return before;
+          }
+          return [ statement ];
+        }
+
        case "WhileStatement":
        case "DoWhileStatement":
-        if (statement.body) statement.body = normalizeMinifiedNested(statement.body);
+        if (statement.body) statement.body = normalizeMinifiedNested(statement.body, hoistSequenceForInit);
         return [ statement ];
 
        case "SwitchStatement":
-        for (let i = 0; i < statement.cases.length; i++) statement.cases[i].consequent = flattenMinified(statement.cases[i].consequent);
+        for (let i = 0; i < statement.cases.length; i++) statement.cases[i].consequent = flattenMinified(statement.cases[i].consequent, hoistSequenceForInit);
         return [ statement ];
 
        default:
         return [ statement ];
       }
     }
-    function normalizeMinifiedNested(statement) {
-      const normalized = normalizeMinifiedStatement(statement);
+    function normalizeMinifiedNested(statement, hoistSequenceForInit) {
+      const normalized = normalizeMinifiedStatement(statement, hoistSequenceForInit);
       if (normalized.length === 1) return normalized[0];
       return stampSynthetic({
         type: "BlockStatement",
@@ -7516,6 +7529,89 @@
     }
     function pushAll(target, items) {
       for (let i = 0; i < items.length; i++) target.push(items[i]);
+    }
+    function normalizeMinifiedForHeader(statement, hoistSequenceForInit) {
+      const before = [];
+      if (hoistSequenceForInit && statement.init && statement.init.type === "SequenceExpression") {
+        const expressions = statement.init.expressions;
+        for (let i = 0; i < expressions.length; i++) pushAll(before, unfoldExpressionStatement(toExpressionStatement(expressions[i])));
+        statement.init = null;
+      }
+      if (statement.update && statement.update.type === "SequenceExpression") {
+        const updateStatements = [];
+        const expressions = statement.update.expressions;
+        for (let i = 0; i < expressions.length; i++) pushAll(updateStatements, unfoldExpressionStatement(toExpressionStatement(expressions[i])));
+        const rewritten = prependBeforeContinues(statement.body && statement.body.type === "BlockStatement" ? statement.body : stampSynthetic({
+          type: "BlockStatement",
+          body: statement.body ? [ statement.body ] : []
+        }, statement), updateStatements);
+        if (rewritten !== null) {
+          statement.update = null;
+          statement.body = rewritten;
+          pushAll(rewritten.body, updateStatements);
+        }
+      }
+      return before;
+    }
+    function cloneWithSyntheticPositions(node) {
+      if (!node || typeof node !== "object") return node;
+      if (Array.isArray(node)) return node.map(cloneWithSyntheticPositions);
+      const copy = {};
+      for (const key in node) {
+        if (key === "parent") continue;
+        copy[key] = cloneWithSyntheticPositions(node[key]);
+      }
+      if (typeof copy.start === "number") {
+        copy.start = minifiedSyntheticId++;
+        copy.end = minifiedSyntheticId++;
+      }
+      return copy;
+    }
+    function prependBeforeContinues(block, prefix) {
+      let unsafe = false;
+      const visit = node => {
+        if (!node || typeof node !== "object" || unsafe) return node;
+        if (Array.isArray(node)) return node.map(visit);
+        switch (node.type) {
+         case "ContinueStatement":
+          if (node.label) {
+            unsafe = true;
+            return node;
+          }
+          return stampSynthetic({
+            type: "BlockStatement",
+            body: [ ...cloneWithSyntheticPositions(prefix), node ]
+          }, node);
+
+         case "ForStatement":
+         case "WhileStatement":
+         case "DoWhileStatement":
+         case "FunctionExpression":
+         case "FunctionDeclaration":
+         case "ArrowFunctionExpression":
+          return node;
+
+         case "IfStatement":
+          node.consequent = visit(node.consequent);
+          if (node.alternate) node.alternate = visit(node.alternate);
+          return node;
+
+         case "BlockStatement":
+          node.body = node.body.map(visit);
+          return node;
+
+         case "SwitchStatement":
+          for (let i = 0; i < node.cases.length; i++) node.cases[i].consequent = node.cases[i].consequent.map(visit);
+          return node;
+
+         default:
+          return node;
+        }
+      };
+      const body = block.body.map(visit);
+      if (unsafe) return null;
+      block.body = body;
+      return block;
     }
     module.exports = {
       FunctionNode: FunctionNode
@@ -15497,6 +15593,9 @@
     const {utils: utils} = require_utils();
     const {FunctionNode: FunctionNode} = require_function_node$4();
     var WGSLFunctionNode = class extends FunctionNode {
+      get requiresSequenceFreeForInit() {
+        return true;
+      }
       wgslFloat(value) {
         if (value === Infinity) return "0x1.fffffep+127";
         if (value === -Infinity) return "-0x1.fffffep+127";
