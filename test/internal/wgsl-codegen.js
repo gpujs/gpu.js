@@ -146,3 +146,18 @@ test('a comma for-init hoists to statements ahead of the loop', t => {
     'init assignments became statements');
   t.notOk(/for \([^;]*,/.test(wgsl), 'no comma survives in a for clause');
 });
+
+test('every user function name is mangled, reserved or not', t => {
+  // WGSL reserves over sixty legal JavaScript function names (#861); rather
+  // than track the spec's list, every helper gets the fn_ prefix
+  for (const name of ['filter', 'self', 'get', 'type', 'plainOldName']) {
+    const wgsl = translate(new Function('v', `return ${ name }(v[this.thread.x]);`).toString().replace('anonymous', ''), {
+      argumentTypes: ['Array'],
+      args: [[1, 2, 3, 4]],
+      functions: [`function ${ name }(x) { return x * 2; }`],
+    });
+    t.ok(new RegExp(`fn fn_${ name }\\(`).test(wgsl), `${ name } definition is mangled`);
+    t.notOk(new RegExp(`\\bfn ${ name }\\(`).test(wgsl), `${ name } never appears bare as a definition`);
+    t.ok(new RegExp(`fn_${ name }\\(`).test(wgsl.split(`fn fn_${ name }`)[1] || ''), `${ name } call site uses the mangled name`);
+  }
+});

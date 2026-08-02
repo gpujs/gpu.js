@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.20.0
- * @date Sun Aug 02 2026 23:11:14 GMT+0800 (Singapore Standard Time)
+ * @date Sun Aug 02 2026 23:40:32 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -15609,8 +15609,7 @@
         return `${Math.round(value)}`;
       }
       mangleFunctionName(name) {
-        if (reservedNames.indexOf(name) !== -1) return `fn_${name}`;
-        return utils.sanitizeName(name);
+        return `fn_${utils.sanitizeName(name)}`;
       }
       getLookupType(type) {
         if (type === "WebGPUBuffer") return "Number";
@@ -16760,7 +16759,6 @@
       floor: true,
       _round: true
     };
-    const reservedNames = [ "alias", "break", "case", "const", "const_assert", "continue", "continuing", "default", "diagnostic", "discard", "else", "enable", "false", "fn", "for", "if", "let", "loop", "override", "requires", "return", "struct", "switch", "true", "var", "while", "main", "params", "result", "gid", "threadGid", "data_index", "select", "abs", "acos", "acosh", "asin", "asinh", "atan", "atan2", "atanh", "ceil", "clamp", "cos", "cosh", "cross", "degrees", "distance", "dot", "exp", "exp2", "floor", "fma", "fract", "inverseSqrt", "length", "log", "log2", "max", "min", "mix", "modf", "normalize", "pow", "radians", "round", "sign", "sin", "sinh", "smoothstep", "sqrt", "step", "tan", "tanh", "trunc", "cbrt", "expm1", "fround", "imul", "log10", "log1p", "clz32", "_pow", "_round", "LOOP_MAX", "bitcast", "ptr", "array", "vec2", "vec3", "vec4", "mat2x2", "mat3x3", "mat4x4", "f32", "i32", "u32", "bool" ];
     module.exports = {
       WGSLFunctionNode: WGSLFunctionNode
     };

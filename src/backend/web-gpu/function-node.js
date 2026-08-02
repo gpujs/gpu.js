@@ -49,15 +49,17 @@ class WGSLFunctionNode extends FunctionNode {
 
   /**
    * User function names collide with WGSL keywords and builtins where GLSL
-   * names did not; mangle rather than reject.
+   * names did not; mangle rather than reject. Unconditionally: WGSL reserves
+   * over sixty words that are legal JavaScript function names (filter, get,
+   * set, type, self, ...), and a curated list drifts out of date with the
+   * spec -- #861 found 64 missing. The fn_ prefix removes the class the way
+   * user_ already does for variables; the registry side (FunctionBuilder,
+   * type inference) keys on original names and never sees this.
    * @param {String} name
    * @returns {String}
    */
   mangleFunctionName(name) {
-    if (reservedNames.indexOf(name) !== -1) {
-      return `fn_${ name }`;
-    }
-    return utils.sanitizeName(name);
+    return `fn_${ utils.sanitizeName(name) }`;
   }
 
   /**
@@ -1542,21 +1544,6 @@ const integerResultMathFunctions = {
 
 // WGSL keywords, reserved words and the builtin/helper names this backend
 // emits; user function names colliding with these are prefixed
-const reservedNames = [
-  'alias', 'break', 'case', 'const', 'const_assert', 'continue', 'continuing',
-  'default', 'diagnostic', 'discard', 'else', 'enable', 'false', 'fn', 'for',
-  'if', 'let', 'loop', 'override', 'requires', 'return', 'struct', 'switch',
-  'true', 'var', 'while', 'main', 'params', 'result', 'gid', 'threadGid',
-  'data_index', 'select', 'abs', 'acos', 'acosh', 'asin', 'asinh', 'atan',
-  'atan2', 'atanh', 'ceil', 'clamp', 'cos', 'cosh', 'cross', 'degrees',
-  'distance', 'dot', 'exp', 'exp2', 'floor', 'fma', 'fract', 'inverseSqrt',
-  'length', 'log', 'log2', 'max', 'min', 'mix', 'modf', 'normalize', 'pow',
-  'radians', 'round', 'sign', 'sin', 'sinh', 'smoothstep', 'sqrt', 'step',
-  'tan', 'tanh', 'trunc', 'cbrt', 'expm1', 'fround', 'imul', 'log10', 'log1p',
-  'clz32', '_pow', '_round', 'LOOP_MAX', 'bitcast', 'ptr', 'array', 'vec2',
-  'vec3', 'vec4', 'mat2x2', 'mat3x3', 'mat4x4', 'f32', 'i32', 'u32', 'bool',
-];
-
 module.exports = {
   WGSLFunctionNode
 };
