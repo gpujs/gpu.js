@@ -6,14 +6,16 @@ const { HeadlessGLKernel } = require('./backend/headless-gl/kernel');
 const { WebGL2Kernel } = require('./backend/web-gl2/kernel');
 const { WebGLKernel } = require('./backend/web-gl/kernel');
 const { WebGPUKernel } = require('./backend/web-gpu/kernel');
+const { WebAssemblyKernel } = require('./backend/web-assembly/kernel');
 const { kernelRunShortcut } = require('./kernel-run-shortcut');
 
 
 /**
- *
+ * webasm sits last, one step above the cpu fallback: any working GL backend
+ * outranks it, so auto modes only reach it where no GL context exists
  * @type {Array.<Kernel>}
  */
-const kernelOrder = [HeadlessGLKernel, WebGL2Kernel, WebGLKernel];
+const kernelOrder = [HeadlessGLKernel, WebGL2Kernel, WebGLKernel, WebAssemblyKernel];
 
 /**
  *
@@ -29,6 +31,7 @@ const internalKernels = {
   // (navigator.gpu presence) does not prove an adapter exists, so webgpu is
   // explicit opt-in via `new GPU({ mode: 'webgpu' })` only
   'webgpu': WebGPUKernel,
+  'webasm': WebAssemblyKernel,
 };
 
 let validate = true;
@@ -104,6 +107,13 @@ class GPU {
   static isWebGPUAvailable() {
     if (!WebGPUKernel.isSupported) return Promise.resolve(false);
     return navigator.gpu.requestAdapter().then(adapter => adapter !== null, () => false);
+  }
+
+  /**
+   * @desc TRUE if platform supports WebAssembly
+   */
+  static get isWebAssemblySupported() {
+    return WebAssemblyKernel.isSupported;
   }
 
   /**

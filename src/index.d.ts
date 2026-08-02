@@ -11,6 +11,7 @@ export class GPU {
   /** WebGPU API surface exists (navigator.gpu); an adapter may still be absent — await isWebGPUAvailable() for the authoritative answer */
   static isWebGPUSupported: boolean;
   static isWebGPUAvailable(): Promise<boolean>;
+  static isWebAssemblySupported: boolean;
   constructor(settings?: IGPUSettings);
   functions: GPUFunction<ThreadKernelVariable[]>[];
   nativeFunctions: IGPUNativeFunction[];
@@ -104,7 +105,7 @@ export interface INativeFunctionList {
 }
 
 export type GPUMode = 'gpu' | 'cpu' | 'dev' | 'async';
-export type GPUInternalMode = 'webgl' | 'webgl2' | 'headlessgl' | 'webgpu';
+export type GPUInternalMode = 'webgl' | 'webgl2' | 'headlessgl' | 'webgpu' | 'webasm';
 
 export interface IGPUSettings {
   mode?: GPUMode | GPUInternalMode;

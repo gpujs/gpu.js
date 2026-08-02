@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.21.0
- * @date Mon Aug 03 2026 01:03:16 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 03:25:37 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -5229,7 +5229,7 @@
       utils: utils
     };
   });
-  var require_kernel$6 = __commonJSMin((exports, module) => {
+  var require_kernel$7 = __commonJSMin((exports, module) => {
     const {utils: utils} = require_utils();
     const {Input: Input} = require_input();
     var Kernel = class {
@@ -6334,7 +6334,7 @@
       FunctionTracer: FunctionTracer
     };
   });
-  var require_function_node$4 = __commonJSMin((exports, module) => {
+  var require_function_node$5 = __commonJSMin((exports, module) => {
     const acorn = require_acorn();
     const {utils: utils} = require_utils();
     const {FunctionTracer: FunctionTracer} = require_function_tracer();
@@ -7623,8 +7623,8 @@
       FunctionNode: FunctionNode
     };
   });
-  var require_function_node$3 = __commonJSMin((exports, module) => {
-    const {FunctionNode: FunctionNode} = require_function_node$4();
+  var require_function_node$4 = __commonJSMin((exports, module) => {
+    const {FunctionNode: FunctionNode} = require_function_node$5();
     var CPUFunctionNode = class extends FunctionNode {
       astFunction(ast, retArr) {
         if (!this.isRootKernel) {
@@ -8155,10 +8155,10 @@
       cpuKernelString: cpuKernelString
     };
   });
-  var require_kernel$5 = __commonJSMin((exports, module) => {
-    const {Kernel: Kernel} = require_kernel$6();
+  var require_kernel$6 = __commonJSMin((exports, module) => {
+    const {Kernel: Kernel} = require_kernel$7();
     const {FunctionBuilder: FunctionBuilder} = require_function_builder();
-    const {CPUFunctionNode: CPUFunctionNode} = require_function_node$3();
+    const {CPUFunctionNode: CPUFunctionNode} = require_function_node$4();
     const {utils: utils} = require_utils();
     const {cpuKernelString: cpuKernelString} = require_kernel_string$1();
     var CPUKernel = class extends Kernel {
@@ -8972,8 +8972,8 @@
       GLTextureGraphical: GLTextureGraphical
     };
   });
-  var require_kernel$4 = __commonJSMin((exports, module) => {
-    const {Kernel: Kernel} = require_kernel$6();
+  var require_kernel$5 = __commonJSMin((exports, module) => {
+    const {Kernel: Kernel} = require_kernel$7();
     const {utils: utils} = require_utils();
     const {GLTextureArray2Float: GLTextureArray2Float} = require_array_2_float();
     const {GLTextureArray2Float2D: GLTextureArray2Float2D} = require_array_2_float_2d();
@@ -9753,9 +9753,9 @@
       GLKernel: GLKernel
     };
   });
-  var require_function_node$2 = __commonJSMin((exports, module) => {
+  var require_function_node$3 = __commonJSMin((exports, module) => {
     const {utils: utils} = require_utils();
-    const {FunctionNode: FunctionNode} = require_function_node$4();
+    const {FunctionNode: FunctionNode} = require_function_node$5();
     const INTEGER_COMPARISON_ROUNDING = {
       "<": "ceil",
       ">=": "ceil",
@@ -13370,10 +13370,10 @@
       kernelValueMaps: kernelValueMaps
     };
   });
-  var require_kernel$3 = __commonJSMin((exports, module) => {
-    const {GLKernel: GLKernel} = require_kernel$4();
+  var require_kernel$4 = __commonJSMin((exports, module) => {
+    const {GLKernel: GLKernel} = require_kernel$5();
     const {FunctionBuilder: FunctionBuilder} = require_function_builder();
-    const {WebGLFunctionNode: WebGLFunctionNode} = require_function_node$2();
+    const {WebGLFunctionNode: WebGLFunctionNode} = require_function_node$3();
     const {utils: utils} = require_utils();
     const mrud = require_math_random_uniformly_distributed();
     const {fragmentShader: fragmentShader} = require_fragment_shader$1();
@@ -14321,9 +14321,9 @@
       WebGLKernel: WebGLKernel
     };
   });
-  var require_kernel$2 = __commonJSMin((exports, module) => {
+  var require_kernel$3 = __commonJSMin((exports, module) => {
     const getContext = require_empty_module();
-    const {WebGLKernel: WebGLKernel} = require_kernel$3();
+    const {WebGLKernel: WebGLKernel} = require_kernel$4();
     const {glKernelString: glKernelString} = require_kernel_string();
     let isSupported = null;
     let testCanvas = null;
@@ -14435,9 +14435,9 @@
       HeadlessGLKernel: HeadlessGLKernel
     };
   });
-  var require_function_node$1 = __commonJSMin((exports, module) => {
+  var require_function_node$2 = __commonJSMin((exports, module) => {
     const {utils: utils} = require_utils();
-    const {WebGLFunctionNode: WebGLFunctionNode} = require_function_node$2();
+    const {WebGLFunctionNode: WebGLFunctionNode} = require_function_node$3();
     var WebGL2FunctionNode = class extends WebGLFunctionNode {
       astIdentifierExpression(idtNode, retArr) {
         if (idtNode.type !== "Identifier") throw this.astErrorOutput("IdentifierExpression - not an Identifier", idtNode);
@@ -15119,9 +15119,9 @@
       lookupKernelValueType: lookupKernelValueType
     };
   });
-  var require_kernel$1 = __commonJSMin((exports, module) => {
-    const {WebGLKernel: WebGLKernel} = require_kernel$3();
-    const {WebGL2FunctionNode: WebGL2FunctionNode} = require_function_node$1();
+  var require_kernel$2 = __commonJSMin((exports, module) => {
+    const {WebGLKernel: WebGLKernel} = require_kernel$4();
+    const {WebGL2FunctionNode: WebGL2FunctionNode} = require_function_node$2();
     const {FunctionBuilder: FunctionBuilder} = require_function_builder();
     const {utils: utils} = require_utils();
     const {fragmentShader: fragmentShader} = require_fragment_shader();
@@ -15605,9 +15605,9 @@
       WebGL2Kernel: WebGL2Kernel
     };
   });
-  var require_function_node = __commonJSMin((exports, module) => {
+  var require_function_node$1 = __commonJSMin((exports, module) => {
     const {utils: utils} = require_utils();
-    const {FunctionNode: FunctionNode} = require_function_node$4();
+    const {FunctionNode: FunctionNode} = require_function_node$5();
     var WGSLFunctionNode = class extends FunctionNode {
       get requiresSequenceFreeForInit() {
         return true;
@@ -16884,10 +16884,10 @@
       }
     };
   });
-  var require_kernel = __commonJSMin((exports, module) => {
-    const {Kernel: Kernel} = require_kernel$6();
+  var require_kernel$1 = __commonJSMin((exports, module) => {
+    const {Kernel: Kernel} = require_kernel$7();
     const {FunctionBuilder: FunctionBuilder} = require_function_builder();
-    const {WGSLFunctionNode: WGSLFunctionNode} = require_function_node();
+    const {WGSLFunctionNode: WGSLFunctionNode} = require_function_node$1();
     const {WebGPUContext: WebGPUContext} = require_context();
     const {WebGPUBufferResult: WebGPUBufferResult} = require_buffer_result();
     const {utils: utils} = require_utils();
@@ -17212,10 +17212,10 @@
         const context = await WebGPUContext.acquire();
         this.context = context;
         const device = this._device = context.device;
-        const module$1 = device.createShaderModule({
+        const module$5 = device.createShaderModule({
           code: this.compiledSource
         });
-        const errors = (await module$1.getCompilationInfo()).messages.filter(message => message.type === "error");
+        const errors = (await module$5.getCompilationInfo()).messages.filter(message => message.type === "error");
         if (errors.length > 0) throw new Error("Error compiling WGSL compute shader:\n" + errors.map(message => `  ${message.lineNum}:${message.linePos} ${message.message}`).join("\n") + `\n--- generated WGSL ---\n${this.compiledSource}`);
         const {arrayArgs: arrayArgs, bufferConstants: bufferConstants, byteLength: byteLength} = this.paramsLayout;
         const layoutEntries = [ {
@@ -17256,7 +17256,7 @@
             bindGroupLayouts: [ this.bindGroupLayout ]
           }),
           compute: {
-            module: module$1,
+            module: module$5,
             entryPoint: "main"
           }
         });
@@ -17810,6 +17810,5180 @@
       WebGPUKernel: WebGPUKernel
     };
   });
+  var require_wasm_builder = __commonJSMin((exports, module) => {
+    const VAL_TYPES = {
+      i32: 127,
+      i64: 126,
+      f32: 125,
+      f64: 124,
+      v128: 123
+    };
+    const SECTION_TYPE = 1;
+    const SECTION_IMPORT = 2;
+    const SECTION_FUNCTION = 3;
+    const SECTION_GLOBAL = 6;
+    const SECTION_EXPORT = 7;
+    const SECTION_CODE = 10;
+    const f32Scratch = new DataView(new ArrayBuffer(16));
+    function uleb(value, out) {
+      let v = value >>> 0;
+      do {
+        let byte = v & 127;
+        v >>>= 7;
+        if (v !== 0) byte |= 128;
+        out.push(byte);
+      } while (v !== 0);
+    }
+    function sleb(value, out) {
+      let v = value | 0;
+      for (;;) {
+        const byte = v & 127;
+        v >>= 7;
+        if (v === 0 && (byte & 64) === 0 || v === -1 && (byte & 64) !== 0) {
+          out.push(byte);
+          return;
+        }
+        out.push(byte | 128);
+      }
+    }
+    function uleb5At(value, bytes, at) {
+      let v = value >>> 0;
+      for (let i = 0; i < 4; i++) {
+        bytes[at + i] = v & 127 | 128;
+        v >>>= 7;
+      }
+      bytes[at + 4] = v & 127;
+    }
+    function utf8(str, out) {
+      const bytes = [];
+      for (let i = 0; i < str.length; i++) {
+        let code = str.codePointAt(i);
+        if (code > 65535) i++;
+        if (code < 128) bytes.push(code); else if (code < 2048) bytes.push(192 | code >> 6, 128 | code & 63); else if (code < 65536) bytes.push(224 | code >> 12, 128 | code >> 6 & 63, 128 | code & 63); else bytes.push(240 | code >> 18, 128 | code >> 12 & 63, 128 | code >> 6 & 63, 128 | code & 63);
+      }
+      uleb(bytes.length, out);
+      for (let i = 0; i < bytes.length; i++) out.push(bytes[i]);
+    }
+    function valType(type) {
+      const byte = VAL_TYPES[type];
+      if (byte === void 0) throw new Error(`WasmModuleBuilder: unknown value type "${type}"`);
+      return byte;
+    }
+    function blockType(type) {
+      if (type === void 0 || type === null || type === "void") return 64;
+      return valType(type);
+    }
+    var WasmFunctionEmitter = class {
+      constructor(builder, name, params, results, locals) {
+        this.builder = builder;
+        this.name = name;
+        this.params = params;
+        this.results = results;
+        this.locals = locals.slice();
+        this.bytes = [];
+        this.callFixups = [];
+      }
+      addLocal(type) {
+        valType(type);
+        this.locals.push(type);
+        return this.params.length + this.locals.length - 1;
+      }
+      block(type) {
+        this.bytes.push(2, blockType(type));
+        return this;
+      }
+      loop(type) {
+        this.bytes.push(3, blockType(type));
+        return this;
+      }
+      if_(type) {
+        this.bytes.push(4, blockType(type));
+        return this;
+      }
+      br(depth) {
+        this.bytes.push(12);
+        uleb(depth, this.bytes);
+        return this;
+      }
+      brIf(depth) {
+        this.bytes.push(13);
+        uleb(depth, this.bytes);
+        return this;
+      }
+      call(name) {
+        this.bytes.push(16);
+        this.callFixups.push({
+          at: this.bytes.length,
+          name: name
+        });
+        this.bytes.push(0, 0, 0, 0, 0);
+        return this;
+      }
+      localGet(index) {
+        this.bytes.push(32);
+        uleb(index, this.bytes);
+        return this;
+      }
+      localSet(index) {
+        this.bytes.push(33);
+        uleb(index, this.bytes);
+        return this;
+      }
+      localTee(index) {
+        this.bytes.push(34);
+        uleb(index, this.bytes);
+        return this;
+      }
+      globalGet(index) {
+        this.bytes.push(35);
+        uleb(index, this.bytes);
+        return this;
+      }
+      globalSet(index) {
+        this.bytes.push(36);
+        uleb(index, this.bytes);
+        return this;
+      }
+      i32Const(value) {
+        this.bytes.push(65);
+        sleb(value, this.bytes);
+        return this;
+      }
+      f32Const(value) {
+        this.bytes.push(67);
+        f32Scratch.setFloat32(0, value, true);
+        for (let i = 0; i < 4; i++) this.bytes.push(f32Scratch.getUint8(i));
+        return this;
+      }
+      v128Const(lanes) {
+        if (lanes.length !== 16) throw new Error("WasmModuleBuilder: v128.const requires exactly 16 bytes");
+        this.bytes.push(253, 12);
+        for (let i = 0; i < 16; i++) this.bytes.push(lanes[i] & 255);
+        return this;
+      }
+      v128ConstI32x4(a, b, c, d) {
+        f32Scratch.setInt32(0, a, true);
+        f32Scratch.setInt32(4, b, true);
+        f32Scratch.setInt32(8, c, true);
+        f32Scratch.setInt32(12, d, true);
+        this.bytes.push(253, 12);
+        for (let i = 0; i < 16; i++) this.bytes.push(f32Scratch.getUint8(i));
+        return this;
+      }
+      v128ConstF32x4(a, b, c, d) {
+        f32Scratch.setFloat32(0, a, true);
+        f32Scratch.setFloat32(4, b, true);
+        f32Scratch.setFloat32(8, c, true);
+        f32Scratch.setFloat32(12, d, true);
+        this.bytes.push(253, 12);
+        for (let i = 0; i < 16; i++) this.bytes.push(f32Scratch.getUint8(i));
+        return this;
+      }
+      i32Load(offset = 0, align = 2) {
+        this.bytes.push(40);
+        uleb(align, this.bytes);
+        uleb(offset, this.bytes);
+        return this;
+      }
+      f32Load(offset = 0, align = 2) {
+        this.bytes.push(42);
+        uleb(align, this.bytes);
+        uleb(offset, this.bytes);
+        return this;
+      }
+      i32Store(offset = 0, align = 2) {
+        this.bytes.push(54);
+        uleb(align, this.bytes);
+        uleb(offset, this.bytes);
+        return this;
+      }
+      f32Store(offset = 0, align = 2) {
+        this.bytes.push(56);
+        uleb(align, this.bytes);
+        uleb(offset, this.bytes);
+        return this;
+      }
+      v128Load(offset = 0, align = 4) {
+        this.bytes.push(253, 0);
+        uleb(align, this.bytes);
+        uleb(offset, this.bytes);
+        return this;
+      }
+      v128Store(offset = 0, align = 4) {
+        this.bytes.push(253, 11);
+        uleb(align, this.bytes);
+        uleb(offset, this.bytes);
+        return this;
+      }
+      i32x4ExtractLane(lane) {
+        return this._lane(27, lane);
+      }
+      i32x4ReplaceLane(lane) {
+        return this._lane(28, lane);
+      }
+      f32x4ExtractLane(lane) {
+        return this._lane(31, lane);
+      }
+      f32x4ReplaceLane(lane) {
+        return this._lane(32, lane);
+      }
+      _lane(op, lane) {
+        if (!Number.isInteger(lane) || lane < 0 || lane > 3) throw new Error(`WasmModuleBuilder: lane index ${lane} out of range for 4-lane shape`);
+        this.bytes.push(253, op, lane);
+        return this;
+      }
+      _push(bytes) {
+        for (let i = 0; i < bytes.length; i++) this.bytes.push(bytes[i]);
+        return this;
+      }
+    };
+    const PLAIN_OPS = {
+      unreachable: [ 0 ],
+      nop: [ 1 ],
+      else_: [ 5 ],
+      end: [ 11 ],
+      return_: [ 15 ],
+      drop: [ 26 ],
+      select: [ 27 ],
+      i32Eqz: [ 69 ],
+      i32Eq: [ 70 ],
+      i32Ne: [ 71 ],
+      i32LtS: [ 72 ],
+      i32LtU: [ 73 ],
+      i32GtS: [ 74 ],
+      i32GtU: [ 75 ],
+      i32LeS: [ 76 ],
+      i32LeU: [ 77 ],
+      i32GeS: [ 78 ],
+      i32GeU: [ 79 ],
+      f32Eq: [ 91 ],
+      f32Ne: [ 92 ],
+      f32Lt: [ 93 ],
+      f32Gt: [ 94 ],
+      f32Le: [ 95 ],
+      f32Ge: [ 96 ],
+      i32Clz: [ 103 ],
+      i32Ctz: [ 104 ],
+      i32Popcnt: [ 105 ],
+      i32Add: [ 106 ],
+      i32Sub: [ 107 ],
+      i32Mul: [ 108 ],
+      i32DivS: [ 109 ],
+      i32DivU: [ 110 ],
+      i32RemS: [ 111 ],
+      i32RemU: [ 112 ],
+      i32And: [ 113 ],
+      i32Or: [ 114 ],
+      i32Xor: [ 115 ],
+      i32Shl: [ 116 ],
+      i32ShrS: [ 117 ],
+      i32ShrU: [ 118 ],
+      i32Rotl: [ 119 ],
+      i32Rotr: [ 120 ],
+      f32Abs: [ 139 ],
+      f32Neg: [ 140 ],
+      f32Ceil: [ 141 ],
+      f32Floor: [ 142 ],
+      f32Trunc: [ 143 ],
+      f32Nearest: [ 144 ],
+      f32Sqrt: [ 145 ],
+      f32Add: [ 146 ],
+      f32Sub: [ 147 ],
+      f32Mul: [ 148 ],
+      f32Div: [ 149 ],
+      f32Min: [ 150 ],
+      f32Max: [ 151 ],
+      f32Copysign: [ 152 ],
+      i32TruncF32S: [ 168 ],
+      i32TruncF32U: [ 169 ],
+      f32ConvertI32S: [ 178 ],
+      f32ConvertI32U: [ 179 ],
+      i32ReinterpretF32: [ 188 ],
+      f32ReinterpretI32: [ 190 ],
+      i32TruncSatF32S: [ 252, 0 ],
+      i32TruncSatF32U: [ 252, 1 ]
+    };
+    const SIMD_OPS = {
+      i32x4Splat: 17,
+      f32x4Splat: 19,
+      i32x4Eq: 55,
+      i32x4Ne: 56,
+      i32x4LtS: 57,
+      i32x4GtS: 59,
+      i32x4LeS: 61,
+      i32x4GeS: 63,
+      f32x4Eq: 65,
+      f32x4Ne: 66,
+      f32x4Lt: 67,
+      f32x4Gt: 68,
+      f32x4Le: 69,
+      f32x4Ge: 70,
+      v128Not: 77,
+      v128And: 78,
+      v128Andnot: 79,
+      v128Or: 80,
+      v128Xor: 81,
+      v128Bitselect: 82,
+      v128AnyTrue: 83,
+      f32x4Ceil: 103,
+      f32x4Floor: 104,
+      f32x4Trunc: 105,
+      f32x4Nearest: 106,
+      i32x4Abs: 160,
+      i32x4Neg: 161,
+      i32x4AllTrue: 163,
+      i32x4Bitmask: 164,
+      i32x4Shl: 171,
+      i32x4ShrS: 172,
+      i32x4ShrU: 173,
+      i32x4Add: 174,
+      i32x4Sub: 177,
+      i32x4Mul: 181,
+      i32x4MinS: 182,
+      i32x4MinU: 183,
+      i32x4MaxS: 184,
+      i32x4MaxU: 185,
+      f32x4Abs: 224,
+      f32x4Neg: 225,
+      f32x4Sqrt: 227,
+      f32x4Add: 228,
+      f32x4Sub: 229,
+      f32x4Mul: 230,
+      f32x4Div: 231,
+      f32x4Min: 232,
+      f32x4Max: 233,
+      f32x4Pmin: 234,
+      f32x4Pmax: 235,
+      i32x4TruncSatF32x4S: 248,
+      i32x4TruncSatF32x4U: 249,
+      f32x4ConvertI32x4S: 250,
+      f32x4ConvertI32x4U: 251
+    };
+    for (const name of Object.keys(PLAIN_OPS)) {
+      const bytes = PLAIN_OPS[name];
+      WasmFunctionEmitter.prototype[name] = function() {
+        return this._push(bytes);
+      };
+    }
+    for (const name of Object.keys(SIMD_OPS)) {
+      const bytes = [ 253 ];
+      uleb(SIMD_OPS[name], bytes);
+      WasmFunctionEmitter.prototype[name] = function() {
+        return this._push(bytes);
+      };
+    }
+    var WasmModuleBuilder = class {
+      constructor() {
+        this.types = [];
+        this.typeIndexByKey = {};
+        this.memoryImport = null;
+        this.funcImports = [];
+        this.funcImportIndexByName = {};
+        this.functions = [];
+        this.functionIndexByName = {};
+        this.globals = [];
+        this.exports = [];
+      }
+      _typeIndex(params, results) {
+        const key = `${params.join(",")}=>${results.join(",")}`;
+        if (key in this.typeIndexByKey) return this.typeIndexByKey[key];
+        const index = this.types.length;
+        this.types.push({
+          params: params,
+          results: results
+        });
+        this.typeIndexByKey[key] = index;
+        return index;
+      }
+      addMemoryImport(initial, maximum, shared = false) {
+        if (shared && (maximum === void 0 || maximum === null)) throw new Error("WasmModuleBuilder: shared memory import requires a maximum");
+        this.memoryImport = {
+          initial: initial,
+          maximum: maximum,
+          shared: shared
+        };
+        return this;
+      }
+      addFuncImport(name, params, results, module$3 = "env") {
+        if (name in this.funcImportIndexByName || name in this.functionIndexByName) throw new Error(`WasmModuleBuilder: duplicate function name "${name}"`);
+        const index = this.funcImports.length;
+        this.funcImports.push({
+          name: name,
+          module: module$3,
+          typeIndex: this._typeIndex(params, results)
+        });
+        this.funcImportIndexByName[name] = index;
+        return index;
+      }
+      addGlobal(type, mutable, initialValue) {
+        valType(type);
+        this.globals.push({
+          type: type,
+          mutable: mutable,
+          initialValue: initialValue
+        });
+        return this.globals.length - 1;
+      }
+      addFunction(name, {params: params = [], results: results = [], locals: locals = []} = {}) {
+        if (name in this.funcImportIndexByName || name in this.functionIndexByName) throw new Error(`WasmModuleBuilder: duplicate function name "${name}"`);
+        params.forEach(valType);
+        results.forEach(valType);
+        locals.forEach(valType);
+        const emitter = new WasmFunctionEmitter(this, name, params, results, locals);
+        this.functionIndexByName[name] = this.functions.length;
+        this.functions.push({
+          name: name,
+          emitter: emitter,
+          typeIndex: this._typeIndex(params, results)
+        });
+        return emitter;
+      }
+      exportFunction(name, exportName = name) {
+        this.exports.push({
+          name: name,
+          exportName: exportName
+        });
+        return this;
+      }
+      _resolveFuncIndex(name) {
+        if (name in this.funcImportIndexByName) return this.funcImportIndexByName[name];
+        if (name in this.functionIndexByName) return this.funcImports.length + this.functionIndexByName[name];
+        throw new Error(`WasmModuleBuilder: call target "${name}" is not an import or a defined function`);
+      }
+      _section(id, payload, out) {
+        out.push(id);
+        uleb(payload.length, out);
+        for (let i = 0; i < payload.length; i++) out.push(payload[i]);
+      }
+      toBytes() {
+        const out = [ 0, 97, 115, 109, 1, 0, 0, 0 ];
+        if (this.types.length > 0) {
+          const payload = [];
+          uleb(this.types.length, payload);
+          for (const {params: params, results: results} of this.types) {
+            payload.push(96);
+            uleb(params.length, payload);
+            for (const p of params) payload.push(valType(p));
+            uleb(results.length, payload);
+            for (const r of results) payload.push(valType(r));
+          }
+          this._section(SECTION_TYPE, payload, out);
+        }
+        if (this.memoryImport !== null || this.funcImports.length > 0) {
+          const payload = [];
+          uleb((this.memoryImport !== null ? 1 : 0) + this.funcImports.length, payload);
+          if (this.memoryImport !== null) {
+            const {initial: initial, maximum: maximum, shared: shared} = this.memoryImport;
+            utf8("env", payload);
+            utf8("memory", payload);
+            payload.push(2);
+            const hasMax = maximum !== void 0 && maximum !== null;
+            payload.push(shared ? 3 : hasMax ? 1 : 0);
+            uleb(initial, payload);
+            if (hasMax) uleb(maximum, payload);
+          }
+          for (const {name: name, module: module$4, typeIndex: typeIndex} of this.funcImports) {
+            utf8(module$4, payload);
+            utf8(name, payload);
+            payload.push(0);
+            uleb(typeIndex, payload);
+          }
+          this._section(SECTION_IMPORT, payload, out);
+        }
+        if (this.functions.length > 0) {
+          const payload = [];
+          uleb(this.functions.length, payload);
+          for (const {typeIndex: typeIndex} of this.functions) uleb(typeIndex, payload);
+          this._section(SECTION_FUNCTION, payload, out);
+        }
+        if (this.globals.length > 0) {
+          const payload = [];
+          uleb(this.globals.length, payload);
+          for (const {type: type, mutable: mutable, initialValue: initialValue} of this.globals) {
+            payload.push(valType(type), mutable ? 1 : 0);
+            if (type === "i32") {
+              payload.push(65);
+              sleb(initialValue, payload);
+            } else if (type === "f32") {
+              payload.push(67);
+              f32Scratch.setFloat32(0, initialValue, true);
+              for (let i = 0; i < 4; i++) payload.push(f32Scratch.getUint8(i));
+            } else if (type === "v128") {
+              payload.push(253, 12);
+              for (let i = 0; i < 16; i++) payload.push(0);
+            } else throw new Error(`WasmModuleBuilder: no initializer encoding for global type "${type}"`);
+            payload.push(11);
+          }
+          this._section(SECTION_GLOBAL, payload, out);
+        }
+        if (this.exports.length > 0) {
+          const payload = [];
+          uleb(this.exports.length, payload);
+          for (const {name: name, exportName: exportName} of this.exports) {
+            utf8(exportName, payload);
+            payload.push(0);
+            uleb(this._resolveFuncIndex(name), payload);
+          }
+          this._section(SECTION_EXPORT, payload, out);
+        }
+        if (this.functions.length > 0) {
+          const payload = [];
+          uleb(this.functions.length, payload);
+          for (const {emitter: emitter} of this.functions) {
+            const body = emitter.bytes.slice();
+            for (const {at: at, name: name} of emitter.callFixups) uleb5At(this._resolveFuncIndex(name), body, at);
+            const entry = [];
+            const runs = [];
+            for (const local of emitter.locals) {
+              const type = valType(local);
+              if (runs.length > 0 && runs[runs.length - 1].type === type) runs[runs.length - 1].count++; else runs.push({
+                type: type,
+                count: 1
+              });
+            }
+            uleb(runs.length, entry);
+            for (const {type: type, count: count} of runs) {
+              uleb(count, entry);
+              entry.push(type);
+            }
+            for (let i = 0; i < body.length; i++) entry.push(body[i]);
+            entry.push(11);
+            uleb(entry.length, payload);
+            for (let i = 0; i < entry.length; i++) payload.push(entry[i]);
+          }
+          this._section(SECTION_CODE, payload, out);
+        }
+        return Uint8Array.from(out);
+      }
+    };
+    module.exports = {
+      WasmModuleBuilder: WasmModuleBuilder,
+      WasmFunctionEmitter: WasmFunctionEmitter
+    };
+  });
+  var require_function_node = __commonJSMin((exports, module) => {
+    const {utils: utils} = require_utils();
+    const {FunctionNode: FunctionNode} = require_function_node$5();
+    const {WasmFunctionEmitter: WasmFunctionEmitter} = require_wasm_builder();
+    var NoopEmitter = class {
+      constructor() {
+        this.localCount = 0;
+      }
+      addLocal() {
+        return this.localCount++;
+      }
+    };
+    for (const name of Object.getOwnPropertyNames(WasmFunctionEmitter.prototype)) {
+      if (name === "constructor" || name === "addLocal") continue;
+      if (typeof WasmFunctionEmitter.prototype[name] !== "function") continue;
+      NoopEmitter.prototype[name] = function() {
+        return this;
+      };
+    }
+    const MATH_IMPORT_ARITY = {
+      sin: 1,
+      cos: 1,
+      tan: 1,
+      asin: 1,
+      acos: 1,
+      atan: 1,
+      atan2: 2,
+      sinh: 1,
+      cosh: 1,
+      tanh: 1,
+      asinh: 1,
+      acosh: 1,
+      atanh: 1,
+      exp: 1,
+      expm1: 1,
+      log: 1,
+      log2: 1,
+      log10: 1,
+      log1p: 1,
+      cbrt: 1,
+      pow: 2,
+      sign: 1
+    };
+    const MATH_NATIVE_OPS = {
+      abs: "f32Abs",
+      floor: "f32Floor",
+      ceil: "f32Ceil",
+      sqrt: "f32Sqrt",
+      trunc: "f32Trunc"
+    };
+    const F32_ARITH = {
+      "+": "f32Add",
+      "-": "f32Sub",
+      "*": "f32Mul"
+    };
+    const I32_ARITH = {
+      "+": "i32Add",
+      "-": "i32Sub",
+      "*": "i32Mul"
+    };
+    const F32_COMPARE = {
+      "==": "f32Eq",
+      "===": "f32Eq",
+      "!=": "f32Ne",
+      "!==": "f32Ne",
+      "<": "f32Lt",
+      ">": "f32Gt",
+      "<=": "f32Le",
+      ">=": "f32Ge"
+    };
+    const I32_COMPARE = {
+      "==": "i32Eq",
+      "===": "i32Eq",
+      "!=": "i32Ne",
+      "!==": "i32Ne",
+      "<": "i32LtS",
+      ">": "i32GtS",
+      "<=": "i32LeS",
+      ">=": "i32GeS"
+    };
+    const BITWISE_OPS = {
+      "&": "i32And",
+      "|": "i32Or",
+      "^": "i32Xor",
+      "<<": "i32Shl",
+      ">>": "i32ShrS",
+      ">>>": "i32ShrU"
+    };
+    const VF32_ARITH = {
+      "+": "f32x4Add",
+      "-": "f32x4Sub",
+      "*": "f32x4Mul"
+    };
+    const VI32_ARITH = {
+      "+": "i32x4Add",
+      "-": "i32x4Sub",
+      "*": "i32x4Mul"
+    };
+    const VF32_COMPARE = {
+      "==": "f32x4Eq",
+      "===": "f32x4Eq",
+      "!=": "f32x4Ne",
+      "!==": "f32x4Ne",
+      "<": "f32x4Lt",
+      ">": "f32x4Gt",
+      "<=": "f32x4Le",
+      ">=": "f32x4Ge"
+    };
+    const VI32_COMPARE = {
+      "==": "i32x4Eq",
+      "===": "i32x4Eq",
+      "!=": "i32x4Ne",
+      "!==": "i32x4Ne",
+      "<": "i32x4LtS",
+      ">": "i32x4GtS",
+      "<=": "i32x4LeS",
+      ">=": "i32x4GeS"
+    };
+    const VECTOR_SHIFT_OPS = {
+      "<<": "i32x4Shl",
+      ">>": "i32x4ShrS",
+      ">>>": "i32x4ShrU"
+    };
+    const VECTOR_MATH_NATIVE_OPS = {
+      abs: "f32x4Abs",
+      floor: "f32x4Floor",
+      ceil: "f32x4Ceil",
+      sqrt: "f32x4Sqrt",
+      trunc: "f32x4Trunc"
+    };
+    function scalarWasmType(type) {
+      switch (type) {
+       case "Number":
+       case "Float":
+       case "LiteralInteger":
+        return "f32";
+
+       case "Integer":
+       case "Boolean":
+        return "i32";
+
+       default:
+        throw new Error(`WebAssembly backend does not yet support ${type} arguments to helper functions`);
+      }
+    }
+    var WebAssemblyFunctionNode = class extends FunctionNode {
+      constructor(source, settings) {
+        super(source, settings);
+        this.assembler = null;
+        this.em = null;
+        this.locals = null;
+        this.depth = 0;
+        this.loopStack = null;
+        this.usedMathImports = new Set;
+        this.usesRandom = false;
+        this.readsThread = false;
+        this.taintedLocals = null;
+        this.uniformity = [];
+        this._analysisDone = false;
+        this._analysisPass = false;
+        this.vec = false;
+        this.vMaskDepth = 0;
+        this.vCur = -1;
+        this.vRetMask = -1;
+        this.vTerminated = false;
+        this.vInfo = null;
+        this._vBaseX = -1;
+      }
+      mangleFunctionName(name) {
+        return `fn_${utils.sanitizeName(name)}`;
+      }
+      getType(ast) {
+        if (ast && ast.type === "ConditionalExpression") {
+          const consequentType = this.getType(ast.consequent);
+          if (consequentType === "Integer" || consequentType === "LiteralInteger") {
+            const alternateType = this.getType(ast.alternate);
+            if (alternateType === "Number" || alternateType === "Float") return "Number";
+          }
+        }
+        return super.getType(ast);
+      }
+      toString() {
+        if (!this._analysisDone) {
+          this._analysisDone = true;
+          this._analysisPass = true;
+          this.walkFunction(new NoopEmitter);
+          this._analysisPass = false;
+        }
+        return "";
+      }
+      emitFunction(assembler) {
+        this.assembler = assembler;
+        const {module: module$2} = assembler;
+        let em;
+        if (this.isRootKernel) em = module$2.addFunction("kernel", {
+          params: [],
+          results: []
+        }); else {
+          const params = this.argumentTypes.map(type => scalarWasmType(type === "LiteralInteger" ? "Number" : type));
+          const results = [];
+          if (this.returnType) switch (this.returnType) {
+           case "Integer":
+           case "Boolean":
+            results.push("i32");
+            break;
+
+           case "Number":
+           case "Float":
+           case "LiteralInteger":
+            results.push("f32");
+            break;
+
+           default:
+            throw new Error(`WebAssembly backend does not yet support helper functions returning ${this.returnType}`);
+          }
+          em = module$2.addFunction(this.mangleFunctionName(this.name), {
+            params: params,
+            results: results
+          });
+        }
+        this.walkFunction(em);
+        if (!this.isRootKernel && this.returnType) em.unreachable();
+        return em;
+      }
+      walkFunction(em) {
+        this.em = em;
+        this.locals = new Map;
+        this.depth = 0;
+        this.loopStack = [];
+        this.taintedLocals = new Set;
+        const ast = this.getJsAST();
+        if (this.isRootKernel) for (const name of this.collectAssignedArgumentNames(ast)) {
+          const argumentIndex = this.argumentNames.indexOf(name);
+          const gtype = this.argumentTypes[argumentIndex];
+          if (gtype !== "Number" && gtype !== "Float" && gtype !== "Integer" && gtype !== "Boolean") continue;
+          const slot = this.assembler ? this.assembler.layout.scalars[name] : null;
+          const offset = slot ? slot.offset : 0;
+          const wtype = gtype === "Integer" || gtype === "Boolean" ? "i32" : "f32";
+          const index = em.addLocal(wtype);
+          em.i32Const(0);
+          if (wtype === "i32") em.i32Load(offset); else em.f32Load(offset);
+          em.localSet(index);
+          this.locals.set(name, {
+            kind: "scalar",
+            index: index,
+            wtype: wtype,
+            gtype: gtype
+          });
+        }
+        if (!this.isRootKernel) {
+          for (let i = 0; i < this.argumentNames.length; i++) {
+            const name = this.argumentNames[i];
+            let argumentType = this.argumentTypes[i];
+            if (!argumentType) throw this.astErrorOutput(`Unknown argument ${name} type`, ast);
+            if (argumentType === "LiteralInteger") this.argumentTypes[i] = argumentType = "Number";
+            this.locals.set(name, {
+              kind: "scalar",
+              index: i,
+              wtype: scalarWasmType(argumentType),
+              gtype: argumentType
+            });
+          }
+          if (!this.returnType) {
+            if (this.findLastReturn()) {
+              this.returnType = this.getType(ast.body);
+              if (this.returnType === "LiteralInteger") this.returnType = "Number";
+            }
+          }
+        }
+        const body = ast.body.body;
+        for (let i = 0; i < body.length; i++) this.statement(body[i]);
+      }
+      collectAssignedArgumentNames(ast) {
+        const names = new Set;
+        const walk = node => {
+          if (!node || typeof node !== "object") return;
+          if (Array.isArray(node)) return node.forEach(walk);
+          if (node.type === "FunctionDeclaration" && node !== ast) return;
+          if (node.type === "AssignmentExpression" && node.left.type === "Identifier" && this.argumentNames.indexOf(node.left.name) !== -1) names.add(node.left.name);
+          if (node.type === "UpdateExpression" && node.argument.type === "Identifier" && this.argumentNames.indexOf(node.argument.name) !== -1) names.add(node.argument.name);
+          for (const key in node) {
+            if (key === "loc" || key === "start" || key === "end" || key === "parent") continue;
+            const child = node[key];
+            if (child && typeof child === "object") walk(child);
+          }
+        };
+        walk(ast.body);
+        return names;
+      }
+      enterBlock(type) {
+        this.em.block(type);
+        this.depth++;
+      }
+      enterLoop(type) {
+        this.em.loop(type);
+        this.depth++;
+      }
+      enterIf(type) {
+        this.em.if_(type);
+        this.depth++;
+      }
+      exit() {
+        this.em.end();
+        this.depth--;
+      }
+      brTo(level) {
+        this.em.br(this.depth - level);
+      }
+      brIfTo(level) {
+        this.em.brIf(this.depth - level);
+      }
+      get loopMax() {
+        return parseInt(this.loopMaxIterations, 10) || 1e3;
+      }
+      coerce(from, to) {
+        if (from === to) return to;
+        if (from === "void") throw new Error("cannot use a void expression as a value");
+        switch (to) {
+         case "f32":
+          this.em.f32ConvertI32S();
+          return "f32";
+
+         case "i32":
+          if (from === "f32") this.em.i32TruncSatF32S();
+          return "i32";
+
+         case "bool":
+          if (from === "f32") this.em.f32Const(0).f32Ne(); else this.em.i32Eqz().i32Eqz();
+          return "bool";
+
+         default:
+          throw new Error(`unknown wasm value category ${to}`);
+        }
+      }
+      castLiteralToInteger(ast) {
+        this.pushState("casting-to-integer");
+        const type = this.expression(ast);
+        this.popState("casting-to-integer");
+        this.coerce(type, "i32");
+        return "i32";
+      }
+      castLiteralToFloat(ast) {
+        this.pushState("casting-to-float");
+        const type = this.expression(ast);
+        this.popState("casting-to-float");
+        this.coerce(type, "f32");
+        return "f32";
+      }
+      castValueToInteger(ast) {
+        this.pushState("casting-to-integer");
+        const type = this.expression(ast);
+        this.popState("casting-to-integer");
+        this.coerce(type, "i32");
+        return "i32";
+      }
+      castValueToFloat(ast) {
+        this.pushState("casting-to-float");
+        const type = this.expression(ast);
+        this.popState("casting-to-float");
+        this.coerce(type, "f32");
+        return "f32";
+      }
+      emitByType(ast, want) {
+        const type = this.getType(ast);
+        if (want === "f32") {
+          if (type === "Integer") return this.castValueToFloat(ast);
+          if (type === "LiteralInteger") return this.castLiteralToFloat(ast);
+          this.coerce(this.expression(ast), "f32");
+          return "f32";
+        }
+        if (type === "Number" || type === "Float") return this.castValueToInteger(ast);
+        if (type === "LiteralInteger") return this.castLiteralToInteger(ast);
+        this.coerce(this.expression(ast), "i32");
+        return "i32";
+      }
+      emitCondition(ast) {
+        const type = this.expression(ast);
+        if (type === "bool") return;
+        if (type === "i32") {
+          this.em.i32Eqz().i32Eqz();
+          return;
+        }
+        if (type === "f32") {
+          this.em.f32Const(0).f32Ne();
+          return;
+        }
+        throw this.astErrorOutput("cannot use a void expression as a condition", ast);
+      }
+      statement(ast) {
+        switch (ast.type) {
+         case "VariableDeclaration":
+          return this.stmtVariableDeclaration(ast);
+
+         case "ExpressionStatement":
+          return this.statementExpression(ast.expression);
+
+         case "ReturnStatement":
+          return this.stmtReturn(ast);
+
+         case "IfStatement":
+          return this.stmtIf(ast);
+
+         case "ForStatement":
+          return this.stmtFor(ast);
+
+         case "WhileStatement":
+          return this.stmtWhile(ast);
+
+         case "DoWhileStatement":
+          return this.stmtDoWhile(ast);
+
+         case "BlockStatement":
+          for (let i = 0; i < ast.body.length; i++) this.statement(ast.body[i]);
+          return;
+
+         case "BreakStatement":
+          return this.stmtBreak(ast);
+
+         case "ContinueStatement":
+          return this.stmtContinue(ast);
+
+         case "SwitchStatement":
+          return this.stmtSwitch(ast);
+
+         case "FunctionDeclaration":
+          if (this.isChildFunction(ast)) return;
+          throw this.astErrorOutput("unexpected function declaration", ast);
+
+         case "EmptyStatement":
+         case "DebuggerStatement":
+          return;
+
+         default:
+          throw this.astErrorOutput(`Unknown statement type ${ast.type}`, ast);
+        }
+      }
+      statementExpression(expression) {
+        switch (expression.type) {
+         case "AssignmentExpression":
+          return this.emitAssignment(expression);
+
+         case "UpdateExpression":
+          this.emitUpdate(expression, true);
+          return;
+
+         case "SequenceExpression":
+          for (let i = 0; i < expression.expressions.length; i++) this.statementExpression(expression.expressions[i]);
+          return;
+
+         case "Identifier":
+         case "Literal":
+          return;
+
+         default:
+          if (this.expression(expression) !== "void") this.em.drop();
+        }
+      }
+      stmtVariableDeclaration(varDecNode) {
+        const declarations = varDecNode.declarations;
+        if (!declarations || !declarations[0] || !declarations[0].init) throw this.astErrorOutput("Unexpected expression", varDecNode);
+        for (let i = 0; i < declarations.length; i++) {
+          const declaration = declarations[i];
+          const init = declaration.init;
+          const info = this.getDeclaration(declaration.id);
+          const actualType = this.getType(init);
+          const name = declaration.id.name;
+          if (actualType === "Array(2)" || actualType === "Array(3)" || actualType === "Array(4)") {
+            this.declareVecLocal(name, actualType, init, info, varDecNode);
+            if (this.isThreadDependent(init)) this.taintedLocals.add(name);
+            continue;
+          }
+          let type = actualType;
+          if (type === "LiteralInteger") type = info.suggestedType === "Integer" ? "Integer" : "Number";
+          if (actualType === "Integer" && type === "Integer") {
+            info.valueType = "Number";
+            this.setScalarLocal(name, "f32", "Number", () => this.castValueToFloat(init));
+          } else {
+            info.valueType = type;
+            switch (type) {
+             case "Number":
+             case "Float":
+              this.setScalarLocal(name, "f32", type, () => {
+                if (actualType === "LiteralInteger") this.castLiteralToFloat(init); else if (actualType === "Integer") this.castValueToFloat(init); else this.coerce(this.expression(init), "f32");
+              });
+              break;
+
+             case "Integer":
+              this.setScalarLocal(name, "i32", "Integer", () => {
+                if (actualType === "LiteralInteger") this.castLiteralToInteger(init); else if (actualType === "Number" || actualType === "Float") this.castValueToInteger(init); else this.coerce(this.expression(init), "i32");
+              });
+              break;
+
+             case "Boolean":
+              this.setScalarLocal(name, "i32", "Boolean", () => this.emitCondition(init));
+              break;
+
+             default:
+              throw this.astErrorOutput(`WebAssembly backend does not yet support declaring type ${type}`, varDecNode);
+            }
+          }
+          if (this.isThreadDependent(init)) this.taintedLocals.add(name);
+        }
+      }
+      setScalarLocal(name, wtype, gtype, emitInit) {
+        let local = this.locals.get(name);
+        if (!local || local.kind !== "scalar" || local.wtype !== wtype) {
+          local = {
+            kind: "scalar",
+            index: this.em.addLocal(wtype),
+            wtype: wtype,
+            gtype: gtype
+          };
+          this.locals.set(name, local);
+        } else local.gtype = gtype;
+        emitInit();
+        this.em.localSet(local.index);
+      }
+      declareVecLocal(name, type, init, info, varDecNode) {
+        const n = parseInt(type.substring(6), 10);
+        info.valueType = type;
+        let local = this.locals.get(name);
+        if (!local || local.kind !== "vec" || local.n !== n) {
+          const indices = [];
+          for (let c = 0; c < n; c++) indices.push(this.em.addLocal("f32"));
+          local = {
+            kind: "vec",
+            indices: indices,
+            n: n,
+            gtype: type
+          };
+          this.locals.set(name, local);
+        }
+        if (init.type === "ArrayExpression") {
+          for (let c = 0; c < n; c++) {
+            this.emitArrayElement(init.elements[c]);
+            this.em.localSet(local.indices[c]);
+          }
+          return;
+        }
+        if (init.type === "Identifier") {
+          const source = this.locals.get(init.name);
+          if (source && source.kind === "vec" && source.n === n) {
+            for (let c = 0; c < n; c++) this.em.localGet(source.indices[c]).localSet(local.indices[c]);
+            return;
+          }
+        }
+        throw this.astErrorOutput(`WebAssembly backend does not yet support ${type} initializer of type ${init.type}`, varDecNode);
+      }
+      emitArrayElement(element) {
+        switch (this.getType(element)) {
+         case "Integer":
+          this.castValueToFloat(element);
+          break;
+
+         case "LiteralInteger":
+          this.castLiteralToFloat(element);
+          break;
+
+         default:
+          this.coerce(this.expression(element), "f32");
+        }
+      }
+      emitAssignment(assNode) {
+        if (assNode.left.type !== "Identifier") throw this.astErrorOutput(`WebAssembly backend does not yet support assignment to ${assNode.left.type}`, assNode);
+        const name = assNode.left.name;
+        const local = this.locals.get(name);
+        let wtype = null;
+        let store = null;
+        if (local && local.kind === "scalar") {
+          wtype = local.wtype;
+          store = () => this.em.localSet(local.index);
+        } else if (!local && this.isRootKernel && this.argumentNames.indexOf(name) !== -1) {
+          const gtype = this.argumentTypes[this.argumentNames.indexOf(name)];
+          const slot = this.assembler ? this.assembler.layout.scalars[name] : null;
+          const offset = slot ? slot.offset : 0;
+          wtype = gtype === "Integer" || gtype === "Boolean" ? "i32" : "f32";
+          this.em.i32Const(0);
+          store = () => wtype === "i32" ? this.em.i32Store(offset) : this.em.f32Store(offset);
+        } else throw this.astErrorOutput(`cannot assign to "${name}"`, assNode);
+        if (assNode.operator === "=") {
+          const leftType = this.getType(assNode.left);
+          const rightType = this.getType(assNode.right);
+          if (leftType !== "Integer" && rightType === "Integer") {
+            this.castValueToFloat(assNode.right);
+            this.coerce("f32", wtype);
+          } else if (leftType !== "Integer" && rightType === "LiteralInteger") {
+            this.castLiteralToFloat(assNode.right);
+            this.coerce("f32", wtype);
+          } else if (leftType === "Integer" && rightType === "LiteralInteger") {
+            this.castLiteralToInteger(assNode.right);
+            this.coerce("i32", wtype);
+          } else if (leftType === "Integer" && (rightType === "Number" || rightType === "Float")) {
+            this.castValueToInteger(assNode.right);
+            this.coerce("i32", wtype);
+          } else this.coerce(this.expression(assNode.right), wtype);
+        } else {
+          const synthetic = {
+            type: "BinaryExpression",
+            operator: assNode.operator.slice(0, -1),
+            left: assNode.left,
+            right: assNode.right
+          };
+          this.coerce(this.exprBinary(synthetic), wtype);
+        }
+        store();
+        if (this.isThreadDependent(assNode.right) || assNode.operator !== "=" && this.taintedLocals.has(name)) this.taintedLocals.add(name);
+      }
+      emitUpdate(uNode, isStatement) {
+        if (uNode.argument.type !== "Identifier") throw this.astErrorOutput("update expression needs a variable", uNode);
+        const local = this.locals.get(uNode.argument.name);
+        if (!local || local.kind !== "scalar") throw this.astErrorOutput(`cannot update "${uNode.argument.name}"`, uNode);
+        const isInt = local.wtype === "i32";
+        const one = () => isInt ? this.em.i32Const(1) : this.em.f32Const(1);
+        const op = uNode.operator === "++" ? isInt ? "i32Add" : "f32Add" : isInt ? "i32Sub" : "f32Sub";
+        if (isStatement) {
+          this.em.localGet(local.index);
+          one();
+          this.em[op]().localSet(local.index);
+          return "void";
+        }
+        if (uNode.prefix) {
+          this.em.localGet(local.index);
+          one();
+          this.em[op]().localTee(local.index);
+        } else {
+          this.em.localGet(local.index).localGet(local.index);
+          one();
+          this.em[op]().localSet(local.index);
+        }
+        return local.wtype;
+      }
+      stmtReturn(ast) {
+        if (!ast.argument) {
+          if (this.isRootKernel) {
+            this.em.return_();
+            return;
+          }
+          throw this.astErrorOutput("Unexpected return statement", ast);
+        }
+        this.pushState("skip-literal-correction");
+        const type = this.getType(ast.argument);
+        this.popState("skip-literal-correction");
+        if (!this.returnType) this.returnType = type === "LiteralInteger" || type === "Integer" ? "Number" : type;
+        if (this.isRootKernel) return this.stmtRootReturn(ast, type);
+        if (this.isSubKernel) throw this.astErrorOutput("WebAssembly backend does not yet support createKernelMap", ast);
+        switch (this.returnType) {
+         case "LiteralInteger":
+         case "Number":
+         case "Float":
+          if (type === "Integer") this.castValueToFloat(ast.argument); else if (type === "LiteralInteger") this.castLiteralToFloat(ast.argument); else this.coerce(this.expression(ast.argument), "f32");
+          break;
+
+         case "Integer":
+          if (type === "Float" || type === "Number") this.castValueToInteger(ast.argument); else if (type === "LiteralInteger") this.castLiteralToInteger(ast.argument); else this.coerce(this.expression(ast.argument), "i32");
+          break;
+
+         case "Boolean":
+          this.emitCondition(ast.argument);
+          break;
+
+         default:
+          throw this.astErrorOutput(`unhandled return type ${this.returnType}`, ast);
+        }
+        this.em.return_();
+      }
+      stmtRootReturn(ast, type) {
+        const globals = this.assembler ? this.assembler.globals : {
+          dataIndex: 0
+        };
+        const outputOffset = this.assembler ? this.assembler.layout.outputOffset : 0;
+        switch (this.returnType) {
+         case "Array(2)":
+         case "Array(3)":
+         case "Array(4)":
+          {
+            const n = parseInt(this.returnType.substring(6), 10);
+            const argument = ast.argument;
+            if (argument.type === "ArrayExpression") {
+              if (argument.elements.length !== n) throw this.astErrorOutput(`expected ${n} array elements to match return type ${this.returnType}`, ast);
+              for (let c = 0; c < n; c++) {
+                this.emitComponentAddress(globals.dataIndex, n, c);
+                this.emitArrayElement(argument.elements[c]);
+                this.em.f32Store(outputOffset);
+              }
+            } else if (argument.type === "Identifier") {
+              const local = this.locals.get(argument.name);
+              if (!local || local.kind !== "vec" || local.n !== n) throw this.astErrorOutput(`"${argument.name}" is not an Array(${n}) variable`, ast);
+              for (let c = 0; c < n; c++) {
+                this.emitComponentAddress(globals.dataIndex, n, c);
+                this.em.localGet(local.indices[c]);
+                this.em.f32Store(outputOffset);
+              }
+            } else throw this.astErrorOutput(`WebAssembly backend does not yet support returning ${this.returnType} from a ${argument.type}`, ast);
+            this.em.return_();
+            return;
+          }
+
+         default:
+          this.emitComponentAddress(globals.dataIndex, 1, 0);
+          switch (this.returnType) {
+           case "Integer":
+            if (type === "Float" || type === "Number") this.castValueToInteger(ast.argument); else if (type === "LiteralInteger") this.castLiteralToInteger(ast.argument); else this.coerce(this.expression(ast.argument), "i32");
+            this.em.f32ConvertI32S();
+            break;
+
+           case "LiteralInteger":
+           case "Number":
+           case "Float":
+            if (type === "Integer") this.castValueToFloat(ast.argument); else if (type === "LiteralInteger") this.castLiteralToFloat(ast.argument); else this.coerce(this.expression(ast.argument), "f32");
+            break;
+
+           case "Boolean":
+            this.emitCondition(ast.argument);
+            this.em.f32ConvertI32S();
+            break;
+
+           default:
+            throw this.astErrorOutput(`WebAssembly backend does not yet support returning ${this.returnType}`, ast);
+          }
+          this.em.f32Store(outputOffset);
+          this.em.return_();
+        }
+      }
+      emitComponentAddress(dataIndexGlobal, componentCount, component) {
+        this.em.globalGet(dataIndexGlobal);
+        if (componentCount !== 1) {
+          this.em.i32Const(componentCount).i32Mul();
+          if (component !== 0) this.em.i32Const(component).i32Add();
+        }
+        this.em.i32Const(2).i32Shl();
+      }
+      stmtIf(ifNode) {
+        this.recordUniformity("if", ifNode.test);
+        this.emitCondition(ifNode.test);
+        this.enterIf();
+        this.statement(ifNode.consequent);
+        if (ifNode.alternate) {
+          this.em.else_();
+          this.statement(ifNode.alternate);
+        }
+        this.exit();
+      }
+      forLoopIsSafe(forNode) {
+        let isSafe = null;
+        if (forNode.init) {
+          const declarations = forNode.init.declarations;
+          if (declarations) {
+            if (declarations.length > 1) isSafe = false;
+            for (let i = 0; i < declarations.length; i++) if (declarations[i].init && declarations[i].init.type !== "Literal") isSafe = false;
+          } else isSafe = false;
+        } else isSafe = false;
+        if (!forNode.test || !forNode.update) isSafe = false;
+        if (isSafe === null) isSafe = this.isSafe(forNode.init) && this.isSafe(forNode.test);
+        return isSafe;
+      }
+      stmtFor(forNode) {
+        if (forNode.type !== "ForStatement") throw this.astErrorOutput("Invalid for statement", forNode);
+        const isSafe = this.forLoopIsSafe(forNode);
+        this.recordUniformity("for", forNode.test || null);
+        if (forNode.init) if (forNode.init.type === "VariableDeclaration") this.stmtVariableDeclaration(forNode.init); else this.statementExpression(forNode.init);
+        let safeI = -1;
+        if (!isSafe) {
+          safeI = this.em.addLocal("i32");
+          this.em.i32Const(0).localSet(safeI);
+        }
+        this.enterBlock();
+        const breakLevel = this.depth;
+        this.enterLoop();
+        const loopLevel = this.depth;
+        if (!isSafe) {
+          this.em.localGet(safeI).i32Const(this.loopMax).i32GeS();
+          this.brIfTo(breakLevel);
+        }
+        if (forNode.test) {
+          this.emitCondition(forNode.test);
+          this.em.i32Eqz();
+          this.brIfTo(breakLevel);
+        }
+        this.enterBlock();
+        const continueLevel = this.depth;
+        this.loopStack.push({
+          breakLevel: breakLevel,
+          continueLevel: continueLevel
+        });
+        if (forNode.body) this.statement(forNode.body);
+        this.loopStack.pop();
+        this.exit();
+        if (forNode.update) this.statementExpression(forNode.update);
+        if (!isSafe) this.em.localGet(safeI).i32Const(1).i32Add().localSet(safeI);
+        this.brTo(loopLevel);
+        this.exit();
+        this.exit();
+      }
+      stmtWhile(whileNode) {
+        if (whileNode.type !== "WhileStatement") throw this.astErrorOutput("Invalid while statement", whileNode);
+        this.recordUniformity("while", whileNode.test);
+        const safeI = this.em.addLocal("i32");
+        this.em.i32Const(0).localSet(safeI);
+        this.enterBlock();
+        const breakLevel = this.depth;
+        this.enterLoop();
+        const loopLevel = this.depth;
+        this.em.localGet(safeI).i32Const(this.loopMax).i32GeS();
+        this.brIfTo(breakLevel);
+        this.emitCondition(whileNode.test);
+        this.em.i32Eqz();
+        this.brIfTo(breakLevel);
+        this.enterBlock();
+        const continueLevel = this.depth;
+        this.loopStack.push({
+          breakLevel: breakLevel,
+          continueLevel: continueLevel
+        });
+        this.statement(whileNode.body);
+        this.loopStack.pop();
+        this.exit();
+        this.em.localGet(safeI).i32Const(1).i32Add().localSet(safeI);
+        this.brTo(loopLevel);
+        this.exit();
+        this.exit();
+      }
+      stmtDoWhile(doWhileNode) {
+        if (doWhileNode.type !== "DoWhileStatement") throw this.astErrorOutput("Invalid while statement", doWhileNode);
+        this.recordUniformity("do-while", doWhileNode.test);
+        const safeI = this.em.addLocal("i32");
+        this.em.i32Const(0).localSet(safeI);
+        this.enterBlock();
+        const breakLevel = this.depth;
+        this.enterLoop();
+        const loopLevel = this.depth;
+        this.em.localGet(safeI).i32Const(this.loopMax).i32GeS();
+        this.brIfTo(breakLevel);
+        this.enterBlock();
+        const continueLevel = this.depth;
+        this.loopStack.push({
+          breakLevel: breakLevel,
+          continueLevel: continueLevel
+        });
+        this.statement(doWhileNode.body);
+        this.loopStack.pop();
+        this.exit();
+        this.em.localGet(safeI).i32Const(1).i32Add().localSet(safeI);
+        this.emitCondition(doWhileNode.test);
+        this.brIfTo(loopLevel);
+        this.exit();
+        this.exit();
+      }
+      stmtBreak(brNode) {
+        const target = this.loopStack[this.loopStack.length - 1];
+        if (!target) throw this.astErrorOutput("break used outside of a loop", brNode);
+        this.brTo(target.breakLevel);
+      }
+      stmtContinue(crNode) {
+        const target = this.loopStack[this.loopStack.length - 1];
+        if (!target) throw this.astErrorOutput("continue used outside of a loop", crNode);
+        this.brTo(target.continueLevel);
+      }
+      stmtSwitch(ast) {
+        if (ast.type !== "SwitchStatement") throw this.astErrorOutput("Invalid switch statement", ast);
+        const {discriminant: discriminant, cases: cases} = ast;
+        const type = this.getType(discriminant);
+        this.recordUniformity("switch", discriminant);
+        let dLocal;
+        let dIsInt;
+        switch (type) {
+         case "Float":
+         case "Number":
+          dIsInt = false;
+          dLocal = this.em.addLocal("f32");
+          this.coerce(this.expression(discriminant), "f32");
+          this.em.localSet(dLocal);
+          break;
+
+         case "Integer":
+          dIsInt = true;
+          dLocal = this.em.addLocal("i32");
+          this.coerce(this.expression(discriminant), "i32");
+          this.em.localSet(dLocal);
+          break;
+
+         default:
+          throw this.astErrorOutput(`Unhandled switch discriminant type "${type}"`, ast);
+        }
+        if (cases.length === 1 && !cases[0].test) {
+          this.emitSwitchConsequent(cases[0].consequent);
+          return;
+        }
+        const {groups: groups, defaultConsequent: defaultConsequent} = this.collectSwitchGroups(cases);
+        const emitChain = index => {
+          if (index === groups.length) {
+            if (defaultConsequent) this.emitSwitchConsequent(defaultConsequent);
+            return false;
+          }
+          const {tests: tests, consequent: consequent} = groups[index];
+          for (let i = 0; i < tests.length; i++) {
+            this.em.localGet(dLocal);
+            this.emitSwitchTest(tests[i], dIsInt);
+            if (dIsInt) this.em.i32Eq(); else this.em.f32Eq();
+            if (i > 0) this.em.i32Or();
+          }
+          this.enterIf();
+          this.emitSwitchConsequent(consequent);
+          if (index + 1 < groups.length || defaultConsequent) {
+            this.em.else_();
+            emitChain(index + 1);
+          }
+          this.exit();
+          return true;
+        };
+        emitChain(0);
+      }
+      emitSwitchTest(test, dIsInt) {
+        const testType = this.getType(test);
+        if (dIsInt) if (testType === "Number" || testType === "Float") this.castValueToInteger(test); else if (testType === "LiteralInteger") this.castLiteralToInteger(test); else this.coerce(this.expression(test), "i32"); else if (testType === "LiteralInteger") this.castLiteralToFloat(test); else if (testType === "Integer") this.castValueToFloat(test); else this.coerce(this.expression(test), "f32");
+      }
+      collectSwitchGroups(cases) {
+        let defaultConsequent = null;
+        const groups = [];
+        let pendingTests = [];
+        for (let i = 0; i < cases.length; i++) {
+          if (!cases[i].test) {
+            defaultConsequent = cases[i].consequent;
+            continue;
+          }
+          pendingTests.push(cases[i].test);
+          if (cases[i].consequent && cases[i].consequent.length > 0) {
+            groups.push({
+              tests: pendingTests,
+              consequent: cases[i].consequent
+            });
+            pendingTests = [];
+          }
+        }
+        return {
+          groups: groups,
+          defaultConsequent: defaultConsequent
+        };
+      }
+      collectSwitchCaseStatements(consequent) {
+        const statements = [];
+        for (let i = 0; i < consequent.length; i++) {
+          if (consequent[i].type === "BreakStatement") break;
+          statements.push(consequent[i]);
+        }
+        const containsBreak = node => {
+          if (!node || typeof node !== "object") return false;
+          if (Array.isArray(node)) return node.some(containsBreak);
+          if (node.type === "BreakStatement") return true;
+          if (node.type === "ForStatement" || node.type === "WhileStatement" || node.type === "DoWhileStatement" || node.type === "SwitchStatement") return false;
+          for (const key in node) {
+            if (key === "loc" || key === "range" || key === "parent") continue;
+            if (containsBreak(node[key])) return true;
+          }
+          return false;
+        };
+        for (let i = 0; i < statements.length; i++) if (containsBreak(statements[i])) throw this.astErrorOutput("break inside a switch case is only supported as the case terminator", statements[i]);
+        return statements;
+      }
+      emitSwitchConsequent(consequent) {
+        const statements = this.collectSwitchCaseStatements(consequent);
+        for (let i = 0; i < statements.length; i++) this.statement(statements[i]);
+      }
+      expression(ast) {
+        switch (ast.type) {
+         case "Literal":
+          return this.exprLiteral(ast);
+
+         case "Identifier":
+          return this.exprIdentifier(ast);
+
+         case "BinaryExpression":
+          return this.exprBinary(ast);
+
+         case "LogicalExpression":
+          return this.exprLogical(ast);
+
+         case "UnaryExpression":
+          return this.exprUnary(ast);
+
+         case "UpdateExpression":
+          return this.emitUpdate(ast, false);
+
+         case "ConditionalExpression":
+          return this.exprConditional(ast);
+
+         case "CallExpression":
+          return this.exprCall(ast);
+
+         case "MemberExpression":
+          return this.exprMember(ast);
+
+         case "ThisExpression":
+          throw this.astErrorOutput("unexpected bare `this`", ast);
+
+         case "SequenceExpression":
+          if (ast.expressions.length === 1) return this.expression(ast.expressions[0]);
+          throw this.astErrorOutput("WebAssembly backend does not yet support the comma operator", ast);
+
+         case "AssignmentExpression":
+          throw this.astErrorOutput("WebAssembly backend does not yet support assignment used as an expression", ast);
+
+         case "ArrayExpression":
+          throw this.astErrorOutput("array literals are only supported as variable initializers and kernel returns", ast);
+
+         default:
+          throw this.astErrorOutput(`Unknown expression type ${ast.type}`, ast);
+        }
+      }
+      exprLiteral(ast) {
+        if (ast.value === true || ast.value === false) {
+          this.em.i32Const(ast.value ? 1 : 0);
+          return "bool";
+        }
+        if (isNaN(ast.value)) throw this.astErrorOutput("Non-numeric literal not supported : " + ast.value, ast);
+        const key = this.astKey(ast);
+        if (this.isState("casting-to-integer") || this.isState("building-integer")) {
+          if (!this.vec) this.literalTypes[key] = "Integer";
+          this.em.i32Const(Math.round(ast.value));
+          return "i32";
+        }
+        if (!this.vec) this.literalTypes[key] = "Number";
+        this.em.f32Const(ast.value);
+        return "f32";
+      }
+      exprIdentifier(idtNode) {
+        if (idtNode.type !== "Identifier") throw this.astErrorOutput("IdentifierExpression - not an Identifier", idtNode);
+        if (idtNode.name === "Infinity") {
+          this.em.f32Const(Infinity);
+          return "f32";
+        }
+        const local = this.locals.get(idtNode.name);
+        if (local) {
+          if (local.kind === "vec") throw this.astErrorOutput(`array-valued variable "${idtNode.name}" can only be indexed or returned`, idtNode);
+          this.em.localGet(local.index);
+          return local.gtype === "Boolean" ? "bool" : local.wtype;
+        }
+        const argumentIndex = this.argumentNames.indexOf(idtNode.name);
+        if (argumentIndex !== -1 && this.isRootKernel) {
+          const type = this.argumentTypes[argumentIndex];
+          const slot = this.assembler ? this.assembler.layout.scalars[idtNode.name] : null;
+          const offset = slot ? slot.offset : 0;
+          this.em.i32Const(0);
+          switch (type) {
+           case "Integer":
+            this.em.i32Load(offset);
+            return "i32";
+
+           case "Boolean":
+            this.em.i32Load(offset);
+            return "bool";
+
+           case "Number":
+           case "Float":
+            this.em.f32Load(offset);
+            return "f32";
+
+           default:
+            throw this.astErrorOutput(`argument "${idtNode.name}" of type ${type} cannot be read as a scalar`, idtNode);
+          }
+        }
+        throw this.astErrorOutput(`Unhandled identifier "${idtNode.name}"`, idtNode);
+      }
+      exprBinary(ast) {
+        const operator = ast.operator;
+        if (operator === "**") {
+          this.emitByType(ast.left, "f32");
+          this.emitByType(ast.right, "f32");
+          this.usedMathImports.add("pow");
+          this.em.call("math_pow");
+          return "f32";
+        }
+        if (BITWISE_OPS[operator]) {
+          this.emitAsIntegerOperand(ast.left);
+          this.emitAsIntegerOperand(ast.right);
+          this.em[BITWISE_OPS[operator]]();
+          return "i32";
+        }
+        if (operator === "/" || operator === "%") {
+          if (operator === "/") {
+            this.emitByType(ast.left, "f32");
+            this.emitByType(ast.right, "f32");
+            this.em.f32Div();
+            return "f32";
+          }
+          const a = this.em.addLocal("f32");
+          const b = this.em.addLocal("f32");
+          this.emitByType(ast.left, "f32");
+          this.em.localSet(a);
+          this.emitByType(ast.right, "f32");
+          this.em.localSet(b);
+          this.em.localGet(a).localGet(a).localGet(b).f32Div().f32Trunc().localGet(b).f32Mul().f32Sub();
+          return "f32";
+        }
+        const leftType = this.getType(ast.left) || "Number";
+        const rightType = this.getType(ast.right) || "Number";
+        const key = leftType + " & " + rightType;
+        let category;
+        switch (key) {
+         case "Integer & Integer":
+          this.pushState("building-integer");
+          this.coerce(this.expression(ast.left), "i32");
+          this.coerce(this.expression(ast.right), "i32");
+          this.popState("building-integer");
+          category = "i32";
+          break;
+
+         case "Number & Float":
+         case "Float & Number":
+         case "Float & Float":
+         case "Number & Number":
+          this.pushState("building-float");
+          this.coerce(this.expression(ast.left), "f32");
+          this.coerce(this.expression(ast.right), "f32");
+          this.popState("building-float");
+          category = "f32";
+          break;
+
+         case "LiteralInteger & LiteralInteger":
+          if (this.isState("casting-to-integer") || this.isState("building-integer")) {
+            this.pushState("building-integer");
+            this.coerce(this.expression(ast.left), "i32");
+            this.coerce(this.expression(ast.right), "i32");
+            this.popState("building-integer");
+            category = "i32";
+          } else {
+            this.pushState("building-float");
+            this.castLiteralToFloat(ast.left);
+            this.castLiteralToFloat(ast.right);
+            this.popState("building-float");
+            category = "f32";
+          }
+          break;
+
+         case "Integer & Float":
+         case "Integer & Number":
+          this.pushState("building-float");
+          this.castValueToFloat(ast.left);
+          this.coerce(this.expression(ast.right), "f32");
+          this.popState("building-float");
+          category = "f32";
+          break;
+
+         case "Integer & LiteralInteger":
+          this.pushState("building-integer");
+          this.coerce(this.expression(ast.left), "i32");
+          this.castLiteralToInteger(ast.right);
+          this.popState("building-integer");
+          category = "i32";
+          break;
+
+         case "Number & Integer":
+         case "Float & Integer":
+          this.pushState("building-float");
+          this.coerce(this.expression(ast.left), "f32");
+          this.castValueToFloat(ast.right);
+          this.popState("building-float");
+          category = "f32";
+          break;
+
+         case "Float & LiteralInteger":
+         case "Number & LiteralInteger":
+          this.pushState("building-float");
+          this.coerce(this.expression(ast.left), "f32");
+          this.castLiteralToFloat(ast.right);
+          this.popState("building-float");
+          category = "f32";
+          break;
+
+         case "LiteralInteger & Float":
+         case "LiteralInteger & Number":
+          if (this.isState("casting-to-integer")) {
+            this.pushState("building-integer");
+            this.castLiteralToInteger(ast.left);
+            this.castValueToInteger(ast.right);
+            this.popState("building-integer");
+            category = "i32";
+          } else {
+            this.pushState("building-float");
+            this.castLiteralToFloat(ast.left);
+            this.pushState("casting-to-float");
+            this.coerce(this.expression(ast.right), "f32");
+            this.popState("casting-to-float");
+            this.popState("building-float");
+            category = "f32";
+          }
+          break;
+
+         case "LiteralInteger & Integer":
+          this.pushState("building-integer");
+          this.castLiteralToInteger(ast.left);
+          this.coerce(this.expression(ast.right), "i32");
+          this.popState("building-integer");
+          category = "i32";
+          break;
+
+         case "Boolean & Boolean":
+          this.coerce(this.expression(ast.left), "i32");
+          this.coerce(this.expression(ast.right), "i32");
+          category = "i32";
+          break;
+
+         default:
+          throw this.astErrorOutput(`Unhandled binary expression between ${key}`, ast);
+        }
+        const compareOp = category === "i32" ? I32_COMPARE[operator] : F32_COMPARE[operator];
+        if (compareOp) {
+          this.em[compareOp]();
+          return "bool";
+        }
+        const arithOp = category === "i32" ? I32_ARITH[operator] : F32_ARITH[operator];
+        if (!arithOp) throw this.astErrorOutput(`Unhandled operator ${operator}`, ast);
+        this.em[arithOp]();
+        return category;
+      }
+      emitAsIntegerOperand(side) {
+        switch (this.getType(side)) {
+         case "Number":
+         case "Float":
+          this.castValueToInteger(side);
+          break;
+
+         case "LiteralInteger":
+          this.castLiteralToInteger(side);
+          break;
+
+         default:
+          {
+            this.pushState("building-integer");
+            const type = this.expression(side);
+            this.popState("building-integer");
+            this.coerce(type, "i32");
+          }
+        }
+      }
+      exprLogical(logNode) {
+        this.emitCondition(logNode.left);
+        this.enterIf("i32");
+        if (logNode.operator === "&&") {
+          this.emitCondition(logNode.right);
+          this.em.else_();
+          this.em.i32Const(0);
+        } else if (logNode.operator === "||") {
+          this.em.i32Const(1);
+          this.em.else_();
+          this.emitCondition(logNode.right);
+        } else throw this.astErrorOutput(`Unhandled logical operator ${logNode.operator}`, logNode);
+        this.exit();
+        return "bool";
+      }
+      exprUnary(uNode) {
+        switch (uNode.operator) {
+         case "~":
+          this.emitAsIntegerOperand(uNode.argument);
+          this.em.i32Const(-1).i32Xor();
+          return "i32";
+
+         case "!":
+          this.emitCondition(uNode.argument);
+          this.em.i32Eqz();
+          return "bool";
+
+         case "+":
+          return this.expression(uNode.argument);
+
+         case "-":
+          {
+            const type = this.getType(uNode.argument);
+            if (type === "Integer" || type === "LiteralInteger" && (this.isState("casting-to-integer") || this.isState("building-integer"))) {
+              this.em.i32Const(0);
+              this.emitByType(uNode.argument, "i32");
+              this.em.i32Sub();
+              return "i32";
+            }
+            this.emitByType(uNode.argument, "f32");
+            this.em.f32Neg();
+            return "f32";
+          }
+
+         default:
+          throw this.astErrorOutput(`Unhandled unary operator ${uNode.operator}`, uNode);
+        }
+      }
+      exprConditional(ast) {
+        if (ast.type !== "ConditionalExpression") throw this.astErrorOutput("Not a conditional expression", ast);
+        const consequentType = this.getType(ast.consequent);
+        const alternateType = this.getType(ast.alternate);
+        this.recordUniformity("ternary", ast.test);
+        if (consequentType === null && alternateType === null) {
+          this.emitCondition(ast.test);
+          this.enterIf();
+          this.statementExpression(ast.consequent);
+          this.em.else_();
+          this.statementExpression(ast.alternate);
+          this.exit();
+          return "void";
+        }
+        let targetType = consequentType === "LiteralInteger" ? "Number" : consequentType;
+        if (targetType === "Integer" && (alternateType === "Number" || alternateType === "Float")) targetType = "Number";
+        const wtype = targetType === "Integer" || targetType === "Boolean" ? "i32" : "f32";
+        const emitBranch = branch => {
+          const branchType = this.getType(branch);
+          switch (targetType) {
+           case "Number":
+           case "Float":
+            if (branchType === "Integer") this.castValueToFloat(branch); else if (branchType === "LiteralInteger") this.castLiteralToFloat(branch); else this.coerce(this.expression(branch), "f32");
+            break;
+
+           case "Integer":
+            if (branchType === "Number" || branchType === "Float") this.castValueToInteger(branch); else if (branchType === "LiteralInteger") this.castLiteralToInteger(branch); else this.coerce(this.expression(branch), "i32");
+            break;
+
+           case "Boolean":
+            this.emitCondition(branch);
+            break;
+
+           default:
+            throw this.astErrorOutput(`WebAssembly backend does not yet support a ternary of type ${targetType}`, ast);
+          }
+        };
+        this.emitCondition(ast.test);
+        this.enterIf(wtype);
+        emitBranch(ast.consequent);
+        this.em.else_();
+        emitBranch(ast.alternate);
+        this.exit();
+        return targetType === "Boolean" ? "bool" : wtype;
+      }
+      exprCall(ast) {
+        if (!ast.callee) throw this.astErrorOutput("Unknown CallExpression", ast);
+        if (ast.callee.type === "MemberExpression" && this.getVariableSignature(ast.callee, true) === "this.color") throw this.astErrorOutput("WebAssembly backend does not yet support graphical mode (this.color)", ast);
+        let functionName = null;
+        const isMathFunction = this.isAstMathFunction(ast);
+        if (isMathFunction || ast.callee.object && ast.callee.object.type === "ThisExpression") functionName = ast.callee.property.name; else if (ast.callee.type === "SequenceExpression" && ast.callee.expressions[0].type === "Literal" && !isNaN(ast.callee.expressions[0].raw)) functionName = ast.callee.expressions[1].property.name; else functionName = ast.callee.name;
+        if (!functionName) throw this.astErrorOutput(`Unhandled function, couldn't find name`, ast);
+        if (this.calledFunctions.indexOf(functionName) < 0) this.calledFunctions.push(functionName);
+        if (this.onFunctionCall) this.onFunctionCall(this.name, functionName, ast.arguments);
+        if (isMathFunction) return this.emitMathCall(functionName, ast);
+        const returnType = this.getType(ast);
+        const targetTypes = this.lookupFunctionArgumentTypes(functionName) || [];
+        for (let i = 0; i < ast.arguments.length; ++i) {
+          const argument = ast.arguments[i];
+          let targetType = targetTypes[i];
+          const argumentType = this.getType(argument);
+          if (!targetType) {
+            this.triggerImplyArgumentType(functionName, i, argumentType, this);
+            targetType = argumentType;
+          }
+          switch (argumentType) {
+           case "Boolean":
+            this.coerce(this.expression(argument), "i32");
+            continue;
+
+           case "Number":
+           case "Float":
+            if (targetType === "Integer") {
+              this.castValueToInteger(argument);
+              continue;
+            } else if (targetType === "Number" || targetType === "Float" || targetType === "LiteralInteger") {
+              this.coerce(this.expression(argument), "f32");
+              continue;
+            }
+            break;
+
+           case "Integer":
+            if (targetType === "Number" || targetType === "Float") {
+              this.castValueToFloat(argument);
+              continue;
+            } else if (targetType === "Integer") {
+              this.coerce(this.expression(argument), "i32");
+              continue;
+            }
+            break;
+
+           case "LiteralInteger":
+            if (targetType === "Integer") {
+              this.castLiteralToInteger(argument);
+              continue;
+            } else if (targetType === "Number" || targetType === "Float" || targetType === "LiteralInteger") {
+              this.castLiteralToFloat(argument);
+              continue;
+            }
+            break;
+
+           case "Array(2)":
+           case "Array(3)":
+           case "Array(4)":
+           case "Array":
+           case "Array2D":
+           case "Array3D":
+           case "Input":
+            throw this.astErrorOutput("WebAssembly backend does not yet support array arguments to helper functions", ast);
+          }
+          throw this.astErrorOutput(`Unhandled argument combination of ${argumentType} and ${targetType} for argument named "${argument.name}"`, ast);
+        }
+        this.em.call(this.mangleFunctionName(functionName));
+        switch (returnType) {
+         case null:
+         case void 0:
+          return "void";
+
+         case "Integer":
+          return "i32";
+
+         case "Boolean":
+          return "bool";
+
+         default:
+          return "f32";
+        }
+      }
+      emitMathCall(functionName, ast) {
+        if (functionName === "random") {
+          this.usesRandom = true;
+          this.em.call("pcg_random");
+          return "f32";
+        }
+        const emitMathArg = argument => {
+          switch (this.getType(argument)) {
+           case "Integer":
+            this.castValueToFloat(argument);
+            break;
+
+           case "LiteralInteger":
+            this.castLiteralToFloat(argument);
+            break;
+
+           default:
+            this.coerce(this.expression(argument), "f32");
+          }
+        };
+        const nativeOp = MATH_NATIVE_OPS[functionName];
+        if (nativeOp) {
+          emitMathArg(ast.arguments[0]);
+          this.em[nativeOp]();
+          return "f32";
+        }
+        switch (functionName) {
+         case "round":
+          emitMathArg(ast.arguments[0]);
+          this.em.f32Const(.5).f32Add().f32Floor();
+          return "f32";
+
+         case "fround":
+          emitMathArg(ast.arguments[0]);
+          return "f32";
+
+         case "min":
+         case "max":
+          {
+            const op = functionName === "min" ? "f32Min" : "f32Max";
+            emitMathArg(ast.arguments[0]);
+            for (let i = 1; i < ast.arguments.length; i++) {
+              emitMathArg(ast.arguments[i]);
+              this.em[op]();
+            }
+            return "f32";
+          }
+
+         case "imul":
+          emitMathArg(ast.arguments[0]);
+          this.em.i32TruncSatF32S();
+          emitMathArg(ast.arguments[1]);
+          this.em.i32TruncSatF32S();
+          this.em.i32Mul().f32ConvertI32S();
+          return "f32";
+
+         case "clz32":
+          emitMathArg(ast.arguments[0]);
+          this.em.i32TruncSatF32U().i32Clz().f32ConvertI32S();
+          return "f32";
+
+         default:
+          {
+            const arity = MATH_IMPORT_ARITY[functionName];
+            if (!arity) throw this.astErrorOutput(`WebAssembly backend does not yet support Math.${functionName}`, ast);
+            for (let i = 0; i < arity; i++) emitMathArg(ast.arguments[i]);
+            this.usedMathImports.add(functionName);
+            this.em.call("math_" + functionName);
+            return "f32";
+          }
+        }
+      }
+      exprMember(mNode) {
+        const details = this.getMemberExpressionDetails(mNode);
+        if (!details) throw this.astErrorOutput("Unexpected expression", mNode);
+        const {signature: signature, name: name, origin: origin, type: type, property: property, xProperty: xProperty, yProperty: yProperty, zProperty: zProperty} = details;
+        switch (signature) {
+         case "value.thread.value":
+         case "this.thread.value":
+          {
+            if (name !== "x" && name !== "y" && name !== "z") throw this.astErrorOutput("Unexpected expression, expected `this.thread.x`, `this.thread.y`, or `this.thread.z`", mNode);
+            this.readsThread = true;
+            const globals = this.assembler ? this.assembler.globals : null;
+            this.em.globalGet(globals ? globals["thread" + name.toUpperCase()] : 0);
+            return "i32";
+          }
+
+         case "this.output.value":
+          {
+            const axisIndex = {
+              x: 0,
+              y: 1,
+              z: 2
+            }[name];
+            if (axisIndex === void 0) throw this.astErrorOutput("Unexpected expression", mNode);
+            const value = this.output[axisIndex];
+            if (this.isState("casting-to-float")) {
+              this.em.f32Const(value);
+              return "f32";
+            }
+            this.em.i32Const(value);
+            return "i32";
+          }
+
+         case "value.value":
+          {
+            if (origin === "Math") {
+              this.em.f32Const(Math[name]);
+              return "f32";
+            }
+            const component = {
+              r: 0,
+              g: 1,
+              b: 2,
+              a: 3
+            }[property];
+            if (component !== void 0) {
+              const local = this.locals.get(name);
+              if (local && local.kind === "vec" && component < local.n) {
+                this.em.localGet(local.indices[component]);
+                return "f32";
+              }
+            }
+            throw this.astErrorOutput("Unexpected expression", mNode);
+          }
+
+         case "this.constants.value":
+          {
+            const value = this.constants[name];
+            switch (type) {
+             case "Integer":
+              if (this.isState("casting-to-float")) {
+                this.em.f32Const(value);
+                return "f32";
+              }
+              this.em.i32Const(Math.round(value));
+              return "i32";
+
+             case "Number":
+             case "Float":
+              if (this.isState("casting-to-integer")) {
+                this.em.i32Const(Math.round(value));
+                return "i32";
+              }
+              this.em.f32Const(value);
+              return "f32";
+
+             case "Boolean":
+              this.em.i32Const(value ? 1 : 0);
+              return "bool";
+
+             default:
+              throw this.astErrorOutput(`WebAssembly backend does not yet support constant type ${type}`, mNode);
+            }
+          }
+
+         case "value[]":
+         case "value[][]":
+         case "value[][][]":
+         case "value[][][][]":
+          {
+            const local = this.locals.get(name);
+            if (local && local.kind === "vec") {
+              if (signature !== "value[]") throw this.astErrorOutput("Unexpected expression", mNode);
+              return this.emitVecIndex(local, xProperty);
+            }
+            return this.emitFlatLoad("arrays", name, xProperty, yProperty, zProperty, mNode);
+          }
+
+         case "this.constants.value[]":
+         case "this.constants.value[][]":
+         case "this.constants.value[][][]":
+         case "this.constants.value[][][][]":
+          return this.emitFlatLoad("constantArrays", name, xProperty, yProperty, zProperty, mNode);
+
+         case "fn()[]":
+          throw this.astErrorOutput("WebAssembly backend does not yet support indexing a function call result", mNode);
+
+         default:
+          throw this.astErrorOutput(`WebAssembly backend does not yet support expression signature "${signature}"`, mNode);
+        }
+      }
+      emitFlatLoad(table, name, xProperty, yProperty, zProperty, mNode) {
+        let layout;
+        if (this.assembler) {
+          layout = this.assembler.layout[table][name];
+          if (!layout) throw this.astErrorOutput(`no memory layout for "${name}" \u2014 arrays are only readable as kernel arguments or constants`, mNode);
+        } else layout = {
+          offset: 0,
+          dims: [ 1, 1, 1 ]
+        };
+        this.emitIndex(xProperty);
+        if (yProperty) {
+          this.emitIndex(yProperty);
+          this.em.i32Const(layout.dims[0]).i32Mul().i32Add();
+        }
+        if (zProperty) {
+          this.emitIndex(zProperty);
+          this.em.i32Const(layout.dims[0] * layout.dims[1]).i32Mul().i32Add();
+        }
+        if (this.vec && this.vMaskDepth > 0) this.emitClampScalarIndex(layout.dims[0] * layout.dims[1] * layout.dims[2] - 1);
+        this.em.i32Const(2).i32Shl();
+        this.em.f32Load(layout.offset);
+        return "f32";
+      }
+      emitClampScalarIndex(max) {
+        const t = this.em.addLocal("i32");
+        this.em.localSet(t);
+        this.em.localGet(t).i32Const(0).localGet(t).i32Const(0).i32GeS().select();
+        this.em.localSet(t);
+        this.em.localGet(t).i32Const(max).localGet(t).i32Const(max).i32LeS().select();
+      }
+      emitVecIndex(local, xProperty) {
+        if (xProperty.type === "Literal" && Number.isInteger(xProperty.value)) {
+          if (xProperty.value < 0 || xProperty.value >= local.n) throw this.astErrorOutput(`index ${xProperty.value} out of range for Array(${local.n})`, xProperty);
+          this.em.localGet(local.indices[xProperty.value]);
+          return "f32";
+        }
+        const idx = this.em.addLocal("i32");
+        this.emitIndex(xProperty);
+        this.em.localSet(idx);
+        this.em.localGet(local.indices[0]);
+        for (let k = 1; k < local.n; k++) {
+          this.em.localGet(local.indices[k]);
+          this.em.localGet(idx).i32Const(k).i32Ne();
+          this.em.select();
+        }
+        return "f32";
+      }
+      emitIndex(property) {
+        if (!property) throw new Error("Property not set");
+        switch (this.getType(property)) {
+         case "Number":
+         case "Float":
+          this.castValueToInteger(property);
+          return;
+
+         case "LiteralInteger":
+          this.castLiteralToInteger(property);
+          return;
+
+         case "Integer":
+          {
+            this.pushState("building-integer");
+            const emitted = this.expression(property);
+            this.popState("building-integer");
+            this.coerce(emitted, "i32");
+            return;
+          }
+
+         default:
+          this.coerce(this.expression(property), "i32");
+        }
+      }
+      emitVectorFunction(assembler) {
+        if (!this.isRootKernel) throw new Error("only the root kernel is vectorized; helpers are lane-scalarized at call sites");
+        this.assembler = assembler;
+        const em = assembler.module.addFunction("kernel_simd", {
+          params: [],
+          results: []
+        });
+        this.em = em;
+        this.vec = true;
+        try {
+          this.locals = new Map;
+          this.depth = 0;
+          this.loopStack = [];
+          this.vLoopStack = [];
+          this.taintedLocals = new Set;
+          const ast = this.getJsAST();
+          if (!this.vInfo) this.vInfo = this.vAnalyze(ast);
+          this.vMaskDepth = 0;
+          this.vTerminated = false;
+          this.vCur = em.addLocal("v128");
+          em.v128ConstI32x4(-1, -1, -1, -1).localSet(this.vCur);
+          this.vRetMask = this.vInfo.varyingReturn ? em.addLocal("v128") : -1;
+          this._vBaseX = -1;
+          if (assembler.helperInfo) {
+            this._vBaseX = em.addLocal("i32");
+            em.globalGet(assembler.globals.threadX).localSet(this._vBaseX);
+          }
+          for (const name of this.vInfo.assignedArgs) {
+            const argumentIndex = this.argumentNames.indexOf(name);
+            const gtype = this.argumentTypes[argumentIndex];
+            const slot = assembler.layout.scalars[name];
+            const isInt = gtype === "Integer" || gtype === "Boolean";
+            const index = em.addLocal("v128");
+            em.i32Const(0);
+            if (isInt) em.i32Load(slot.offset).i32x4Splat(); else em.f32Load(slot.offset).f32x4Splat();
+            em.localSet(index);
+            this.locals.set(name, {
+              kind: "vscalar",
+              index: index,
+              wtype: isInt ? "vi32" : "vf32",
+              gtype: gtype
+            });
+          }
+          const body = ast.body.body;
+          for (let i = 0; i < body.length; i++) {
+            this.vstatement(body[i]);
+            if (this.vTerminated) break;
+          }
+        } finally {
+          this.vec = false;
+          this.vMaskDepth = 0;
+        }
+        return em;
+      }
+      vAnalyze(ast) {
+        const varying = new Set;
+        const assignedArgs = new Set;
+        let varyingReturn = false;
+        let changed = true;
+        const self = this;
+        const exprVarying = node => {
+          if (!node || typeof node !== "object") return false;
+          switch (node.type) {
+           case "Literal":
+           case "ThisExpression":
+            return false;
+
+           case "Identifier":
+            return varying.has(node.name);
+
+           case "MemberExpression":
+            if (!node.computed && node.object.type === "MemberExpression" && !node.object.computed && node.object.property && node.object.property.name === "thread") return node.property.name === "x";
+            if (node.computed) return exprVarying(node.object) || exprVarying(node.property);
+            return exprVarying(node.object);
+
+           case "BinaryExpression":
+           case "LogicalExpression":
+            return exprVarying(node.left) || exprVarying(node.right);
+
+           case "UnaryExpression":
+           case "UpdateExpression":
+            return exprVarying(node.argument);
+
+           case "ConditionalExpression":
+            return exprVarying(node.test) || exprVarying(node.consequent) || exprVarying(node.alternate);
+
+           case "CallExpression":
+            if (self.isAstMathFunction(node)) {
+              if (node.callee.property.name === "random") return true;
+              return node.arguments.some(exprVarying);
+            }
+            return true;
+
+           case "SequenceExpression":
+            return node.expressions.some(exprVarying);
+
+           case "ArrayExpression":
+            return node.elements.some(exprVarying);
+
+           case "AssignmentExpression":
+            return exprVarying(node.right) || node.left.type === "Identifier" && varying.has(node.left.name);
+
+           default:
+            return true;
+          }
+        };
+        const taint = name => {
+          if (name && !varying.has(name)) {
+            varying.add(name);
+            changed = true;
+          }
+        };
+        const scanExprTaints = (node, cv) => {
+          if (!node || typeof node !== "object") return;
+          if (Array.isArray(node)) return node.forEach(sub => scanExprTaints(sub, cv));
+          switch (node.type) {
+           case "UpdateExpression":
+            if (cv && node.argument.type === "Identifier") taint(node.argument.name);
+            return scanExprTaints(node.argument, cv);
+
+           case "AssignmentExpression":
+            if (cv && node.left.type === "Identifier") taint(node.left.name);
+            scanExprTaints(node.left, cv);
+            return scanExprTaints(node.right, cv);
+
+           case "ConditionalExpression":
+            {
+              scanExprTaints(node.test, cv);
+              const branchCv = cv || exprVarying(node.test);
+              scanExprTaints(node.consequent, branchCv);
+              return scanExprTaints(node.alternate, branchCv);
+            }
+
+           case "LogicalExpression":
+            scanExprTaints(node.left, cv);
+            return scanExprTaints(node.right, cv || exprVarying(node.left));
+
+           default:
+            for (const key in node) {
+              if (key === "loc" || key === "start" || key === "end" || key === "parent") continue;
+              const child = node[key];
+              if (child && typeof child === "object") scanExprTaints(child, cv);
+            }
+          }
+        };
+        const collectAssigned = (node, out) => {
+          if (!node || typeof node !== "object") return;
+          if (Array.isArray(node)) return node.forEach(sub => collectAssigned(sub, out));
+          switch (node.type) {
+           case "VariableDeclarator":
+            if (node.id && node.id.type === "Identifier") out.push(node.id.name);
+            break;
+
+           case "AssignmentExpression":
+            if (node.left.type === "Identifier") out.push(node.left.name);
+            break;
+
+           case "UpdateExpression":
+            if (node.argument.type === "Identifier") out.push(node.argument.name);
+            break;
+
+           case "FunctionDeclaration":
+            return;
+          }
+          for (const key in node) {
+            if (key === "loc" || key === "start" || key === "end" || key === "parent") continue;
+            const child = node[key];
+            if (child && typeof child === "object") collectAssigned(child, out);
+          }
+        };
+        const hasVaryingExit = (node, cv) => {
+          if (!node || typeof node !== "object") return false;
+          if (Array.isArray(node)) return node.some(sub => hasVaryingExit(sub, cv));
+          switch (node.type) {
+           case "BreakStatement":
+           case "ContinueStatement":
+            return cv;
+
+           case "ForStatement":
+           case "WhileStatement":
+           case "DoWhileStatement":
+           case "FunctionDeclaration":
+            return false;
+
+           case "IfStatement":
+            {
+              const branchCv = cv || exprVarying(node.test);
+              if (hasVaryingExit(node.consequent, branchCv)) return true;
+              return node.alternate ? hasVaryingExit(node.alternate, branchCv) : false;
+            }
+
+           case "ConditionalExpression":
+            {
+              const branchCv = cv || exprVarying(node.test);
+              return hasVaryingExit(node.consequent, branchCv) || hasVaryingExit(node.alternate, branchCv);
+            }
+
+           case "SwitchStatement":
+            {
+              const switchCv = cv || exprVarying(node.discriminant) || node.cases.some(c => c.test && exprVarying(c.test));
+              return node.cases.some(c => c.consequent.some(stmt => stmt.type === "BreakStatement" ? false : hasVaryingExit(stmt, switchCv)));
+            }
+
+           default:
+            for (const key in node) {
+              if (key === "loc" || key === "start" || key === "end" || key === "parent") continue;
+              const child = node[key];
+              if (child && typeof child === "object" && hasVaryingExit(child, cv)) return true;
+            }
+            return false;
+          }
+        };
+        const walkExprStatement = (node, cv) => {
+          switch (node.type) {
+           case "AssignmentExpression":
+            if (node.left.type === "Identifier") {
+              const name = node.left.name;
+              if (self.argumentNames.indexOf(name) !== -1) {
+                if (!assignedArgs.has(name)) {
+                  assignedArgs.add(name);
+                  changed = true;
+                }
+                taint(name);
+              }
+              if (cv || exprVarying(node.right) || node.operator !== "=" && varying.has(name)) taint(name);
+            }
+            return scanExprTaints(node.right, cv);
+
+           case "UpdateExpression":
+            if (node.argument.type === "Identifier") {
+              const name = node.argument.name;
+              if (self.argumentNames.indexOf(name) !== -1) {
+                if (!assignedArgs.has(name)) {
+                  assignedArgs.add(name);
+                  changed = true;
+                }
+                taint(name);
+              }
+              if (cv) taint(name);
+            }
+            return;
+
+           case "SequenceExpression":
+            return node.expressions.forEach(e => walkExprStatement(e, cv));
+
+           default:
+            return scanExprTaints(node, cv);
+          }
+        };
+        const walkStatement = (node, cv) => {
+          if (!node) return;
+          switch (node.type) {
+           case "VariableDeclaration":
+            for (const declaration of node.declarations) {
+              if (!declaration.init) continue;
+              if (cv || exprVarying(declaration.init)) taint(declaration.id.name);
+              scanExprTaints(declaration.init, cv);
+            }
+            return;
+
+           case "ExpressionStatement":
+            return walkExprStatement(node.expression, cv);
+
+           case "ReturnStatement":
+            if (cv) varyingReturn = true;
+            if (node.argument) scanExprTaints(node.argument, cv);
+            return;
+
+           case "IfStatement":
+            {
+              scanExprTaints(node.test, cv);
+              const branchCv = cv || exprVarying(node.test);
+              walkStatement(node.consequent, branchCv);
+              if (node.alternate) walkStatement(node.alternate, branchCv);
+              return;
+            }
+
+           case "ForStatement":
+           case "WhileStatement":
+           case "DoWhileStatement":
+            {
+              const loopVarying = cv || (node.test ? exprVarying(node.test) : false) || hasVaryingExit(node.body, false);
+              if (loopVarying) {
+                const assigned = [];
+                if (node.init) collectAssigned(node.init, assigned);
+                collectAssigned(node.body, assigned);
+                if (node.update) collectAssigned(node.update, assigned);
+                assigned.forEach(taint);
+              }
+              if (node.init) if (node.init.type === "VariableDeclaration") walkStatement(node.init, cv); else walkExprStatement(node.init, cv);
+              walkStatement(node.body, loopVarying);
+              if (node.update) walkExprStatement(node.update, loopVarying);
+              if (node.test) scanExprTaints(node.test, loopVarying);
+              return;
+            }
+
+           case "SwitchStatement":
+            {
+              const switchCv = cv || exprVarying(node.discriminant) || node.cases.some(c => c.test && exprVarying(c.test));
+              for (const switchCase of node.cases) for (const stmt of switchCase.consequent) walkStatement(stmt, switchCv);
+              return;
+            }
+
+           case "BlockStatement":
+            return node.body.forEach(stmt => walkStatement(stmt, cv));
+
+           default:
+            return;
+          }
+        };
+        while (changed) {
+          changed = false;
+          walkStatement(ast.body, false);
+        }
+        return {
+          varying: varying,
+          varyingReturn: varyingReturn,
+          assignedArgs: assignedArgs,
+          exprVarying: exprVarying,
+          hasVaryingExit: hasVaryingExit
+        };
+      }
+      vZero() {
+        this.em.v128ConstI32x4(0, 0, 0, 0);
+        return this;
+      }
+      vInnermostVaryingLoop() {
+        const top = this.vLoopStack[this.vLoopStack.length - 1];
+        return top && top.varying ? top : null;
+      }
+      vRecomputeCur(savedIndex) {
+        const em = this.em;
+        em.localGet(savedIndex);
+        if (this.vRetMask !== -1) em.localGet(this.vRetMask).v128Andnot();
+        const loop = this.vInnermostVaryingLoop();
+        if (loop) {
+          if (loop.vBrk !== -1) em.localGet(loop.vBrk).v128Andnot();
+          if (loop.vCnt !== -1) em.localGet(loop.vCnt).v128Andnot();
+        }
+        em.localSet(this.vCur);
+      }
+      vLoopBodyExits(body) {
+        let hasBreak = false;
+        let hasContinue = false;
+        const walk = node => {
+          if (!node || typeof node !== "object" || hasBreak && hasContinue) return;
+          if (Array.isArray(node)) return node.forEach(walk);
+          switch (node.type) {
+           case "BreakStatement":
+            hasBreak = true;
+            return;
+
+           case "ContinueStatement":
+            hasContinue = true;
+            return;
+
+           case "ForStatement":
+           case "WhileStatement":
+           case "DoWhileStatement":
+           case "FunctionDeclaration":
+            return;
+
+           case "SwitchStatement":
+            for (const switchCase of node.cases) for (const stmt of switchCase.consequent) if (stmt.type !== "BreakStatement") walk(stmt);
+            return;
+          }
+          for (const key in node) {
+            if (key === "loc" || key === "start" || key === "end" || key === "parent") continue;
+            const child = node[key];
+            if (child && typeof child === "object") walk(child);
+          }
+        };
+        walk(body);
+        return {
+          hasBreak: hasBreak,
+          hasContinue: hasContinue
+        };
+      }
+      vSetLocal(index) {
+        const em = this.em;
+        if (this.vMaskDepth > 0) em.localGet(index).localGet(this.vCur).v128Bitselect();
+        em.localSet(index);
+      }
+      vCoerce(from, to) {
+        if (from === to) return to;
+        const em = this.em;
+        switch (from) {
+         case "f32":
+         case "i32":
+         case "bool":
+          if (to === "vf32") {
+            this.coerce(from, "f32");
+            em.f32x4Splat();
+            return to;
+          }
+          if (to === "vi32") {
+            this.coerce(from, "i32");
+            em.i32x4Splat();
+            return to;
+          }
+          if (to === "vbool") {
+            this.coerce(from, "i32");
+            em.i32x4Splat();
+            this.vZero();
+            em.i32x4Ne();
+            return to;
+          }
+          break;
+
+         case "vf32":
+          if (to === "vi32") {
+            em.i32x4TruncSatF32x4S();
+            return to;
+          }
+          if (to === "vbool") {
+            em.v128ConstF32x4(0, 0, 0, 0).f32x4Ne();
+            return to;
+          }
+          break;
+
+         case "vi32":
+          if (to === "vf32") {
+            em.f32x4ConvertI32x4S();
+            return to;
+          }
+          if (to === "vbool") {
+            this.vZero();
+            em.i32x4Ne();
+            return to;
+          }
+          break;
+
+         case "vbool":
+          if (to === "vi32") {
+            em.v128ConstI32x4(1, 1, 1, 1).v128And();
+            return to;
+          }
+          if (to === "vf32") {
+            em.v128ConstI32x4(1, 1, 1, 1).v128And().f32x4ConvertI32x4S();
+            return to;
+          }
+          break;
+        }
+        throw new Error(`cannot convert ${from} to ${to}`);
+      }
+      vCastLiteralToInteger(ast) {
+        this.pushState("casting-to-integer");
+        const type = this.vexpr(ast);
+        this.popState("casting-to-integer");
+        this.vCoerce(type, "vi32");
+        return "vi32";
+      }
+      vCastLiteralToFloat(ast) {
+        this.pushState("casting-to-float");
+        const type = this.vexpr(ast);
+        this.popState("casting-to-float");
+        this.vCoerce(type, "vf32");
+        return "vf32";
+      }
+      vCastValueToInteger(ast) {
+        this.pushState("casting-to-integer");
+        const type = this.vexpr(ast);
+        this.popState("casting-to-integer");
+        this.vCoerce(type, "vi32");
+        return "vi32";
+      }
+      vCastValueToFloat(ast) {
+        this.pushState("casting-to-float");
+        const type = this.vexpr(ast);
+        this.popState("casting-to-float");
+        this.vCoerce(type, "vf32");
+        return "vf32";
+      }
+      vEmitByType(ast, want) {
+        const type = this.getType(ast);
+        if (want === "vf32") {
+          if (type === "Integer") return this.vCastValueToFloat(ast);
+          if (type === "LiteralInteger") return this.vCastLiteralToFloat(ast);
+          this.vCoerce(this.vexpr(ast), "vf32");
+          return "vf32";
+        }
+        if (type === "Number" || type === "Float") return this.vCastValueToInteger(ast);
+        if (type === "LiteralInteger") return this.vCastLiteralToInteger(ast);
+        this.vCoerce(this.vexpr(ast), "vi32");
+        return "vi32";
+      }
+      vexprMask(ast) {
+        const type = this.vexpr(ast);
+        if (type === "vbool") return;
+        if (type === "vi32") {
+          this.vZero();
+          this.em.i32x4Ne();
+          return;
+        }
+        if (type === "vf32") {
+          this.em.v128ConstF32x4(0, 0, 0, 0).f32x4Ne();
+          return;
+        }
+        this.coerce(type, "bool");
+        this.em.i32x4Splat();
+        this.vZero();
+        this.em.i32x4Ne();
+      }
+      vstatement(ast) {
+        switch (ast.type) {
+         case "VariableDeclaration":
+          return this.vstmtVariableDeclaration(ast);
+
+         case "ExpressionStatement":
+          return this.vstatementExpression(ast.expression);
+
+         case "ReturnStatement":
+          return this.vstmtReturn(ast);
+
+         case "IfStatement":
+          return this.vstmtIf(ast);
+
+         case "ForStatement":
+          return this.vstmtFor(ast);
+
+         case "WhileStatement":
+          return this.vstmtWhile(ast);
+
+         case "DoWhileStatement":
+          return this.vstmtDoWhile(ast);
+
+         case "BlockStatement":
+          for (let i = 0; i < ast.body.length; i++) {
+            this.vstatement(ast.body[i]);
+            if (this.vTerminated) break;
+          }
+          return;
+
+         case "BreakStatement":
+          return this.vstmtBreak(ast);
+
+         case "ContinueStatement":
+          return this.vstmtContinue(ast);
+
+         case "SwitchStatement":
+          return this.vstmtSwitch(ast);
+
+         case "FunctionDeclaration":
+          if (this.isChildFunction(ast)) return;
+          throw this.astErrorOutput("unexpected function declaration", ast);
+
+         case "EmptyStatement":
+         case "DebuggerStatement":
+          return;
+
+         default:
+          throw this.astErrorOutput(`Unknown statement type ${ast.type}`, ast);
+        }
+      }
+      vstatementBody(node) {
+        if (!node) return;
+        const previous = this.vTerminated;
+        this.vTerminated = false;
+        this.vstatement(node);
+        this.vTerminated = previous;
+      }
+      vstatementExpression(expression) {
+        switch (expression.type) {
+         case "AssignmentExpression":
+          return this.vAssign(expression);
+
+         case "UpdateExpression":
+          this.vUpdate(expression, true);
+          return;
+
+         case "SequenceExpression":
+          for (let i = 0; i < expression.expressions.length; i++) this.vstatementExpression(expression.expressions[i]);
+          return;
+
+         case "Identifier":
+         case "Literal":
+          return;
+
+         default:
+          if (this.vexpr(expression) !== "void") this.em.drop();
+        }
+      }
+      vstmtVariableDeclaration(varDecNode) {
+        const declarations = varDecNode.declarations;
+        if (!declarations || !declarations[0] || !declarations[0].init) throw this.astErrorOutput("Unexpected expression", varDecNode);
+        for (let i = 0; i < declarations.length; i++) {
+          const declaration = declarations[i];
+          if (!this.vInfo.varying.has(declaration.id.name)) {
+            this.stmtVariableDeclaration(Object.assign({}, varDecNode, {
+              declarations: [ declaration ]
+            }));
+            continue;
+          }
+          this.vDeclareVarying(declaration, varDecNode);
+        }
+      }
+      vDeclareVarying(declaration, varDecNode) {
+        const em = this.em;
+        const init = declaration.init;
+        const name = declaration.id.name;
+        const info = this.getDeclaration(declaration.id);
+        const actualType = this.getType(init);
+        if (actualType === "Array(2)" || actualType === "Array(3)" || actualType === "Array(4)") {
+          const n = parseInt(actualType.substring(6), 10);
+          info.valueType = actualType;
+          let local = this.locals.get(name);
+          if (!local || local.kind !== "vvec" || local.n !== n) {
+            const indices = [];
+            for (let c = 0; c < n; c++) indices.push(em.addLocal("v128"));
+            local = {
+              kind: "vvec",
+              indices: indices,
+              n: n,
+              gtype: actualType
+            };
+            this.locals.set(name, local);
+          }
+          if (init.type === "ArrayExpression") {
+            for (let c = 0; c < n; c++) {
+              this.vEmitArrayElement(init.elements[c]);
+              this.vSetLocal(local.indices[c]);
+            }
+            return;
+          }
+          if (init.type === "Identifier") {
+            const source = this.locals.get(init.name);
+            if (source && source.kind === "vvec" && source.n === n) {
+              for (let c = 0; c < n; c++) {
+                em.localGet(source.indices[c]);
+                this.vSetLocal(local.indices[c]);
+              }
+              return;
+            }
+            if (source && source.kind === "vec" && source.n === n) {
+              for (let c = 0; c < n; c++) {
+                em.localGet(source.indices[c]).f32x4Splat();
+                this.vSetLocal(local.indices[c]);
+              }
+              return;
+            }
+          }
+          throw this.astErrorOutput(`WebAssembly backend does not yet support ${actualType} initializer of type ${init.type}`, varDecNode);
+        }
+        let type = actualType;
+        if (type === "LiteralInteger") type = info.suggestedType === "Integer" ? "Integer" : "Number";
+        if (actualType === "Integer" && type === "Integer") {
+          info.valueType = "Number";
+          this.vSetVaryingScalar(name, "vf32", "Number", () => this.vCastValueToFloat(init));
+          return;
+        }
+        info.valueType = type;
+        switch (type) {
+         case "Number":
+         case "Float":
+          this.vSetVaryingScalar(name, "vf32", type, () => {
+            if (actualType === "LiteralInteger") this.vCastLiteralToFloat(init); else if (actualType === "Integer") this.vCastValueToFloat(init); else this.vCoerce(this.vexpr(init), "vf32");
+          });
+          break;
+
+         case "Integer":
+          this.vSetVaryingScalar(name, "vi32", "Integer", () => {
+            if (actualType === "LiteralInteger") this.vCastLiteralToInteger(init); else if (actualType === "Number" || actualType === "Float") this.vCastValueToInteger(init); else this.vCoerce(this.vexpr(init), "vi32");
+          });
+          break;
+
+         case "Boolean":
+          this.vSetVaryingScalar(name, "vi32", "Boolean", () => {
+            this.vexprMask(init);
+            this.em.v128ConstI32x4(1, 1, 1, 1).v128And();
+          });
+          break;
+
+         default:
+          throw this.astErrorOutput(`WebAssembly backend does not yet support declaring type ${type}`, varDecNode);
+        }
+      }
+      vSetVaryingScalar(name, wtype, gtype, emitInit) {
+        let local = this.locals.get(name);
+        if (!local || local.kind !== "vscalar" || local.wtype !== wtype) {
+          local = {
+            kind: "vscalar",
+            index: this.em.addLocal("v128"),
+            wtype: wtype,
+            gtype: gtype
+          };
+          this.locals.set(name, local);
+        } else local.gtype = gtype;
+        emitInit();
+        this.vSetLocal(local.index);
+      }
+      vEmitArrayElement(element) {
+        switch (this.getType(element)) {
+         case "Integer":
+          this.vCastValueToFloat(element);
+          break;
+
+         case "LiteralInteger":
+          this.vCastLiteralToFloat(element);
+          break;
+
+         default:
+          this.vCoerce(this.vexpr(element), "vf32");
+        }
+      }
+      vAssign(assNode) {
+        if (assNode.left.type !== "Identifier") throw this.astErrorOutput(`WebAssembly backend does not yet support assignment to ${assNode.left.type}`, assNode);
+        const name = assNode.left.name;
+        const local = this.locals.get(name);
+        if (local && local.kind === "scalar") return this.emitAssignment(assNode);
+        if (!local || local.kind !== "vscalar") throw this.astErrorOutput(`cannot assign to "${name}"`, assNode);
+        const wtype = local.wtype;
+        if (assNode.operator === "=") {
+          const leftType = this.getType(assNode.left);
+          const rightType = this.getType(assNode.right);
+          if (leftType !== "Integer" && rightType === "Integer") {
+            this.vCastValueToFloat(assNode.right);
+            this.vCoerce("vf32", wtype);
+          } else if (leftType !== "Integer" && rightType === "LiteralInteger") {
+            this.vCastLiteralToFloat(assNode.right);
+            this.vCoerce("vf32", wtype);
+          } else if (leftType === "Integer" && rightType === "LiteralInteger") {
+            this.vCastLiteralToInteger(assNode.right);
+            this.vCoerce("vi32", wtype);
+          } else if (leftType === "Integer" && (rightType === "Number" || rightType === "Float")) {
+            this.vCastValueToInteger(assNode.right);
+            this.vCoerce("vi32", wtype);
+          } else this.vCoerce(this.vexpr(assNode.right), wtype);
+        } else {
+          const synthetic = {
+            type: "BinaryExpression",
+            operator: assNode.operator.slice(0, -1),
+            left: assNode.left,
+            right: assNode.right
+          };
+          this.vCoerce(this.vexprBinary(synthetic), wtype);
+        }
+        this.vSetLocal(local.index);
+      }
+      vUpdate(uNode, isStatement) {
+        if (uNode.argument.type !== "Identifier") throw this.astErrorOutput("update expression needs a variable", uNode);
+        const local = this.locals.get(uNode.argument.name);
+        if (local && local.kind === "scalar") return this.emitUpdate(uNode, isStatement);
+        if (!local || local.kind !== "vscalar") throw this.astErrorOutput(`cannot update "${uNode.argument.name}"`, uNode);
+        const em = this.em;
+        const isInt = local.wtype === "vi32";
+        const one = () => isInt ? em.v128ConstI32x4(1, 1, 1, 1) : em.v128ConstF32x4(1, 1, 1, 1);
+        const op = uNode.operator === "++" ? isInt ? "i32x4Add" : "f32x4Add" : isInt ? "i32x4Sub" : "f32x4Sub";
+        if (isStatement) {
+          em.localGet(local.index);
+          one();
+          em[op]();
+          this.vSetLocal(local.index);
+          return "void";
+        }
+        if (uNode.prefix) {
+          em.localGet(local.index);
+          one();
+          em[op]();
+          this.vSetLocal(local.index);
+          em.localGet(local.index);
+        } else {
+          const old = em.addLocal("v128");
+          em.localGet(local.index).localSet(old);
+          em.localGet(local.index);
+          one();
+          em[op]();
+          this.vSetLocal(local.index);
+          em.localGet(old);
+        }
+        return local.wtype;
+      }
+      vstmtIf(ifNode) {
+        const em = this.em;
+        if (!this.vInfo.exprVarying(ifNode.test)) {
+          this.emitCondition(ifNode.test);
+          this.enterIf();
+          this.vstatementBody(ifNode.consequent);
+          if (ifNode.alternate) {
+            em.else_();
+            this.vstatementBody(ifNode.alternate);
+          }
+          this.exit();
+          return;
+        }
+        const m = em.addLocal("v128");
+        this.vexprMask(ifNode.test);
+        em.localSet(m);
+        const saved = em.addLocal("v128");
+        em.localGet(this.vCur).localSet(saved);
+        em.localGet(saved).localGet(m).v128And().localSet(this.vCur);
+        em.localGet(this.vCur).v128AnyTrue();
+        this.enterIf();
+        this.vMaskDepth++;
+        this.vstatementBody(ifNode.consequent);
+        this.vMaskDepth--;
+        this.exit();
+        if (ifNode.alternate) {
+          em.localGet(saved).localGet(m).v128Andnot().localSet(this.vCur);
+          em.localGet(this.vCur).v128AnyTrue();
+          this.enterIf();
+          this.vMaskDepth++;
+          this.vstatementBody(ifNode.alternate);
+          this.vMaskDepth--;
+          this.exit();
+        }
+        this.vRecomputeCur(saved);
+      }
+      vstmtReturn(ast) {
+        const em = this.em;
+        if (!ast.argument) {
+          this.vRetireOrReturn();
+          return;
+        }
+        this.pushState("skip-literal-correction");
+        const type = this.getType(ast.argument);
+        this.popState("skip-literal-correction");
+        switch (this.returnType) {
+         case "Array(2)":
+         case "Array(3)":
+         case "Array(4)":
+          {
+            const n = parseInt(this.returnType.substring(6), 10);
+            const argument = ast.argument;
+            const comps = [];
+            if (argument.type === "ArrayExpression") {
+              if (argument.elements.length !== n) throw this.astErrorOutput(`expected ${n} array elements to match return type ${this.returnType}`, ast);
+              for (let c = 0; c < n; c++) {
+                const t = em.addLocal("v128");
+                this.vEmitArrayElement(argument.elements[c]);
+                em.localSet(t);
+                comps.push(t);
+              }
+            } else if (argument.type === "Identifier") {
+              const local = this.locals.get(argument.name);
+              if (local && local.kind === "vvec" && local.n === n) for (let c = 0; c < n; c++) comps.push(local.indices[c]); else if (local && local.kind === "vec" && local.n === n) for (let c = 0; c < n; c++) {
+                const t = em.addLocal("v128");
+                em.localGet(local.indices[c]).f32x4Splat().localSet(t);
+                comps.push(t);
+              } else throw this.astErrorOutput(`"${argument.name}" is not an Array(${n}) variable`, ast);
+            } else throw this.astErrorOutput(`WebAssembly backend does not yet support returning ${this.returnType} from a ${argument.type}`, ast);
+            this.vStoreOutput(comps);
+            this.vRetireOrReturn();
+            return;
+          }
+
+         default:
+          {
+            const t = em.addLocal("v128");
+            switch (this.returnType) {
+             case "Integer":
+              if (type === "Float" || type === "Number") this.vCastValueToInteger(ast.argument); else if (type === "LiteralInteger") this.vCastLiteralToInteger(ast.argument); else this.vCoerce(this.vexpr(ast.argument), "vi32");
+              em.f32x4ConvertI32x4S();
+              break;
+
+             case "LiteralInteger":
+             case "Number":
+             case "Float":
+              if (type === "Integer") this.vCastValueToFloat(ast.argument); else if (type === "LiteralInteger") this.vCastLiteralToFloat(ast.argument); else this.vCoerce(this.vexpr(ast.argument), "vf32");
+              break;
+
+             case "Boolean":
+              this.vexprMask(ast.argument);
+              em.v128ConstI32x4(1, 1, 1, 1).v128And().f32x4ConvertI32x4S();
+              break;
+
+             default:
+              throw this.astErrorOutput(`WebAssembly backend does not yet support returning ${this.returnType}`, ast);
+            }
+            em.localSet(t);
+            this.vStoreOutput([ t ]);
+            this.vRetireOrReturn();
+          }
+        }
+      }
+      vStoreOutput(comps) {
+        const em = this.em;
+        const globals = this.assembler.globals;
+        const outputOffset = this.assembler.layout.outputOffset;
+        const n = comps.length;
+        let maskLocal = -1;
+        if (this.vMaskDepth > 0) maskLocal = this.vCur; else if (this.vRetMask !== -1) {
+          maskLocal = em.addLocal("v128");
+          em.localGet(this.vRetMask).v128Not().localSet(maskLocal);
+        }
+        const addr = em.addLocal("i32");
+        if (n === 1) {
+          em.globalGet(globals.dataIndex).i32Const(2).i32Shl().localSet(addr);
+          if (maskLocal === -1) em.localGet(addr).localGet(comps[0]).v128Store(outputOffset, 2); else {
+            em.localGet(addr);
+            em.localGet(comps[0]);
+            em.localGet(addr).v128Load(outputOffset, 2);
+            em.localGet(maskLocal).v128Bitselect();
+            em.v128Store(outputOffset, 2);
+          }
+          return;
+        }
+        em.globalGet(globals.dataIndex).i32Const(n).i32Mul().i32Const(2).i32Shl().localSet(addr);
+        for (let lane = 0; lane < 4; lane++) for (let c = 0; c < n; c++) {
+          const offset = outputOffset + (lane * n + c) * 4;
+          em.localGet(addr);
+          em.localGet(comps[c]).f32x4ExtractLane(lane);
+          if (maskLocal !== -1) {
+            em.localGet(addr).f32Load(offset);
+            em.localGet(maskLocal).i32x4ExtractLane(lane);
+            em.select();
+          }
+          em.f32Store(offset);
+        }
+      }
+      vRetireOrReturn() {
+        const em = this.em;
+        if (this.vMaskDepth === 0) {
+          em.return_();
+          this.vTerminated = true;
+          return;
+        }
+        em.localGet(this.vRetMask).localGet(this.vCur).v128Or().localSet(this.vRetMask);
+        this.vZero();
+        em.localSet(this.vCur);
+        this.vTerminated = true;
+      }
+      vstmtBreak(brNode) {
+        const target = this.vLoopStack[this.vLoopStack.length - 1];
+        if (!target) throw this.astErrorOutput("break used outside of a loop", brNode);
+        if (!target.varying) {
+          this.brTo(target.breakLevel);
+          this.vTerminated = true;
+          return;
+        }
+        if (target.vBrk === -1) throw this.astErrorOutput("internal: loop exit scan missed a break", brNode);
+        const em = this.em;
+        em.localGet(target.vBrk).localGet(this.vCur).v128Or().localSet(target.vBrk);
+        this.vZero();
+        em.localSet(this.vCur);
+        this.vTerminated = true;
+      }
+      vstmtContinue(crNode) {
+        const target = this.vLoopStack[this.vLoopStack.length - 1];
+        if (!target) throw this.astErrorOutput("continue used outside of a loop", crNode);
+        if (!target.varying) {
+          this.brTo(target.continueLevel);
+          this.vTerminated = true;
+          return;
+        }
+        if (target.vCnt === -1) throw this.astErrorOutput("internal: loop exit scan missed a continue", crNode);
+        const em = this.em;
+        em.localGet(target.vCnt).localGet(this.vCur).v128Or().localSet(target.vCnt);
+        this.vZero();
+        em.localSet(this.vCur);
+        this.vTerminated = true;
+      }
+      vstmtFor(forNode) {
+        if (forNode.type !== "ForStatement") throw this.astErrorOutput("Invalid for statement", forNode);
+        const em = this.em;
+        const varying = (forNode.test ? this.vInfo.exprVarying(forNode.test) : false) || this.vInfo.hasVaryingExit(forNode.body, false);
+        const isSafe = this.forLoopIsSafe(forNode);
+        if (forNode.init) if (forNode.init.type === "VariableDeclaration") this.vstmtVariableDeclaration(forNode.init); else this.vstatementExpression(forNode.init);
+        if (!varying) {
+          let safeI = -1;
+          if (!isSafe) {
+            safeI = em.addLocal("i32");
+            em.i32Const(0).localSet(safeI);
+          }
+          this.enterBlock();
+          const breakLevel = this.depth;
+          this.enterLoop();
+          const loopLevel = this.depth;
+          if (!isSafe) {
+            em.localGet(safeI).i32Const(this.loopMax).i32GeS();
+            this.brIfTo(breakLevel);
+          }
+          if (forNode.test) {
+            this.emitCondition(forNode.test);
+            em.i32Eqz();
+            this.brIfTo(breakLevel);
+          }
+          this.enterBlock();
+          const continueLevel = this.depth;
+          this.vLoopStack.push({
+            varying: false,
+            breakLevel: breakLevel,
+            continueLevel: continueLevel
+          });
+          if (forNode.body) this.vstatementBody(forNode.body);
+          this.vLoopStack.pop();
+          this.exit();
+          if (forNode.update) this.vstatementExpression(forNode.update);
+          if (!isSafe) em.localGet(safeI).i32Const(1).i32Add().localSet(safeI);
+          this.brTo(loopLevel);
+          this.exit();
+          this.exit();
+          return;
+        }
+        const saved = em.addLocal("v128");
+        em.localGet(this.vCur).localSet(saved);
+        const vLive = em.addLocal("v128");
+        em.localGet(this.vCur).localSet(vLive);
+        const exits = this.vLoopBodyExits(forNode.body);
+        let vBrk = -1;
+        if (exits.hasBreak) {
+          vBrk = em.addLocal("v128");
+          this.vZero();
+          em.localSet(vBrk);
+        }
+        const vCnt = exits.hasContinue ? em.addLocal("v128") : -1;
+        let safeI = -1;
+        if (!isSafe) {
+          safeI = em.addLocal("i32");
+          em.i32Const(0).localSet(safeI);
+        }
+        this.enterBlock();
+        const breakLevel = this.depth;
+        this.enterLoop();
+        const loopLevel = this.depth;
+        if (!isSafe) {
+          em.localGet(safeI).i32Const(this.loopMax).i32GeS();
+          this.brIfTo(breakLevel);
+        }
+        if (vBrk !== -1 || this.vRetMask !== -1) {
+          em.localGet(vLive);
+          if (vBrk !== -1) em.localGet(vBrk).v128Andnot();
+          if (this.vRetMask !== -1) em.localGet(this.vRetMask).v128Andnot();
+          em.localSet(vLive);
+        }
+        if (vCnt !== -1) {
+          this.vZero();
+          em.localSet(vCnt);
+        }
+        this.vMaskDepth++;
+        em.localGet(vLive).localSet(this.vCur);
+        if (forNode.test) {
+          em.localGet(vLive);
+          this.vexprMask(forNode.test);
+          em.v128And().localSet(vLive);
+        }
+        em.localGet(vLive).v128AnyTrue().i32Eqz();
+        this.brIfTo(breakLevel);
+        em.localGet(vLive).localSet(this.vCur);
+        this.vLoopStack.push({
+          varying: true,
+          vLive: vLive,
+          vBrk: vBrk,
+          vCnt: vCnt,
+          breakLevel: breakLevel,
+          loopLevel: loopLevel
+        });
+        if (forNode.body) this.vstatementBody(forNode.body);
+        this.vLoopStack.pop();
+        em.localGet(vLive);
+        if (vBrk !== -1) em.localGet(vBrk).v128Andnot();
+        if (this.vRetMask !== -1) em.localGet(this.vRetMask).v128Andnot();
+        em.localSet(this.vCur);
+        if (forNode.update) this.vstatementExpression(forNode.update);
+        this.vMaskDepth--;
+        if (!isSafe) em.localGet(safeI).i32Const(1).i32Add().localSet(safeI);
+        this.brTo(loopLevel);
+        this.exit();
+        this.exit();
+        this.vRecomputeCur(saved);
+      }
+      vstmtWhile(whileNode) {
+        if (whileNode.type !== "WhileStatement") throw this.astErrorOutput("Invalid while statement", whileNode);
+        const em = this.em;
+        const varying = this.vInfo.exprVarying(whileNode.test) || this.vInfo.hasVaryingExit(whileNode.body, false);
+        const safeI = em.addLocal("i32");
+        em.i32Const(0).localSet(safeI);
+        if (!varying) {
+          this.enterBlock();
+          const breakLevel = this.depth;
+          this.enterLoop();
+          const loopLevel = this.depth;
+          em.localGet(safeI).i32Const(this.loopMax).i32GeS();
+          this.brIfTo(breakLevel);
+          this.emitCondition(whileNode.test);
+          em.i32Eqz();
+          this.brIfTo(breakLevel);
+          this.enterBlock();
+          const continueLevel = this.depth;
+          this.vLoopStack.push({
+            varying: false,
+            breakLevel: breakLevel,
+            continueLevel: continueLevel
+          });
+          this.vstatementBody(whileNode.body);
+          this.vLoopStack.pop();
+          this.exit();
+          em.localGet(safeI).i32Const(1).i32Add().localSet(safeI);
+          this.brTo(loopLevel);
+          this.exit();
+          this.exit();
+          return;
+        }
+        const saved = em.addLocal("v128");
+        em.localGet(this.vCur).localSet(saved);
+        const vLive = em.addLocal("v128");
+        em.localGet(this.vCur).localSet(vLive);
+        const exits = this.vLoopBodyExits(whileNode.body);
+        let vBrk = -1;
+        if (exits.hasBreak) {
+          vBrk = em.addLocal("v128");
+          this.vZero();
+          em.localSet(vBrk);
+        }
+        const vCnt = exits.hasContinue ? em.addLocal("v128") : -1;
+        this.enterBlock();
+        const breakLevel = this.depth;
+        this.enterLoop();
+        const loopLevel = this.depth;
+        em.localGet(safeI).i32Const(this.loopMax).i32GeS();
+        this.brIfTo(breakLevel);
+        if (vBrk !== -1 || this.vRetMask !== -1) {
+          em.localGet(vLive);
+          if (vBrk !== -1) em.localGet(vBrk).v128Andnot();
+          if (this.vRetMask !== -1) em.localGet(this.vRetMask).v128Andnot();
+          em.localSet(vLive);
+        }
+        if (vCnt !== -1) {
+          this.vZero();
+          em.localSet(vCnt);
+        }
+        this.vMaskDepth++;
+        em.localGet(vLive).localSet(this.vCur);
+        em.localGet(vLive);
+        this.vexprMask(whileNode.test);
+        em.v128And().localSet(vLive);
+        em.localGet(vLive).v128AnyTrue().i32Eqz();
+        this.brIfTo(breakLevel);
+        em.localGet(vLive).localSet(this.vCur);
+        this.vLoopStack.push({
+          varying: true,
+          vLive: vLive,
+          vBrk: vBrk,
+          vCnt: vCnt,
+          breakLevel: breakLevel,
+          loopLevel: loopLevel
+        });
+        this.vstatementBody(whileNode.body);
+        this.vLoopStack.pop();
+        this.vMaskDepth--;
+        em.localGet(safeI).i32Const(1).i32Add().localSet(safeI);
+        this.brTo(loopLevel);
+        this.exit();
+        this.exit();
+        this.vRecomputeCur(saved);
+      }
+      vstmtDoWhile(doWhileNode) {
+        if (doWhileNode.type !== "DoWhileStatement") throw this.astErrorOutput("Invalid while statement", doWhileNode);
+        const em = this.em;
+        const varying = this.vInfo.exprVarying(doWhileNode.test) || this.vInfo.hasVaryingExit(doWhileNode.body, false);
+        const safeI = em.addLocal("i32");
+        em.i32Const(0).localSet(safeI);
+        if (!varying) {
+          this.enterBlock();
+          const breakLevel = this.depth;
+          this.enterLoop();
+          const loopLevel = this.depth;
+          em.localGet(safeI).i32Const(this.loopMax).i32GeS();
+          this.brIfTo(breakLevel);
+          this.enterBlock();
+          const continueLevel = this.depth;
+          this.vLoopStack.push({
+            varying: false,
+            breakLevel: breakLevel,
+            continueLevel: continueLevel
+          });
+          this.vstatementBody(doWhileNode.body);
+          this.vLoopStack.pop();
+          this.exit();
+          em.localGet(safeI).i32Const(1).i32Add().localSet(safeI);
+          this.emitCondition(doWhileNode.test);
+          this.brIfTo(loopLevel);
+          this.exit();
+          this.exit();
+          return;
+        }
+        const saved = em.addLocal("v128");
+        em.localGet(this.vCur).localSet(saved);
+        const vLive = em.addLocal("v128");
+        em.localGet(this.vCur).localSet(vLive);
+        const exits = this.vLoopBodyExits(doWhileNode.body);
+        let vBrk = -1;
+        if (exits.hasBreak) {
+          vBrk = em.addLocal("v128");
+          this.vZero();
+          em.localSet(vBrk);
+        }
+        const vCnt = exits.hasContinue ? em.addLocal("v128") : -1;
+        this.enterBlock();
+        const breakLevel = this.depth;
+        this.enterLoop();
+        const loopLevel = this.depth;
+        em.localGet(safeI).i32Const(this.loopMax).i32GeS();
+        this.brIfTo(breakLevel);
+        if (vBrk !== -1 || this.vRetMask !== -1) {
+          em.localGet(vLive);
+          if (vBrk !== -1) em.localGet(vBrk).v128Andnot();
+          if (this.vRetMask !== -1) em.localGet(this.vRetMask).v128Andnot();
+          em.localSet(vLive);
+        }
+        if (vCnt !== -1) {
+          this.vZero();
+          em.localSet(vCnt);
+        }
+        this.vMaskDepth++;
+        em.localGet(vLive).localSet(this.vCur);
+        this.vLoopStack.push({
+          varying: true,
+          vLive: vLive,
+          vBrk: vBrk,
+          vCnt: vCnt,
+          breakLevel: breakLevel,
+          loopLevel: loopLevel
+        });
+        this.vstatementBody(doWhileNode.body);
+        this.vLoopStack.pop();
+        if (vBrk !== -1 || this.vRetMask !== -1) {
+          em.localGet(vLive);
+          if (vBrk !== -1) em.localGet(vBrk).v128Andnot();
+          if (this.vRetMask !== -1) em.localGet(this.vRetMask).v128Andnot();
+          em.localSet(vLive);
+        }
+        em.localGet(vLive).localSet(this.vCur);
+        em.localGet(vLive);
+        this.vexprMask(doWhileNode.test);
+        em.v128And().localSet(vLive);
+        this.vMaskDepth--;
+        em.localGet(safeI).i32Const(1).i32Add().localSet(safeI);
+        em.localGet(vLive).v128AnyTrue();
+        this.brIfTo(loopLevel);
+        this.exit();
+        this.exit();
+        this.vRecomputeCur(saved);
+      }
+      vstmtSwitch(ast) {
+        if (ast.type !== "SwitchStatement") throw this.astErrorOutput("Invalid switch statement", ast);
+        const {discriminant: discriminant, cases: cases} = ast;
+        const em = this.em;
+        const varying = this.vInfo.exprVarying(discriminant) || cases.some(c => c.test && this.vInfo.exprVarying(c.test));
+        const type = this.getType(discriminant);
+        if (!varying) {
+          let dLocal;
+          let dIsInt;
+          switch (type) {
+           case "Float":
+           case "Number":
+            dIsInt = false;
+            dLocal = em.addLocal("f32");
+            this.coerce(this.expression(discriminant), "f32");
+            em.localSet(dLocal);
+            break;
+
+           case "Integer":
+            dIsInt = true;
+            dLocal = em.addLocal("i32");
+            this.coerce(this.expression(discriminant), "i32");
+            em.localSet(dLocal);
+            break;
+
+           default:
+            throw this.astErrorOutput(`Unhandled switch discriminant type "${type}"`, ast);
+          }
+          if (cases.length === 1 && !cases[0].test) {
+            this.vEmitSwitchConsequent(cases[0].consequent);
+            return;
+          }
+          const {groups: groups, defaultConsequent: defaultConsequent} = this.collectSwitchGroups(cases);
+          const emitChain = index => {
+            if (index === groups.length) {
+              if (defaultConsequent) this.vEmitSwitchConsequent(defaultConsequent);
+              return;
+            }
+            const {tests: tests, consequent: consequent} = groups[index];
+            for (let i = 0; i < tests.length; i++) {
+              em.localGet(dLocal);
+              this.emitSwitchTest(tests[i], dIsInt);
+              if (dIsInt) em.i32Eq(); else em.f32Eq();
+              if (i > 0) em.i32Or();
+            }
+            this.enterIf();
+            this.vEmitSwitchConsequent(consequent);
+            if (index + 1 < groups.length || defaultConsequent) {
+              em.else_();
+              emitChain(index + 1);
+            }
+            this.exit();
+          };
+          emitChain(0);
+          return;
+        }
+        let dLocal;
+        let dIsInt;
+        switch (type) {
+         case "Float":
+         case "Number":
+          dIsInt = false;
+          dLocal = em.addLocal("v128");
+          this.vCoerce(this.vexpr(discriminant), "vf32");
+          em.localSet(dLocal);
+          break;
+
+         case "Integer":
+          dIsInt = true;
+          dLocal = em.addLocal("v128");
+          this.vCoerce(this.vexpr(discriminant), "vi32");
+          em.localSet(dLocal);
+          break;
+
+         default:
+          throw this.astErrorOutput(`Unhandled switch discriminant type "${type}"`, ast);
+        }
+        if (cases.length === 1 && !cases[0].test) {
+          this.vEmitSwitchConsequent(cases[0].consequent);
+          return;
+        }
+        const {groups: groups, defaultConsequent: defaultConsequent} = this.collectSwitchGroups(cases);
+        const saved = em.addLocal("v128");
+        em.localGet(this.vCur).localSet(saved);
+        const prior = em.addLocal("v128");
+        this.vZero();
+        em.localSet(prior);
+        const gm = em.addLocal("v128");
+        this.vMaskDepth++;
+        for (let g = 0; g < groups.length; g++) {
+          const {tests: tests, consequent: consequent} = groups[g];
+          for (let i = 0; i < tests.length; i++) {
+            em.localGet(dLocal);
+            this.vEmitSwitchTest(tests[i], dIsInt);
+            if (dIsInt) em.i32x4Eq(); else em.f32x4Eq();
+            if (i > 0) em.v128Or();
+          }
+          em.localSet(gm);
+          this.vRecomputeCur(saved);
+          em.localGet(this.vCur).localGet(gm).v128And().localGet(prior).v128Andnot().localSet(this.vCur);
+          em.localGet(prior).localGet(gm).v128Or().localSet(prior);
+          em.localGet(this.vCur).v128AnyTrue();
+          this.enterIf();
+          this.vEmitSwitchConsequent(consequent);
+          this.exit();
+        }
+        if (defaultConsequent) {
+          this.vRecomputeCur(saved);
+          em.localGet(this.vCur).localGet(prior).v128Andnot().localSet(this.vCur);
+          em.localGet(this.vCur).v128AnyTrue();
+          this.enterIf();
+          this.vEmitSwitchConsequent(defaultConsequent);
+          this.exit();
+        }
+        this.vMaskDepth--;
+        this.vRecomputeCur(saved);
+      }
+      vEmitSwitchTest(test, dIsInt) {
+        const testType = this.getType(test);
+        if (dIsInt) if (testType === "Number" || testType === "Float") this.vCastValueToInteger(test); else if (testType === "LiteralInteger") this.vCastLiteralToInteger(test); else this.vCoerce(this.vexpr(test), "vi32"); else if (testType === "LiteralInteger") this.vCastLiteralToFloat(test); else if (testType === "Integer") this.vCastValueToFloat(test); else this.vCoerce(this.vexpr(test), "vf32");
+      }
+      vEmitSwitchConsequent(consequent) {
+        const statements = this.collectSwitchCaseStatements(consequent);
+        const previous = this.vTerminated;
+        this.vTerminated = false;
+        for (let i = 0; i < statements.length; i++) {
+          this.vstatement(statements[i]);
+          if (this.vTerminated) break;
+        }
+        this.vTerminated = previous;
+      }
+      vexpr(ast) {
+        if (!this.vInfo.exprVarying(ast)) return this.expression(ast);
+        switch (ast.type) {
+         case "Identifier":
+          return this.vexprIdentifier(ast);
+
+         case "BinaryExpression":
+          return this.vexprBinary(ast);
+
+         case "LogicalExpression":
+          return this.vexprLogical(ast);
+
+         case "UnaryExpression":
+          return this.vexprUnary(ast);
+
+         case "UpdateExpression":
+          return this.vUpdate(ast, false);
+
+         case "ConditionalExpression":
+          return this.vexprConditional(ast);
+
+         case "CallExpression":
+          return this.vexprCall(ast);
+
+         case "MemberExpression":
+          return this.vexprMember(ast);
+
+         case "SequenceExpression":
+          if (ast.expressions.length === 1) return this.vexpr(ast.expressions[0]);
+          throw this.astErrorOutput("WebAssembly backend does not yet support the comma operator", ast);
+
+         case "AssignmentExpression":
+          throw this.astErrorOutput("WebAssembly backend does not yet support assignment used as an expression", ast);
+
+         default:
+          throw this.astErrorOutput(`Unknown expression type ${ast.type}`, ast);
+        }
+      }
+      vexprIdentifier(ast) {
+        const local = this.locals.get(ast.name);
+        if (!local) throw this.astErrorOutput(`Unhandled varying identifier "${ast.name}"`, ast);
+        if (local.kind === "vvec") throw this.astErrorOutput(`array-valued variable "${ast.name}" can only be indexed or returned`, ast);
+        if (local.kind !== "vscalar") throw this.astErrorOutput(`internal: varying read of uniform local "${ast.name}"`, ast);
+        this.em.localGet(local.index);
+        return local.wtype;
+      }
+      vexprBinary(ast) {
+        const operator = ast.operator;
+        const em = this.em;
+        if (operator === "**") {
+          const a = em.addLocal("v128");
+          const b = em.addLocal("v128");
+          this.vEmitByType(ast.left, "vf32");
+          em.localSet(a);
+          this.vEmitByType(ast.right, "vf32");
+          em.localSet(b);
+          this.usedMathImports.add("pow");
+          this.vLaneCall2("math_pow", a, b);
+          return "vf32";
+        }
+        if (BITWISE_OPS[operator]) {
+          if (VECTOR_SHIFT_OPS[operator]) return this.vexprShift(ast);
+          this.vEmitAsIntegerOperand(ast.left);
+          this.vEmitAsIntegerOperand(ast.right);
+          em[{
+            "&": "v128And",
+            "|": "v128Or",
+            "^": "v128Xor"
+          }[operator]]();
+          return "vi32";
+        }
+        if (operator === "/" || operator === "%") {
+          if (operator === "/") {
+            this.vEmitByType(ast.left, "vf32");
+            this.vEmitByType(ast.right, "vf32");
+            em.f32x4Div();
+            return "vf32";
+          }
+          const a = em.addLocal("v128");
+          const b = em.addLocal("v128");
+          this.vEmitByType(ast.left, "vf32");
+          em.localSet(a);
+          this.vEmitByType(ast.right, "vf32");
+          em.localSet(b);
+          em.localGet(a).localGet(a).localGet(b).f32x4Div().f32x4Trunc().localGet(b).f32x4Mul().f32x4Sub();
+          return "vf32";
+        }
+        const leftType = this.getType(ast.left) || "Number";
+        const rightType = this.getType(ast.right) || "Number";
+        const key = leftType + " & " + rightType;
+        let category;
+        switch (key) {
+         case "Integer & Integer":
+          this.pushState("building-integer");
+          this.vCoerce(this.vexpr(ast.left), "vi32");
+          this.vCoerce(this.vexpr(ast.right), "vi32");
+          this.popState("building-integer");
+          category = "vi32";
+          break;
+
+         case "Number & Float":
+         case "Float & Number":
+         case "Float & Float":
+         case "Number & Number":
+          this.pushState("building-float");
+          this.vCoerce(this.vexpr(ast.left), "vf32");
+          this.vCoerce(this.vexpr(ast.right), "vf32");
+          this.popState("building-float");
+          category = "vf32";
+          break;
+
+         case "LiteralInteger & LiteralInteger":
+          if (this.isState("casting-to-integer") || this.isState("building-integer")) {
+            this.pushState("building-integer");
+            this.vCoerce(this.vexpr(ast.left), "vi32");
+            this.vCoerce(this.vexpr(ast.right), "vi32");
+            this.popState("building-integer");
+            category = "vi32";
+          } else {
+            this.pushState("building-float");
+            this.vCastLiteralToFloat(ast.left);
+            this.vCastLiteralToFloat(ast.right);
+            this.popState("building-float");
+            category = "vf32";
+          }
+          break;
+
+         case "Integer & Float":
+         case "Integer & Number":
+          this.pushState("building-float");
+          this.vCastValueToFloat(ast.left);
+          this.vCoerce(this.vexpr(ast.right), "vf32");
+          this.popState("building-float");
+          category = "vf32";
+          break;
+
+         case "Integer & LiteralInteger":
+          this.pushState("building-integer");
+          this.vCoerce(this.vexpr(ast.left), "vi32");
+          this.vCastLiteralToInteger(ast.right);
+          this.popState("building-integer");
+          category = "vi32";
+          break;
+
+         case "Number & Integer":
+         case "Float & Integer":
+          this.pushState("building-float");
+          this.vCoerce(this.vexpr(ast.left), "vf32");
+          this.vCastValueToFloat(ast.right);
+          this.popState("building-float");
+          category = "vf32";
+          break;
+
+         case "Float & LiteralInteger":
+         case "Number & LiteralInteger":
+          this.pushState("building-float");
+          this.vCoerce(this.vexpr(ast.left), "vf32");
+          this.vCastLiteralToFloat(ast.right);
+          this.popState("building-float");
+          category = "vf32";
+          break;
+
+         case "LiteralInteger & Float":
+         case "LiteralInteger & Number":
+          if (this.isState("casting-to-integer")) {
+            this.pushState("building-integer");
+            this.vCastLiteralToInteger(ast.left);
+            this.vCastValueToInteger(ast.right);
+            this.popState("building-integer");
+            category = "vi32";
+          } else {
+            this.pushState("building-float");
+            this.vCastLiteralToFloat(ast.left);
+            this.pushState("casting-to-float");
+            this.vCoerce(this.vexpr(ast.right), "vf32");
+            this.popState("casting-to-float");
+            this.popState("building-float");
+            category = "vf32";
+          }
+          break;
+
+         case "LiteralInteger & Integer":
+          this.pushState("building-integer");
+          this.vCastLiteralToInteger(ast.left);
+          this.vCoerce(this.vexpr(ast.right), "vi32");
+          this.popState("building-integer");
+          category = "vi32";
+          break;
+
+         case "Boolean & Boolean":
+          this.vCoerce(this.vexpr(ast.left), "vi32");
+          this.vCoerce(this.vexpr(ast.right), "vi32");
+          category = "vi32";
+          break;
+
+         default:
+          throw this.astErrorOutput(`Unhandled binary expression between ${key}`, ast);
+        }
+        const compareOp = category === "vi32" ? VI32_COMPARE[operator] : VF32_COMPARE[operator];
+        if (compareOp) {
+          em[compareOp]();
+          return "vbool";
+        }
+        const arithOp = category === "vi32" ? VI32_ARITH[operator] : VF32_ARITH[operator];
+        if (!arithOp) throw this.astErrorOutput(`Unhandled operator ${operator}`, ast);
+        em[arithOp]();
+        return category;
+      }
+      vexprShift(ast) {
+        const em = this.em;
+        this.vEmitAsIntegerOperand(ast.left);
+        if (!this.vInfo.exprVarying(ast.right)) {
+          this.emitAsIntegerOperand(ast.right);
+          em[VECTOR_SHIFT_OPS[ast.operator]]();
+          return "vi32";
+        }
+        const a = em.addLocal("v128");
+        const b = em.addLocal("v128");
+        em.localSet(a);
+        this.vEmitAsIntegerOperand(ast.right);
+        em.localSet(b);
+        const op = BITWISE_OPS[ast.operator];
+        for (let lane = 0; lane < 4; lane++) {
+          em.localGet(a).i32x4ExtractLane(lane);
+          em.localGet(b).i32x4ExtractLane(lane);
+          em[op]();
+          if (lane === 0) em.i32x4Splat(); else em.i32x4ReplaceLane(lane);
+        }
+        return "vi32";
+      }
+      vEmitAsIntegerOperand(side) {
+        switch (this.getType(side)) {
+         case "Number":
+         case "Float":
+          this.vCastValueToInteger(side);
+          break;
+
+         case "LiteralInteger":
+          this.vCastLiteralToInteger(side);
+          break;
+
+         default:
+          {
+            this.pushState("building-integer");
+            const type = this.vexpr(side);
+            this.popState("building-integer");
+            this.vCoerce(type, "vi32");
+          }
+        }
+      }
+      vexprLogical(ast) {
+        const em = this.em;
+        const mLeft = em.addLocal("v128");
+        this.vexprMask(ast.left);
+        em.localSet(mLeft);
+        const saved = em.addLocal("v128");
+        em.localGet(this.vCur).localSet(saved);
+        em.localGet(this.vCur).localGet(mLeft);
+        if (ast.operator === "&&") em.v128And(); else if (ast.operator === "||") em.v128Andnot(); else throw this.astErrorOutput(`Unhandled logical operator ${ast.operator}`, ast);
+        em.localSet(this.vCur);
+        this.vMaskDepth++;
+        this.vexprMask(ast.right);
+        this.vMaskDepth--;
+        em.localGet(saved).localSet(this.vCur);
+        em.localGet(mLeft);
+        if (ast.operator === "&&") em.v128And(); else em.v128Or();
+        return "vbool";
+      }
+      vexprUnary(ast) {
+        const em = this.em;
+        switch (ast.operator) {
+         case "~":
+          this.vEmitAsIntegerOperand(ast.argument);
+          em.v128ConstI32x4(-1, -1, -1, -1).v128Xor();
+          return "vi32";
+
+         case "!":
+          this.vexprMask(ast.argument);
+          em.v128Not();
+          return "vbool";
+
+         case "+":
+          return this.vexpr(ast.argument);
+
+         case "-":
+          {
+            const type = this.getType(ast.argument);
+            if (type === "Integer" || type === "LiteralInteger" && (this.isState("casting-to-integer") || this.isState("building-integer"))) {
+              this.vZero();
+              this.vEmitByType(ast.argument, "vi32");
+              em.i32x4Sub();
+              return "vi32";
+            }
+            this.vEmitByType(ast.argument, "vf32");
+            em.f32x4Neg();
+            return "vf32";
+          }
+
+         default:
+          throw this.astErrorOutput(`Unhandled unary operator ${ast.operator}`, ast);
+        }
+      }
+      vexprConditional(ast) {
+        const em = this.em;
+        const consequentType = this.getType(ast.consequent);
+        const alternateType = this.getType(ast.alternate);
+        if (consequentType === null && alternateType === null) {
+          this.vTernaryStatement(ast);
+          return "void";
+        }
+        let targetType = consequentType === "LiteralInteger" ? "Number" : consequentType;
+        if (targetType === "Integer" && (alternateType === "Number" || alternateType === "Float")) targetType = "Number";
+        const emitBranch = branch => {
+          const branchType = this.getType(branch);
+          switch (targetType) {
+           case "Number":
+           case "Float":
+            if (branchType === "Integer") this.vCastValueToFloat(branch); else if (branchType === "LiteralInteger") this.vCastLiteralToFloat(branch); else this.vCoerce(this.vexpr(branch), "vf32");
+            break;
+
+           case "Integer":
+            if (branchType === "Number" || branchType === "Float") this.vCastValueToInteger(branch); else if (branchType === "LiteralInteger") this.vCastLiteralToInteger(branch); else this.vCoerce(this.vexpr(branch), "vi32");
+            break;
+
+           case "Boolean":
+            this.vexprMask(branch);
+            break;
+
+           default:
+            throw this.astErrorOutput(`WebAssembly backend does not yet support a ternary of type ${targetType}`, ast);
+          }
+        };
+        const resultCategory = targetType === "Integer" ? "vi32" : targetType === "Boolean" ? "vbool" : "vf32";
+        if (!this.vInfo.exprVarying(ast.test)) {
+          this.emitCondition(ast.test);
+          this.enterIf("v128");
+          emitBranch(ast.consequent);
+          em.else_();
+          emitBranch(ast.alternate);
+          this.exit();
+          return resultCategory;
+        }
+        const m = em.addLocal("v128");
+        this.vexprMask(ast.test);
+        em.localSet(m);
+        const saved = em.addLocal("v128");
+        em.localGet(this.vCur).localSet(saved);
+        const v1 = em.addLocal("v128");
+        const v2 = em.addLocal("v128");
+        em.localGet(saved).localGet(m).v128And().localSet(this.vCur);
+        this.vMaskDepth++;
+        emitBranch(ast.consequent);
+        em.localSet(v1);
+        em.localGet(saved).localGet(m).v128Andnot().localSet(this.vCur);
+        emitBranch(ast.alternate);
+        em.localSet(v2);
+        this.vMaskDepth--;
+        em.localGet(saved).localSet(this.vCur);
+        em.localGet(v1).localGet(v2).localGet(m).v128Bitselect();
+        return resultCategory;
+      }
+      vTernaryStatement(ast) {
+        const em = this.em;
+        if (!this.vInfo.exprVarying(ast.test)) {
+          this.emitCondition(ast.test);
+          this.enterIf();
+          this.vstatementExpression(ast.consequent);
+          em.else_();
+          this.vstatementExpression(ast.alternate);
+          this.exit();
+          return;
+        }
+        const m = em.addLocal("v128");
+        this.vexprMask(ast.test);
+        em.localSet(m);
+        const saved = em.addLocal("v128");
+        em.localGet(this.vCur).localSet(saved);
+        em.localGet(saved).localGet(m).v128And().localSet(this.vCur);
+        this.vMaskDepth++;
+        this.vstatementExpression(ast.consequent);
+        em.localGet(saved).localGet(m).v128Andnot().localSet(this.vCur);
+        this.vstatementExpression(ast.alternate);
+        this.vMaskDepth--;
+        em.localGet(saved).localSet(this.vCur);
+      }
+      vexprCall(ast) {
+        if (!ast.callee) throw this.astErrorOutput("Unknown CallExpression", ast);
+        if (ast.callee.type === "MemberExpression" && this.getVariableSignature(ast.callee, true) === "this.color") throw this.astErrorOutput("WebAssembly backend does not yet support graphical mode (this.color)", ast);
+        let functionName = null;
+        const isMathFunction = this.isAstMathFunction(ast);
+        if (isMathFunction || ast.callee.object && ast.callee.object.type === "ThisExpression") functionName = ast.callee.property.name; else if (ast.callee.type === "SequenceExpression" && ast.callee.expressions[0].type === "Literal" && !isNaN(ast.callee.expressions[0].raw)) functionName = ast.callee.expressions[1].property.name; else functionName = ast.callee.name;
+        if (!functionName) throw this.astErrorOutput(`Unhandled function, couldn't find name`, ast);
+        if (isMathFunction) return this.vMathCall(functionName, ast);
+        return this.vUserCall(functionName, ast);
+      }
+      vUserCall(functionName, ast) {
+        const em = this.em;
+        const info = this.assembler.helperInfo || {
+          readsThread: false,
+          usesRandom: false
+        };
+        const globals = this.assembler.globals;
+        const returnType = this.getType(ast);
+        const targetTypes = this.lookupFunctionArgumentTypes(functionName) || [];
+        const argLocals = [];
+        for (let i = 0; i < ast.arguments.length; ++i) {
+          const argument = ast.arguments[i];
+          let targetType = targetTypes[i];
+          const argumentType = this.getType(argument);
+          if (!targetType) {
+            this.triggerImplyArgumentType(functionName, i, argumentType, this);
+            targetType = argumentType;
+          }
+          let wtype;
+          switch (argumentType) {
+           case "Boolean":
+            this.vCoerce(this.vexpr(argument), "vi32");
+            wtype = "vi32";
+            break;
+
+           case "Number":
+           case "Float":
+            if (targetType === "Integer") {
+              this.vCastValueToInteger(argument);
+              wtype = "vi32";
+            } else {
+              this.vCoerce(this.vexpr(argument), "vf32");
+              wtype = "vf32";
+            }
+            break;
+
+           case "Integer":
+            if (targetType === "Number" || targetType === "Float") {
+              this.vCastValueToFloat(argument);
+              wtype = "vf32";
+            } else {
+              this.vCoerce(this.vexpr(argument), "vi32");
+              wtype = "vi32";
+            }
+            break;
+
+           case "LiteralInteger":
+            if (targetType === "Integer") {
+              this.vCastLiteralToInteger(argument);
+              wtype = "vi32";
+            } else {
+              this.vCastLiteralToFloat(argument);
+              wtype = "vf32";
+            }
+            break;
+
+           default:
+            throw this.astErrorOutput("WebAssembly backend does not yet support array arguments to helper functions", ast);
+          }
+          const index = em.addLocal("v128");
+          em.localSet(index);
+          argLocals.push({
+            index: index,
+            wtype: wtype
+          });
+        }
+        const resultKind = returnType === null || returnType === void 0 ? "void" : returnType === "Integer" || returnType === "Boolean" ? "i32" : "f32";
+        const resultTmp = resultKind === "void" ? -1 : em.addLocal(resultKind);
+        const resultVec = resultKind === "void" ? -1 : em.addLocal("v128");
+        let stateTmp = -1;
+        if (info.usesRandom) {
+          stateTmp = em.addLocal("v128");
+          em.globalGet(globals.pcgStateV).localSet(stateTmp);
+        }
+        for (let lane = 0; lane < 4; lane++) {
+          if (info.readsThread) {
+            em.localGet(this._vBaseX);
+            if (lane > 0) em.i32Const(lane).i32Add();
+            em.globalSet(globals.threadX);
+          }
+          if (info.usesRandom) em.localGet(stateTmp).i32x4ExtractLane(lane).globalSet(globals.pcgState);
+          for (const arg of argLocals) {
+            em.localGet(arg.index);
+            if (arg.wtype === "vi32") em.i32x4ExtractLane(lane); else em.f32x4ExtractLane(lane);
+          }
+          em.call(this.mangleFunctionName(functionName));
+          if (resultKind !== "void") em.localSet(resultTmp);
+          if (info.usesRandom) em.localGet(stateTmp).globalGet(globals.pcgState).i32x4ReplaceLane(lane).localSet(stateTmp);
+          if (resultKind !== "void") if (lane === 0) {
+            em.localGet(resultTmp);
+            if (resultKind === "i32") em.i32x4Splat(); else em.f32x4Splat();
+            em.localSet(resultVec);
+          } else {
+            em.localGet(resultVec).localGet(resultTmp);
+            if (resultKind === "i32") em.i32x4ReplaceLane(lane); else em.f32x4ReplaceLane(lane);
+            em.localSet(resultVec);
+          }
+        }
+        if (info.readsThread) em.localGet(this._vBaseX).globalSet(globals.threadX);
+        if (info.usesRandom) {
+          em.localGet(stateTmp).globalGet(globals.pcgStateV);
+          if (this.vMaskDepth > 0) em.localGet(this.vCur); else em.v128ConstI32x4(-1, -1, -1, -1);
+          em.v128Bitselect().globalSet(globals.pcgStateV);
+        }
+        if (resultKind === "void") return "void";
+        em.localGet(resultVec);
+        return resultKind === "i32" ? "vi32" : "vf32";
+      }
+      vMathCall(functionName, ast) {
+        const em = this.em;
+        if (functionName === "random") {
+          this.usesRandom = true;
+          if (this.vMaskDepth > 0) em.localGet(this.vCur); else em.v128ConstI32x4(-1, -1, -1, -1);
+          em.call("pcg_random_v");
+          return "vf32";
+        }
+        const emitArg = argument => {
+          switch (this.getType(argument)) {
+           case "Integer":
+            this.vCastValueToFloat(argument);
+            break;
+
+           case "LiteralInteger":
+            this.vCastLiteralToFloat(argument);
+            break;
+
+           default:
+            this.vCoerce(this.vexpr(argument), "vf32");
+          }
+        };
+        const nativeOp = VECTOR_MATH_NATIVE_OPS[functionName];
+        if (nativeOp) {
+          emitArg(ast.arguments[0]);
+          em[nativeOp]();
+          return "vf32";
+        }
+        switch (functionName) {
+         case "round":
+          emitArg(ast.arguments[0]);
+          em.v128ConstF32x4(.5, .5, .5, .5).f32x4Add().f32x4Floor();
+          return "vf32";
+
+         case "fround":
+          emitArg(ast.arguments[0]);
+          return "vf32";
+
+         case "min":
+         case "max":
+          {
+            const op = functionName === "min" ? "f32x4Min" : "f32x4Max";
+            emitArg(ast.arguments[0]);
+            for (let i = 1; i < ast.arguments.length; i++) {
+              emitArg(ast.arguments[i]);
+              em[op]();
+            }
+            return "vf32";
+          }
+
+         case "imul":
+          emitArg(ast.arguments[0]);
+          em.i32x4TruncSatF32x4S();
+          emitArg(ast.arguments[1]);
+          em.i32x4TruncSatF32x4S();
+          em.i32x4Mul().f32x4ConvertI32x4S();
+          return "vf32";
+
+         case "clz32":
+          {
+            emitArg(ast.arguments[0]);
+            em.i32x4TruncSatF32x4U();
+            const t = em.addLocal("v128");
+            em.localSet(t);
+            em.localGet(t).i32x4ExtractLane(0).i32Clz().i32x4Splat();
+            for (let lane = 1; lane < 4; lane++) em.localGet(t).i32x4ExtractLane(lane).i32Clz().i32x4ReplaceLane(lane);
+            em.f32x4ConvertI32x4S();
+            return "vf32";
+          }
+
+         default:
+          {
+            const arity = MATH_IMPORT_ARITY[functionName];
+            if (!arity) throw this.astErrorOutput(`WebAssembly backend does not yet support Math.${functionName}`, ast);
+            this.usedMathImports.add(functionName);
+            if (arity === 1) {
+              emitArg(ast.arguments[0]);
+              const t = em.addLocal("v128");
+              em.localSet(t);
+              this.vLaneCall1("math_" + functionName, t);
+            } else {
+              const a = em.addLocal("v128");
+              const b = em.addLocal("v128");
+              emitArg(ast.arguments[0]);
+              em.localSet(a);
+              emitArg(ast.arguments[1]);
+              em.localSet(b);
+              this.vLaneCall2("math_" + functionName, a, b);
+            }
+            return "vf32";
+          }
+        }
+      }
+      vLaneCall1(name, argLocal) {
+        const em = this.em;
+        em.localGet(argLocal).f32x4ExtractLane(0).call(name).f32x4Splat();
+        for (let lane = 1; lane < 4; lane++) em.localGet(argLocal).f32x4ExtractLane(lane).call(name).f32x4ReplaceLane(lane);
+      }
+      vLaneCall2(name, aLocal, bLocal) {
+        const em = this.em;
+        em.localGet(aLocal).f32x4ExtractLane(0).localGet(bLocal).f32x4ExtractLane(0).call(name).f32x4Splat();
+        for (let lane = 1; lane < 4; lane++) em.localGet(aLocal).f32x4ExtractLane(lane).localGet(bLocal).f32x4ExtractLane(lane).call(name).f32x4ReplaceLane(lane);
+      }
+      vexprMember(mNode) {
+        const details = this.getMemberExpressionDetails(mNode);
+        if (!details) throw this.astErrorOutput("Unexpected expression", mNode);
+        const {signature: signature, name: name, property: property, xProperty: xProperty, yProperty: yProperty, zProperty: zProperty} = details;
+        const em = this.em;
+        switch (signature) {
+         case "value.thread.value":
+         case "this.thread.value":
+          if (name !== "x") throw this.astErrorOutput(`internal: thread.${name} is uniform along the lane axis`, mNode);
+          this.readsThread = true;
+          em.globalGet(this.assembler.globals.threadX).i32x4Splat();
+          em.v128ConstI32x4(0, 1, 2, 3).i32x4Add();
+          return "vi32";
+
+         case "value.value":
+          {
+            const component = {
+              r: 0,
+              g: 1,
+              b: 2,
+              a: 3
+            }[property];
+            if (component !== void 0) {
+              const local = this.locals.get(name);
+              if (local && local.kind === "vvec" && component < local.n) {
+                em.localGet(local.indices[component]);
+                return "vf32";
+              }
+            }
+            throw this.astErrorOutput("Unexpected expression", mNode);
+          }
+
+         case "value[]":
+         case "value[][]":
+         case "value[][][]":
+         case "value[][][][]":
+          {
+            const local = this.locals.get(name);
+            if (local && (local.kind === "vec" || local.kind === "vvec")) {
+              if (signature !== "value[]") throw this.astErrorOutput("Unexpected expression", mNode);
+              return this.vVecIndex(local, xProperty);
+            }
+            return this.vGather("arrays", name, xProperty, yProperty, zProperty, mNode);
+          }
+
+         case "this.constants.value[]":
+         case "this.constants.value[][]":
+         case "this.constants.value[][][]":
+         case "this.constants.value[][][][]":
+          return this.vGather("constantArrays", name, xProperty, yProperty, zProperty, mNode);
+
+         case "fn()[]":
+          throw this.astErrorOutput("WebAssembly backend does not yet support indexing a function call result", mNode);
+
+         default:
+          throw this.astErrorOutput(`WebAssembly backend does not yet support expression signature "${signature}"`, mNode);
+        }
+      }
+      vVecIndex(local, xProperty) {
+        const em = this.em;
+        const getComponent = k => {
+          em.localGet(local.indices[k]);
+          if (local.kind === "vec") em.f32x4Splat();
+        };
+        if (xProperty.type === "Literal" && Number.isInteger(xProperty.value)) {
+          if (xProperty.value < 0 || xProperty.value >= local.n) throw this.astErrorOutput(`index ${xProperty.value} out of range for Array(${local.n})`, xProperty);
+          getComponent(xProperty.value);
+          return "vf32";
+        }
+        const idx = em.addLocal("v128");
+        this.vEmitIndex(xProperty);
+        em.localSet(idx);
+        const acc = em.addLocal("v128");
+        getComponent(0);
+        em.localSet(acc);
+        for (let k = 1; k < local.n; k++) {
+          getComponent(k);
+          em.localGet(acc);
+          em.localGet(idx).v128ConstI32x4(k, k, k, k).i32x4Eq();
+          em.v128Bitselect();
+          em.localSet(acc);
+        }
+        em.localGet(acc);
+        return "vf32";
+      }
+      vEmitIndex(property) {
+        if (!property) throw new Error("Property not set");
+        switch (this.getType(property)) {
+         case "Number":
+         case "Float":
+          this.vCastValueToInteger(property);
+          return;
+
+         case "LiteralInteger":
+          this.vCastLiteralToInteger(property);
+          return;
+
+         case "Integer":
+          {
+            this.pushState("building-integer");
+            const emitted = this.vexpr(property);
+            this.popState("building-integer");
+            this.vCoerce(emitted, "vi32");
+            return;
+          }
+
+         default:
+          this.vCoerce(this.vexpr(property), "vi32");
+        }
+      }
+      vGather(table, name, xProperty, yProperty, zProperty, mNode) {
+        const em = this.em;
+        const layout = this.assembler.layout[table][name];
+        if (!layout) throw this.astErrorOutput(`no memory layout for "${name}" \u2014 arrays are only readable as kernel arguments or constants`, mNode);
+        this.vEmitIndex(xProperty);
+        if (yProperty) {
+          this.vEmitIndex(yProperty);
+          const d = layout.dims[0];
+          em.v128ConstI32x4(d, d, d, d).i32x4Mul().i32x4Add();
+        }
+        if (zProperty) {
+          this.vEmitIndex(zProperty);
+          const d = layout.dims[0] * layout.dims[1];
+          em.v128ConstI32x4(d, d, d, d).i32x4Mul().i32x4Add();
+        }
+        this.vZero();
+        em.i32x4MaxS();
+        const max = layout.flatLength - 1;
+        em.v128ConstI32x4(max, max, max, max).i32x4MinS();
+        const idx = em.addLocal("v128");
+        em.localSet(idx);
+        em.localGet(idx).i32x4ExtractLane(0).i32Const(2).i32Shl().f32Load(layout.offset).f32x4Splat();
+        for (let lane = 1; lane < 4; lane++) em.localGet(idx).i32x4ExtractLane(lane).i32Const(2).i32Shl().f32Load(layout.offset).f32x4ReplaceLane(lane);
+        return "vf32";
+      }
+      isThreadDependent(ast) {
+        if (!ast || typeof ast !== "object") return false;
+        if (Array.isArray(ast)) return ast.some(node => this.isThreadDependent(node));
+        switch (ast.type) {
+         case "MemberExpression":
+          {
+            const signature = this.getVariableSignature(ast);
+            if (signature === "this.thread.value" || signature === "value.thread.value") return ast.property.name === "x";
+            break;
+          }
+
+         case "CallExpression":
+          if (this.isAstMathFunction(ast)) {
+            if (ast.callee.property.name === "random") return true;
+            break;
+          }
+          return true;
+
+         case "Identifier":
+          return this.taintedLocals ? this.taintedLocals.has(ast.name) : false;
+
+         case "ThisExpression":
+          return false;
+        }
+        for (const key in ast) {
+          if (key === "loc" || key === "start" || key === "end" || key === "parent") continue;
+          const child = ast[key];
+          if (child && typeof child === "object" && this.isThreadDependent(child)) return true;
+        }
+        return false;
+      }
+      recordUniformity(kind, testAst) {
+        if (!this._analysisPass) return;
+        this.uniformity.push({
+          kind: kind,
+          threadDependent: testAst ? this.isThreadDependent(testAst) : true
+        });
+      }
+    };
+    module.exports = {
+      WebAssemblyFunctionNode: WebAssemblyFunctionNode
+    };
+  });
+  var require_worker_pool = __commonJSMin((exports, module) => {
+    let os = null;
+    try {
+      os = require_empty_module();
+    } catch (e) {}
+    const IS_BROWSER_WORKER = typeof Worker === "function";
+    function defaultConcurrency() {
+      if (typeof navigator !== "undefined" && navigator.hardwareConcurrency) return navigator.hardwareConcurrency;
+      if (os && typeof os.cpus === "function") {
+        const count = os.cpus().length;
+        if (count) return count;
+      }
+      return 4;
+    }
+    const WORKER_SOURCE = `\nvar entries = {};\nfunction handleMessage(message, post) {\n  if (message.type === 'setup') {\n    var imports = { env: { memory: message.memory } };\n    for (var i = 0; i < message.mathImports.length; i++) {\n      imports.env['math_' + message.mathImports[i]] = Math[message.mathImports[i]];\n    }\n    var instance = new WebAssembly.Instance(message.module, imports);\n    entries[message.id] = {\n      run: instance.exports.run,\n      runSimd: instance.exports.run_simd || null,\n      sizeX: message.sizeX\n    };\n    post({ type: 'ready', id: message.id });\n  } else if (message.type === 'run') {\n    var entry = entries[message.id];\n    var start = message.start;\n    var end = message.end;\n    var seed = message.seed;\n    if (entry.runSimd && (entry.sizeX & 3) === 0 && (start & 3) === 0) {\n      var quadEnd = end - ((end - start) & 3);\n      if (quadEnd > start) entry.runSimd(start, quadEnd, seed);\n      if (quadEnd < end) entry.run(quadEnd, end, seed);\n    } else {\n      entry.run(start, end, seed);\n    }\n    post({ type: 'done', taskId: message.taskId });\n  }\n}\nif (typeof self !== 'undefined' && typeof postMessage === 'function') {\n  self.onmessage = function(event) {\n    handleMessage(event.data, function(message) { postMessage(message); });\n  };\n} else {\n  var parentPort = require('worker_threads').parentPort;\n  parentPort.on('message', function(message) {\n    handleMessage(message, function(reply) { parentPort.postMessage(reply); });\n  });\n}\n`;
+    var WebAssemblyWorkerPool = class {
+      constructor(size) {
+        this.size = size || defaultConcurrency();
+        this.workers = [];
+        this.destroyed = false;
+        this.dispatchCount = 0;
+        this.lastDispatch = null;
+        this._taskId = 0;
+      }
+      get liveWorkerCount() {
+        return this.workers.length;
+      }
+      _spawn() {
+        const state = {
+          setup: new Set,
+          settingUp: new Map,
+          pending: new Map
+        };
+        const fail = error => {
+          for (const wait of state.settingUp.values()) wait.reject(error);
+          state.settingUp.clear();
+          for (const task of state.pending.values()) task.reject(error);
+          state.pending.clear();
+        };
+        const onMessage = message => {
+          if (message.type === "ready") {
+            const wait = state.settingUp.get(message.id);
+            if (wait) {
+              state.settingUp.delete(message.id);
+              state.setup.add(message.id);
+              wait.resolve();
+            }
+          } else if (message.type === "done") {
+            const task = state.pending.get(message.taskId);
+            if (task) {
+              state.pending.delete(message.taskId);
+              task.resolve();
+            }
+          }
+        };
+        let handle;
+        if (IS_BROWSER_WORKER) {
+          const url = URL.createObjectURL(new Blob([ WORKER_SOURCE ], {
+            type: "text/javascript"
+          }));
+          handle = new Worker(url);
+          URL.revokeObjectURL(url);
+          handle.onmessage = event => onMessage(event.data);
+          handle.onerror = event => fail(new Error(event.message || "WebAssembly worker error"));
+        } else {
+          const {Worker: NodeWorker} = require_empty_module();
+          handle = new NodeWorker(WORKER_SOURCE, {
+            eval: true
+          });
+          handle.on("message", onMessage);
+          handle.on("error", fail);
+        }
+        return {
+          handle: handle,
+          state: state,
+          fail: fail
+        };
+      }
+      _worker(index) {
+        while (this.workers.length <= index) this.workers.push(this._spawn());
+        return this.workers[index];
+      }
+      _ensureSetup(worker, entry) {
+        if (worker.state.setup.has(entry.id)) return Promise.resolve();
+        let wait = worker.state.settingUp.get(entry.id);
+        if (!wait) {
+          wait = {};
+          wait.promise = new Promise((resolve, reject) => {
+            wait.resolve = resolve;
+            wait.reject = reject;
+          });
+          worker.state.settingUp.set(entry.id, wait);
+          worker.handle.postMessage({
+            type: "setup",
+            id: entry.id,
+            module: entry.module,
+            memory: entry.memory,
+            mathImports: entry.mathImports,
+            sizeX: entry.sizeX
+          });
+        }
+        return wait.promise;
+      }
+      dispatch(entry, tasks) {
+        if (this.destroyed) return Promise.reject(new Error("WebAssembly worker pool has been destroyed"));
+        this.dispatchCount++;
+        this.lastDispatch = {
+          workerCount: tasks.length,
+          ranges: tasks.map(task => [ task.start, task.end ])
+        };
+        const runs = tasks.map((task, index) => {
+          const worker = this._worker(index);
+          return this._ensureSetup(worker, entry).then(() => new Promise((resolve, reject) => {
+            const taskId = ++this._taskId;
+            worker.state.pending.set(taskId, {
+              resolve: resolve,
+              reject: reject
+            });
+            worker.handle.postMessage({
+              type: "run",
+              id: entry.id,
+              taskId: taskId,
+              start: task.start,
+              end: task.end,
+              seed: task.seed
+            });
+          }));
+        });
+        return Promise.all(runs).then(() => void 0);
+      }
+      destroy() {
+        if (this.destroyed) return;
+        this.destroyed = true;
+        const error = new Error("WebAssembly worker pool has been destroyed");
+        for (const worker of this.workers) {
+          worker.fail(error);
+          worker.handle.terminate();
+        }
+        this.workers = [];
+      }
+    };
+    module.exports = {
+      WebAssemblyWorkerPool: WebAssemblyWorkerPool
+    };
+  });
+  var require_kernel = __commonJSMin((exports, module) => {
+    const {Kernel: Kernel} = require_kernel$7();
+    const {FunctionBuilder: FunctionBuilder} = require_function_builder();
+    const {WebAssemblyFunctionNode: WebAssemblyFunctionNode} = require_function_node();
+    const {WasmModuleBuilder: WasmModuleBuilder} = require_wasm_builder();
+    const {WebAssemblyWorkerPool: WebAssemblyWorkerPool} = require_worker_pool();
+    const {utils: utils} = require_utils();
+    const {Input: Input} = require_input();
+    const features = Object.freeze({
+      kernelMap: false,
+      isIntegerDivisionAccurate: true,
+      isSpeedTacticSupported: false,
+      isTextureFloat: true,
+      isDrawBuffers: false,
+      kernelMapSize: 0,
+      channelCount: 1,
+      maxTextureSize: Infinity,
+      isFloatRead: true
+    });
+    const PAGE_BYTES = 65536;
+    let simdSupported = null;
+    let threadsSupported = null;
+    let nextEntryId = 1;
+    module.exports = {
+      WebAssemblyKernel: class WebAssemblyKernel extends Kernel {
+        static get isSupported() {
+          if (typeof WebAssembly !== "object" || WebAssembly === null) return false;
+          return WebAssembly.validate(new Uint8Array([ 0, 97, 115, 109, 1, 0, 0, 0 ]));
+        }
+        static get isSIMDSupported() {
+          if (simdSupported === null) try {
+            const builder = new WasmModuleBuilder;
+            builder.addFunction("t", {
+              params: [],
+              results: []
+            }).v128ConstI32x4(0, 0, 0, 0).drop();
+            simdSupported = WebAssembly.validate(builder.toBytes());
+          } catch (e) {
+            simdSupported = false;
+          }
+          return simdSupported;
+        }
+        static get isThreadsSupported() {
+          if (threadsSupported === null) try {
+            if (typeof SharedArrayBuffer === "undefined") threadsSupported = false; else {
+              const builder = new WasmModuleBuilder;
+              builder.addMemoryImport(1, 1, true);
+              const memory = new WebAssembly.Memory({
+                initial: 1,
+                maximum: 1,
+                shared: true
+              });
+              new WebAssembly.Instance(new WebAssembly.Module(builder.toBytes()), {
+                env: {
+                  memory: memory
+                }
+              });
+              threadsSupported = true;
+            }
+          } catch (e) {
+            threadsSupported = false;
+          }
+          return threadsSupported;
+        }
+        static isContextMatch(context) {
+          return false;
+        }
+        static getFeatures() {
+          return features;
+        }
+        static get features() {
+          return features;
+        }
+        static get mode() {
+          return "webasm";
+        }
+        static getSignature(kernel, argumentTypes) {
+          return "webasm" + (argumentTypes.length > 0 ? ":" + argumentTypes.join(",") : "");
+        }
+        static destroyContext(context) {}
+        static nativeFunctionArguments() {
+          throw new Error("WebAssembly backend does not yet support native functions");
+        }
+        static nativeFunctionReturnType() {
+          throw new Error("WebAssembly backend does not yet support native functions");
+        }
+        static combineKernels() {
+          throw new Error("WebAssembly backend does not yet support combineKernels");
+        }
+        constructor(source, settings) {
+          super(source, settings);
+          this.poolSize = null;
+          this.mergeSettings(source.settings || settings);
+          if (this.precision === null) this.precision = "single";
+          this.threadDim = null;
+          this.componentCount = 1;
+          this.functionBuilder = null;
+          this.tracedFunctions = null;
+          this.usesRandom = false;
+          this.usedMathImports = null;
+          this._moduleCache = new Map;
+          this._active = null;
+          this._lastRunPath = null;
+          this._pool = null;
+          this._threadedTail = Promise.resolve();
+        }
+        initCanvas() {
+          return null;
+        }
+        initContext() {
+          return null;
+        }
+        initPlugins(settings) {
+          return [];
+        }
+        setOutput(output) {
+          const newOutput = this.toKernelOutput(output);
+          if (this.built && !this.dynamicOutput) throw new Error("Resizing a kernel with dynamicOutput: false is not possible");
+          this.output = newOutput;
+          return this;
+        }
+        toString() {
+          throw new Error("WebAssembly backend does not yet support toString");
+        }
+        build() {
+          if (this.built) return;
+          if (this.graphical) return this.requestFallback(arguments);
+          if (this.subKernels && this.subKernels.length > 0) return this.requestFallback(arguments);
+          if (this.pipeline) return this.requestFallback(arguments);
+          this.setupConstants();
+          this.setupArguments(arguments);
+          for (let i = 0; i < this.argumentTypes.length; i++) switch (this.argumentTypes[i]) {
+           case "Array":
+           case "Input":
+           case "Number":
+           case "Float":
+           case "Integer":
+           case "Boolean":
+            continue;
+
+           default:
+            return this.requestFallback(arguments);
+          }
+          for (const name in this.constantTypes) switch (this.constantTypes[name]) {
+           case "Array":
+           case "Input":
+           case "Number":
+           case "Float":
+           case "Integer":
+           case "Boolean":
+            continue;
+
+           default:
+            return this.requestFallback(arguments);
+          }
+          this.validateSettings(arguments);
+          const threadDim = this.threadDim = Array.from(this.output);
+          while (threadDim.length < 3) threadDim.push(1);
+          if (!this.translateSource()) return this.requestFallback(arguments);
+          this.buildSignature(arguments);
+          this._instantiate(this._entryKey(arguments), arguments);
+          this.built = true;
+        }
+        validateSettings(args) {
+          if (!this.output || this.output.length === 0) {
+            if (args.length !== 1) throw new Error("Auto output only supported for kernels with only one input");
+            const argType = utils.getVariableType(args[0], this.strictIntegers);
+            if (argType === "Array") this.output = Array.from(utils.getDimensions(args[0])); else throw new Error("Auto output not supported for input type: " + argType);
+          }
+          this.checkOutput();
+        }
+        translateSource() {
+          const functionBuilder = this.functionBuilder = FunctionBuilder.fromKernel(this, WebAssemblyFunctionNode);
+          this.tracedFunctions = functionBuilder.traceFunctionCalls("kernel", []);
+          if (!this.returnType) this.returnType = functionBuilder.getKernelResultType();
+          switch (this.returnType) {
+           case "Number":
+           case "Float":
+           case "Integer":
+           case "LiteralInteger":
+            this.componentCount = 1;
+            break;
+
+           case "Array(2)":
+            this.componentCount = 2;
+            break;
+
+           case "Array(3)":
+            this.componentCount = 3;
+            break;
+
+           case "Array(4)":
+            this.componentCount = 4;
+            break;
+
+           default:
+            return false;
+          }
+          this.usesRandom = false;
+          this.usedMathImports = new Set;
+          for (const name of this.tracedFunctions) {
+            const node = functionBuilder.functionMap[name];
+            if (!node) continue;
+            if (node.usesRandom) this.usesRandom = true;
+            for (const importName of node.usedMathImports) this.usedMathImports.add(importName);
+          }
+          return true;
+        }
+        computeLayout(args) {
+          const align16 = value => Math.ceil(value / 16) * 16;
+          let offset = 0;
+          const arrays = {};
+          const scalars = {};
+          for (let i = 0; i < this.argumentTypes.length; i++) {
+            const name = this.argumentNames[i];
+            const type = this.argumentTypes[i];
+            if (type === "Array" || type === "Input") {
+              const dims = this.valueDimensions(args[i]);
+              const flatLength = dims[0] * dims[1] * dims[2];
+              arrays[name] = {
+                index: i,
+                offset: offset,
+                dims: dims,
+                flatLength: flatLength
+              };
+              offset = align16(offset + flatLength * 4);
+            } else {
+              scalars[name] = {
+                index: i,
+                offset: offset,
+                type: type
+              };
+              offset = align16(offset + 4);
+            }
+          }
+          const constantArrays = {};
+          if (this.constants) for (const name in this.constants) {
+            if (!this.constants.hasOwnProperty(name)) continue;
+            const type = this.constantTypes[name];
+            if (type === "Array" || type === "Input") {
+              const dims = this.valueDimensions(this.constants[name]);
+              const flatLength = dims[0] * dims[1] * dims[2];
+              constantArrays[name] = {
+                offset: offset,
+                dims: dims,
+                flatLength: flatLength
+              };
+              offset = align16(offset + flatLength * 4);
+            }
+          }
+          return {
+            arrays: arrays,
+            scalars: scalars,
+            constantArrays: constantArrays,
+            outputOffset: offset
+          };
+        }
+        valueDimensions(value) {
+          const dims = value instanceof Input ? Array.from(value.size) : Array.from(utils.getDimensions(value));
+          while (dims.length < 3) dims.push(1);
+          return dims;
+        }
+        _computeSizeSignature(args) {
+          const parts = [ this.output.join("x") ];
+          for (let i = 0; i < this.argumentTypes.length; i++) {
+            const type = this.argumentTypes[i];
+            if (type === "Array" || type === "Input") parts.push(this.valueDimensions(args[i]).join("x"));
+          }
+          return parts.join("|");
+        }
+        _threadable() {
+          if (this.asyncMode !== true || !WebAssemblyKernel.isThreadsSupported) return false;
+          const [tx, ty, tz] = this.threadDim;
+          return tx * ty * tz >= 4096;
+        }
+        _entryKey(args) {
+          return this._computeSizeSignature(args) + (this._threadable() ? "|shared" : "");
+        }
+        _assembleModule(layout, cells, shared) {
+          const builder = new WasmModuleBuilder;
+          const totalBytes = layout.outputOffset + cells * this.componentCount * 4;
+          const initial = Math.ceil(totalBytes / PAGE_BYTES) + 16;
+          const maximum = Math.max(initial, 4096);
+          builder.addMemoryImport(initial, maximum, shared);
+          const mathImports = Array.from(this.usedMathImports).sort();
+          for (const name of mathImports) {
+            const params = name === "pow" || name === "atan2" ? [ "f32", "f32" ] : [ "f32" ];
+            builder.addFuncImport("math_" + name, params, [ "f32" ]);
+          }
+          const globals = {
+            threadX: builder.addGlobal("i32", true, 0),
+            threadY: builder.addGlobal("i32", true, 0),
+            threadZ: builder.addGlobal("i32", true, 0),
+            dataIndex: builder.addGlobal("i32", true, 0)
+          };
+          if (this.usesRandom) {
+            globals.pcgState = builder.addGlobal("i32", true, 0);
+            this._emitPcgRandom(builder, globals.pcgState);
+          }
+          const assembler = {
+            module: builder,
+            layout: layout,
+            globals: globals
+          };
+          for (let i = this.tracedFunctions.length - 1; i >= 0; i--) {
+            const name = this.tracedFunctions[i];
+            if (name === "kernel") continue;
+            const node = this.functionBuilder.functionMap[name];
+            if (!node) continue;
+            node.output = this.output;
+            node.emitFunction(assembler);
+          }
+          this.functionBuilder.functionMap["kernel"].output = this.output;
+          this.functionBuilder.functionMap["kernel"].emitFunction(assembler);
+          const [sizeX, sizeY] = this.threadDim;
+          const run = builder.addFunction("run", {
+            params: [ "i32", "i32", "i32" ],
+            locals: [ "i32" ]
+          });
+          const cell = 3;
+          run.localGet(0).localSet(cell);
+          if (this.output.length === 1) {
+            run.i32Const(0).globalSet(globals.threadY);
+            run.i32Const(0).globalSet(globals.threadZ);
+          } else if (this.output.length === 2) run.i32Const(0).globalSet(globals.threadZ);
+          run.block();
+          run.localGet(cell).localGet(1).i32GeS().brIf(0);
+          run.loop();
+          run.localGet(cell).globalSet(globals.dataIndex);
+          if (this.output.length === 1) run.localGet(cell).globalSet(globals.threadX); else if (this.output.length === 2) {
+            run.localGet(cell).i32Const(sizeX).i32RemU().globalSet(globals.threadX);
+            run.localGet(cell).i32Const(sizeX).i32DivU().globalSet(globals.threadY);
+          } else {
+            run.localGet(cell).i32Const(sizeX).i32RemU().globalSet(globals.threadX);
+            run.localGet(cell).i32Const(sizeX).i32DivU().i32Const(sizeY).i32RemU().globalSet(globals.threadY);
+            run.localGet(cell).i32Const(sizeX * sizeY).i32DivU().globalSet(globals.threadZ);
+          }
+          if (this.usesRandom) run.localGet(2).localGet(cell).i32Const(-1640531527).i32Mul().i32Add().i32Const(747796405).i32Mul().i32Const(-1403630843).i32Add().globalSet(globals.pcgState);
+          run.call("kernel");
+          run.localGet(cell).i32Const(1).i32Add().localSet(cell);
+          run.localGet(cell).localGet(1).i32LtS().brIf(0);
+          run.end();
+          run.end();
+          builder.exportFunction("run");
+          if (WebAssemblyKernel.isSIMDSupported) {
+            if (this.usesRandom) {
+              globals.pcgStateV = builder.addGlobal("v128", true, 0);
+              this._emitPcgRandomVector(builder, globals.pcgStateV);
+            }
+            let helperInfo = null;
+            for (const name of this.tracedFunctions) {
+              if (name === "kernel") continue;
+              const node = this.functionBuilder.functionMap[name];
+              if (!node) continue;
+              if (!helperInfo) helperInfo = {
+                readsThread: false,
+                usesRandom: false
+              };
+              if (node.readsThread) helperInfo.readsThread = true;
+              if (node.usesRandom) helperInfo.usesRandom = true;
+            }
+            assembler.helperInfo = helperInfo;
+            this.functionBuilder.functionMap["kernel"].emitVectorFunction(assembler);
+            this._emitRunSimd(builder, globals);
+            builder.exportFunction("run_simd");
+          }
+          return {
+            bytes: builder.toBytes(),
+            initial: initial,
+            maximum: maximum
+          };
+        }
+        _emitRunSimd(builder, globals) {
+          const [sizeX, sizeY] = this.threadDim;
+          const run = builder.addFunction("run_simd", {
+            params: [ "i32", "i32", "i32" ],
+            locals: [ "i32" ]
+          });
+          const cell = 3;
+          run.localGet(0).localSet(cell);
+          if (this.output.length === 1) {
+            run.i32Const(0).globalSet(globals.threadY);
+            run.i32Const(0).globalSet(globals.threadZ);
+          } else if (this.output.length === 2) run.i32Const(0).globalSet(globals.threadZ);
+          run.block();
+          run.localGet(cell).localGet(1).i32GeS().brIf(0);
+          run.loop();
+          run.localGet(cell).globalSet(globals.dataIndex);
+          if (this.output.length === 1) run.localGet(cell).globalSet(globals.threadX); else if (this.output.length === 2) {
+            run.localGet(cell).i32Const(sizeX).i32RemU().globalSet(globals.threadX);
+            run.localGet(cell).i32Const(sizeX).i32DivU().globalSet(globals.threadY);
+          } else {
+            run.localGet(cell).i32Const(sizeX).i32RemU().globalSet(globals.threadX);
+            run.localGet(cell).i32Const(sizeX).i32DivU().i32Const(sizeY).i32RemU().globalSet(globals.threadY);
+            run.localGet(cell).i32Const(sizeX * sizeY).i32DivU().globalSet(globals.threadZ);
+          }
+          if (this.usesRandom) {
+            run.localGet(cell).i32x4Splat().v128ConstI32x4(0, 1, 2, 3).i32x4Add();
+            run.v128ConstI32x4(-1640531527, -1640531527, -1640531527, -1640531527).i32x4Mul();
+            run.localGet(2).i32x4Splat().i32x4Add();
+            run.v128ConstI32x4(747796405, 747796405, 747796405, 747796405).i32x4Mul();
+            run.v128ConstI32x4(-1403630843, -1403630843, -1403630843, -1403630843).i32x4Add();
+            run.globalSet(globals.pcgStateV);
+          }
+          run.call("kernel_simd");
+          run.localGet(cell).i32Const(4).i32Add().localSet(cell);
+          run.localGet(cell).localGet(1).i32LtS().brIf(0);
+          run.end();
+          run.end();
+        }
+        _emitPcgRandomVector(builder, stateGlobal) {
+          const em = builder.addFunction("pcg_random_v", {
+            params: [ "v128" ],
+            results: [ "v128" ]
+          });
+          const s = em.addLocal("v128");
+          const w = em.addLocal("i32");
+          em.globalGet(stateGlobal).v128ConstI32x4(747796405, 747796405, 747796405, 747796405).i32x4Mul().v128ConstI32x4(-1403630843, -1403630843, -1403630843, -1403630843).i32x4Add().globalGet(stateGlobal).localGet(0).v128Bitselect().globalSet(stateGlobal);
+          em.globalGet(stateGlobal).localSet(s);
+          em.localGet(s).i32x4ExtractLane(0).localSet(w);
+          em.localGet(w).localGet(w).i32Const(28).i32ShrU().i32Const(4).i32Add().i32ShrU().i32x4Splat();
+          for (let lane = 1; lane < 4; lane++) {
+            em.localGet(s).i32x4ExtractLane(lane).localSet(w);
+            em.localGet(w).localGet(w).i32Const(28).i32ShrU().i32Const(4).i32Add().i32ShrU().i32x4ReplaceLane(lane);
+          }
+          em.localGet(s).v128Xor();
+          em.v128ConstI32x4(277803737, 277803737, 277803737, 277803737).i32x4Mul();
+          const wv = em.addLocal("v128");
+          em.localTee(wv);
+          em.i32Const(22).i32x4ShrU().localGet(wv).v128Xor();
+          em.i32Const(8).i32x4ShrU();
+          em.f32x4ConvertI32x4U();
+          em.v128ConstF32x4(16777216, 16777216, 16777216, 16777216).f32x4Div();
+        }
+        _emitPcgRandom(builder, stateGlobal) {
+          const em = builder.addFunction("pcg_random", {
+            params: [],
+            results: [ "f32" ]
+          });
+          const word = em.addLocal("i32");
+          em.globalGet(stateGlobal).i32Const(747796405).i32Mul().i32Const(-1403630843).i32Add().globalSet(stateGlobal);
+          em.globalGet(stateGlobal).globalGet(stateGlobal).i32Const(28).i32ShrU().i32Const(4).i32Add().i32ShrU().globalGet(stateGlobal).i32Xor().i32Const(277803737).i32Mul().localTee(word);
+          em.i32Const(22).i32ShrU().localGet(word).i32Xor().i32Const(8).i32ShrU().f32ConvertI32U().f32Const(16777216).f32Div();
+        }
+        _instantiate(entryKey, args) {
+          let entry = this._moduleCache.get(entryKey);
+          if (!entry) {
+            const shared = this._threadable();
+            const layout = this.computeLayout(args);
+            const [tx, ty, tz] = this.threadDim;
+            const cells = tx * ty * tz;
+            const {bytes: bytes, initial: initial, maximum: maximum} = this._assembleModule(layout, cells, shared);
+            if (!WebAssembly.validate(bytes)) throw new Error("WebAssembly backend: generated module failed validation (internal error)");
+            const memory = shared ? new WebAssembly.Memory({
+              initial: initial,
+              maximum: maximum,
+              shared: true
+            }) : new WebAssembly.Memory({
+              initial: initial,
+              maximum: maximum
+            });
+            const imports = {
+              env: {
+                memory: memory
+              }
+            };
+            for (const name of this.usedMathImports) imports.env["math_" + name] = Math[name];
+            const module$1 = new WebAssembly.Module(bytes);
+            const instance = new WebAssembly.Instance(module$1, imports);
+            entry = {
+              id: nextEntryId++,
+              sizeSignature: entryKey,
+              shared: shared,
+              layout: layout,
+              cells: cells,
+              bytes: bytes,
+              module: module$1,
+              memory: memory,
+              mathImports: Array.from(this.usedMathImports).sort(),
+              sizeX: tx,
+              instance: instance,
+              run: instance.exports.run,
+              runSimd: instance.exports.run_simd || null,
+              f32: new Float32Array(memory.buffer),
+              i32: new Int32Array(memory.buffer)
+            };
+            for (const name in layout.constantArrays) {
+              const record = layout.constantArrays[name];
+              const value = this.constants[name];
+              utils.flattenTo(value instanceof Input ? value.value : value, entry.f32.subarray(record.offset / 4, record.offset / 4 + record.flatLength));
+            }
+            this._moduleCache.set(entryKey, entry);
+          }
+          this._active = entry;
+        }
+        run() {
+          if (!this.built) {
+            this.build.apply(this, arguments);
+            if (this.fallbackRequested) return null;
+          }
+          const threadDim = this.threadDim = Array.from(this.output);
+          while (threadDim.length < 3) threadDim.push(1);
+          const entryKey = this._entryKey(arguments);
+          if (!this._active || this._active.sizeSignature !== entryKey) {
+            const previous = this._active ? this._active.layout.arrays : {};
+            for (const name in previous) {
+              const record = previous[name];
+              const dims = this.valueDimensions(arguments[record.index]);
+              if (!this.dynamicArguments && (dims[0] !== record.dims[0] || dims[1] !== record.dims[1] || dims[2] !== record.dims[2])) throw new Error(`argument "${name}" changed size from [${record.dims.join(", ")}] to [${dims.join(", ")}]; use dynamicArguments: true for varying input sizes`);
+            }
+            this._instantiate(entryKey, arguments);
+          }
+          if (this._active.shared && this._threadable()) return this._runThreaded(arguments);
+          const {layout: layout, cells: cells, f32: f32, i32: i32, run: run, runSimd: runSimd} = this._active;
+          for (const name in layout.arrays) {
+            const record = layout.arrays[name];
+            const value = arguments[record.index];
+            utils.flattenTo(value instanceof Input ? value.value : value, f32.subarray(record.offset / 4, record.offset / 4 + record.flatLength));
+          }
+          for (const name in layout.scalars) {
+            const record = layout.scalars[name];
+            const value = arguments[record.index];
+            if (record.type === "Integer") i32[record.offset / 4] = value | 0; else if (record.type === "Boolean") i32[record.offset / 4] = value ? 1 : 0; else f32[record.offset / 4] = value;
+          }
+          let seed = 0;
+          if (this.usesRandom) seed = this.randomSeed !== null ? this.randomSeed >>> 0 : Math.random() * 4294967296 >>> 0;
+          seed = seed | 0;
+          if (runSimd && cells > 0) {
+            const sizeX = threadDim[0];
+            if ((sizeX & 3) === 0) {
+              runSimd(0, cells, seed);
+              this._lastRunPath = "simd";
+            } else {
+              const quadSpan = sizeX & -4;
+              const rows = cells / sizeX;
+              for (let row = 0; row < rows; row++) {
+                const base = row * sizeX;
+                if (quadSpan > 0) runSimd(base, base + quadSpan, seed);
+                run(base + quadSpan, base + sizeX, seed);
+              }
+              this._lastRunPath = quadSpan > 0 ? "simd+scalar-tail" : "scalar";
+            }
+          } else {
+            run(0, cells, seed);
+            this._lastRunPath = "scalar";
+          }
+          const base = layout.outputOffset / 4;
+          const data = f32.slice(base, base + cells * this.componentCount);
+          return this._shapeOutput(data, Array.from(this.output), this.componentCount);
+        }
+        _runThreaded(args) {
+          const entry = this._active;
+          const {layout: layout, cells: cells} = entry;
+          const staged = [];
+          for (const name in layout.arrays) {
+            const record = layout.arrays[name];
+            const value = args[record.index];
+            const flat = new Float32Array(record.flatLength);
+            utils.flattenTo(value instanceof Input ? value.value : value, flat);
+            staged.push({
+              record: record,
+              flat: flat
+            });
+          }
+          const scalarValues = [];
+          for (const name in layout.scalars) {
+            const record = layout.scalars[name];
+            scalarValues.push({
+              record: record,
+              value: args[record.index]
+            });
+          }
+          let seed = 0;
+          if (this.usesRandom) seed = this.randomSeed !== null ? this.randomSeed >>> 0 : Math.random() * 4294967296 >>> 0;
+          seed = seed | 0;
+          if (!this._pool) this._pool = new WebAssemblyWorkerPool(this.poolSize || void 0);
+          const pool = this._pool;
+          const componentCount = this.componentCount;
+          const output = Array.from(this.output);
+          const result = this._threadedTail.then(() => {
+            for (let i = 0; i < staged.length; i++) entry.f32.set(staged[i].flat, staged[i].record.offset / 4);
+            for (let i = 0; i < scalarValues.length; i++) {
+              const {record: record, value: value} = scalarValues[i];
+              if (record.type === "Integer") entry.i32[record.offset / 4] = value | 0; else if (record.type === "Boolean") entry.i32[record.offset / 4] = value ? 1 : 0; else entry.f32[record.offset / 4] = value;
+            }
+            const workerCount = Math.min(pool.size, Math.ceil(cells / 4096));
+            let chunk = Math.ceil(cells / workerCount) & -4;
+            if (chunk < 4) chunk = 4;
+            const tasks = [];
+            for (let i = 0; i < workerCount; i++) {
+              const start = i * chunk;
+              if (start >= cells) break;
+              tasks.push({
+                start: start,
+                end: i === workerCount - 1 ? cells : Math.min(start + chunk, cells),
+                seed: seed
+              });
+            }
+            this._lastRunPath = "threaded";
+            return pool.dispatch(entry, tasks).then(() => {
+              const base = layout.outputOffset / 4;
+              const data = entry.f32.slice(base, base + cells * componentCount);
+              return this._shapeOutput(data, output, componentCount);
+            });
+          });
+          this._threadedTail = result.then(() => void 0, () => void 0);
+          return result;
+        }
+        _shapeOutput(data, output, componentCount) {
+          const [width, height, depth] = [ output[0], output[1] || 1, output[2] || 1 ];
+          if (componentCount === 1) switch (output.length) {
+           case 1:
+            return utils.erectMemoryOptimizedFloat(data, width);
+
+           case 2:
+            return utils.erectMemoryOptimized2DFloat(data, width, height);
+
+           default:
+            return utils.erectMemoryOptimized3DFloat(data, width, height, depth);
+          }
+          const n = componentCount;
+          const erectRow = offset => {
+            const row = new Array(width);
+            for (let x = 0; x < width; x++) row[x] = data.subarray(offset + x * n, offset + x * n + n);
+            return row;
+          };
+          switch (output.length) {
+           case 1:
+            return erectRow(0);
+
+           case 2:
+            {
+              const rows = new Array(height);
+              for (let y = 0; y < height; y++) rows[y] = erectRow(y * width * n);
+              return rows;
+            }
+
+           default:
+            {
+              const layers = new Array(depth);
+              for (let z = 0; z < depth; z++) {
+                const rows = new Array(height);
+                for (let y = 0; y < height; y++) rows[y] = erectRow((z * height + y) * width * n);
+                layers[z] = rows;
+              }
+              return layers;
+            }
+          }
+        }
+        destroy(removeCanvasReferences) {
+          if (this._pool) {
+            this._pool.destroy();
+            this._pool = null;
+          }
+          this._threadedTail = Promise.resolve();
+          this._moduleCache = new Map;
+          this._active = null;
+          this.built = false;
+          if (this.gpu && this.gpu.kernels) {
+            const index = this.gpu.kernels.indexOf(this);
+            if (index !== -1) this.gpu.kernels.splice(index, 1);
+          }
+        }
+      }
+    };
+  });
   var require_kernel_run_shortcut = __commonJSMin((exports, module) => {
     const {utils: utils} = require_utils();
     const {Input: Input} = require_input();
@@ -17948,20 +23122,22 @@
   var require_gpu = __commonJSMin((exports, module) => {
     const {gpuMock: gpuMock} = require_gpu_mock_js();
     const {utils: utils} = require_utils();
-    const {Kernel: Kernel} = require_kernel$6();
-    const {CPUKernel: CPUKernel} = require_kernel$5();
-    const {HeadlessGLKernel: HeadlessGLKernel} = require_kernel$2();
-    const {WebGL2Kernel: WebGL2Kernel} = require_kernel$1();
-    const {WebGLKernel: WebGLKernel} = require_kernel$3();
-    const {WebGPUKernel: WebGPUKernel} = require_kernel();
+    const {Kernel: Kernel} = require_kernel$7();
+    const {CPUKernel: CPUKernel} = require_kernel$6();
+    const {HeadlessGLKernel: HeadlessGLKernel} = require_kernel$3();
+    const {WebGL2Kernel: WebGL2Kernel} = require_kernel$2();
+    const {WebGLKernel: WebGLKernel} = require_kernel$4();
+    const {WebGPUKernel: WebGPUKernel} = require_kernel$1();
+    const {WebAssemblyKernel: WebAssemblyKernel} = require_kernel();
     const {kernelRunShortcut: kernelRunShortcut} = require_kernel_run_shortcut();
-    const kernelOrder = [ HeadlessGLKernel, WebGL2Kernel, WebGLKernel ];
+    const kernelOrder = [ HeadlessGLKernel, WebGL2Kernel, WebGLKernel, WebAssemblyKernel ];
     const kernelTypes = [ "gpu", "cpu" ];
     const internalKernels = {
       headlessgl: HeadlessGLKernel,
       webgl2: WebGL2Kernel,
       webgl: WebGLKernel,
-      webgpu: WebGPUKernel
+      webgpu: WebGPUKernel,
+      webasm: WebAssemblyKernel
     };
     let validate = true;
     var GPU = class GPU {
@@ -17995,6 +23171,9 @@
       static isWebGPUAvailable() {
         if (!WebGPUKernel.isSupported) return Promise.resolve(false);
         return navigator.gpu.requestAdapter().then(adapter => adapter !== null, () => false);
+      }
+      static get isWebAssemblySupported() {
+        return WebAssemblyKernel.isSupported;
       }
       static get isCanvasSupported() {
         return typeof HTMLCanvasElement !== "undefined";
@@ -18404,22 +23583,24 @@
     const {Input: Input, input: input} = require_input();
     const {Texture: Texture} = require_texture$1();
     const {FunctionBuilder: FunctionBuilder} = require_function_builder();
-    const {FunctionNode: FunctionNode} = require_function_node$4();
-    const {CPUFunctionNode: CPUFunctionNode} = require_function_node$3();
-    const {CPUKernel: CPUKernel} = require_kernel$5();
-    const {HeadlessGLKernel: HeadlessGLKernel} = require_kernel$2();
-    const {WebGLFunctionNode: WebGLFunctionNode} = require_function_node$2();
-    const {WebGLKernel: WebGLKernel} = require_kernel$3();
+    const {FunctionNode: FunctionNode} = require_function_node$5();
+    const {CPUFunctionNode: CPUFunctionNode} = require_function_node$4();
+    const {CPUKernel: CPUKernel} = require_kernel$6();
+    const {HeadlessGLKernel: HeadlessGLKernel} = require_kernel$3();
+    const {WebGLFunctionNode: WebGLFunctionNode} = require_function_node$3();
+    const {WebGLKernel: WebGLKernel} = require_kernel$4();
     const {kernelValueMaps: webGLKernelValueMaps} = require_kernel_value_maps$1();
-    const {WebGL2FunctionNode: WebGL2FunctionNode} = require_function_node$1();
-    const {WebGL2Kernel: WebGL2Kernel} = require_kernel$1();
+    const {WebGL2FunctionNode: WebGL2FunctionNode} = require_function_node$2();
+    const {WebGL2Kernel: WebGL2Kernel} = require_kernel$2();
     const {kernelValueMaps: webGL2KernelValueMaps} = require_kernel_value_maps();
-    const {WGSLFunctionNode: WGSLFunctionNode} = require_function_node();
-    const {WebGPUKernel: WebGPUKernel} = require_kernel();
+    const {WGSLFunctionNode: WGSLFunctionNode} = require_function_node$1();
+    const {WebGPUKernel: WebGPUKernel} = require_kernel$1();
     const {WebGPUContext: WebGPUContext} = require_context();
     const {WebGPUBufferResult: WebGPUBufferResult} = require_buffer_result();
-    const {GLKernel: GLKernel} = require_kernel$4();
-    const {Kernel: Kernel} = require_kernel$6();
+    const {WebAssemblyFunctionNode: WebAssemblyFunctionNode} = require_function_node();
+    const {WebAssemblyKernel: WebAssemblyKernel} = require_kernel();
+    const {GLKernel: GLKernel} = require_kernel$5();
+    const {Kernel: Kernel} = require_kernel$7();
     const {FunctionTracer: FunctionTracer} = require_function_tracer();
     module.exports = {
       alias: alias,
@@ -18443,6 +23624,8 @@
       WebGPUKernel: WebGPUKernel,
       WebGPUContext: WebGPUContext,
       WebGPUBufferResult: WebGPUBufferResult,
+      WebAssemblyFunctionNode: WebAssemblyFunctionNode,
+      WebAssemblyKernel: WebAssemblyKernel,
       GLKernel: GLKernel,
       Kernel: Kernel,
       FunctionTracer: FunctionTracer,

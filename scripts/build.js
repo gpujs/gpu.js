@@ -62,10 +62,12 @@ async function toAscii(code, name) {
 }
 
 async function build() {
-  const full = await bundle(['gl']);
+  // worker_threads and os are the wasm worker pool's Node half; in the
+  // browser it detects `Worker` first and never touches them
+  const full = await bundle(['gl', 'worker_threads', 'os']);
   write('dist/gpu-browser.js', withBanner(await toAscii(decomment(full), 'gpu-browser.js')));
 
-  const core = await bundle(['gl', 'acorn']);
+  const core = await bundle(['gl', 'acorn', 'worker_threads', 'os']);
   write('dist/gpu-browser-core.js', withBanner(await toAscii(decomment(core), 'gpu-browser-core.js')));
 }
 
