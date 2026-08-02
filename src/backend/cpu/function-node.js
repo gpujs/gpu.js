@@ -12,6 +12,46 @@ class CPUFunctionNode extends FunctionNode {
    * @param {Array} retArr - return array string
    * @returns {Array} the append retArr
    */
+  /**
+   * @desc Argument names the kernel body assigns to. The generated cell loop
+   * binds arguments once for the whole run, so an assignment would leak into
+   * every later cell (#865); assigned arguments get a per-cell shadow local
+   * instead. `$` cannot appear in sanitized user names, so the shadow name
+   * cannot collide.
+   */
+  getAssignedArguments() {
+    if (this._assignedArguments) return this._assignedArguments;
+    const assigned = new Set();
+    const names = this.argumentNames || [];
+    const walk = node => {
+      if (!node || typeof node !== 'object') return;
+      if (Array.isArray(node)) {
+        for (const child of node) walk(child);
+        return;
+      }
+      if (node.type === 'AssignmentExpression' && node.left.type === 'Identifier' && names.indexOf(node.left.name) !== -1) {
+        assigned.add(node.left.name);
+      }
+      if (node.type === 'UpdateExpression' && node.argument.type === 'Identifier' && names.indexOf(node.argument.name) !== -1) {
+        assigned.add(node.argument.name);
+      }
+      for (const key in node) {
+        if (key === 'loc' || key === 'range' || key === 'parent') continue;
+        const child = node[key];
+        if (child && typeof child === 'object') walk(child);
+      }
+    };
+    walk(this.getJsAST());
+    return this._assignedArguments = assigned;
+  }
+
+  markupUserName(name) {
+    if (this.isRootKernel && this.getAssignedArguments().has(name)) {
+      return `user_${ name }$cell`;
+    }
+    return `user_${ name }`;
+  }
+
   astFunction(ast, retArr) {
 
     // Setup function return type and name
@@ -36,10 +76,23 @@ class CPUFunctionNode extends FunctionNode {
       retArr.push(') {\n');
     }
 
+    if (this.isRootKernel) {
+      for (const name of this.getAssignedArguments()) {
+        retArr.push(`let user_${ name }$cell = user_${ name };\n`);
+      }
+      // an early return breaks out of this block -- a plain `continue` only
+      // reaches the cell loop from the body's top level, so a return inside
+      // a user loop used to fall through and let later statements overwrite
+      // the result (#865)
+      retArr.push('kernelBody: {\n');
+    }
     // Body statement iteration
     for (let i = 0; i < ast.body.body.length; ++i) {
       this.astGeneric(ast.body.body[i], retArr);
       retArr.push('\n');
+    }
+    if (this.isRootKernel) {
+      retArr.push('}\n');
     }
 
     if (!this.isRootKernel) {
@@ -67,7 +120,7 @@ class CPUFunctionNode extends FunctionNode {
       this.astGeneric(ast.argument, retArr);
       retArr.push(';\n');
       retArr.push(this.followingReturnStatement);
-      retArr.push('continue;\n');
+      retArr.push('break kernelBody;\n');
     } else if (this.isSubKernel) {
       retArr.push(`subKernelResult_${ this.name } = `);
       this.astGeneric(ast.argument, retArr);
@@ -147,6 +200,12 @@ class CPUFunctionNode extends FunctionNode {
           this.constants && this.constants.hasOwnProperty(idtNode.name)
         ) {
           retArr.push('constants_' + idtNode.name);
+        } else if (
+          !this.getDeclaration(idtNode) &&
+          this.isRootKernel && this.getAssignedArguments().has(idtNode.name)
+        ) {
+          // an assigned argument reads and writes its per-cell shadow (#865)
+          retArr.push(this.markupUserName(idtNode.name));
         } else {
           retArr.push('user_' + idtNode.name);
         }
@@ -272,14 +331,16 @@ class CPUFunctionNode extends FunctionNode {
       );
     }
 
-    retArr.push('for (let i = 0; i < LOOP_MAX; i++) {');
+    // a native do-while: `continue` must jump to the test, which the old
+    // for-wrapped form skipped (#865). The iteration cap rides in the
+    // condition; the counter name is keyed to the node so nesting works.
+    const safeName = `safeI${ this.astKey(doWhileNode, '_') }`;
+    retArr.push(`let ${ safeName } = 0;\n`);
+    retArr.push('do {');
     this.astGeneric(doWhileNode.body, retArr);
-    retArr.push('if (!');
+    retArr.push('} while ((');
     this.astGeneric(doWhileNode.test, retArr);
-    retArr.push(') {\n');
-    retArr.push('break;\n');
-    retArr.push('}\n');
-    retArr.push('}\n');
+    retArr.push(`) && ++${ safeName } < LOOP_MAX);\n`);
 
     return retArr;
 
@@ -521,14 +582,14 @@ class CPUFunctionNode extends FunctionNode {
         case 'Integer':
         case 'Float':
         case 'Boolean':
-          retArr.push(`${origin}_${name}`);
+          retArr.push(origin === 'user' ? this.markupUserName(name) : `${origin}_${name}`);
           return retArr;
       }
     }
 
     // handle more complex types
     // argument may have come from a parent
-    const markupName = `${origin}_${name}`;
+    const markupName = origin === 'user' ? this.markupUserName(name) : `${origin}_${name}`;
 
     switch (type) {
       case 'Array(2)':

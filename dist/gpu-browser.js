@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.21.0
- * @date Mon Aug 03 2026 04:00:48 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 07:33:13 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -7626,6 +7626,31 @@
   var require_function_node$4 = __commonJSMin((exports, module) => {
     const {FunctionNode: FunctionNode} = require_function_node$5();
     var CPUFunctionNode = class extends FunctionNode {
+      getAssignedArguments() {
+        if (this._assignedArguments) return this._assignedArguments;
+        const assigned = new Set;
+        const names = this.argumentNames || [];
+        const walk = node => {
+          if (!node || typeof node !== "object") return;
+          if (Array.isArray(node)) {
+            for (const child of node) walk(child);
+            return;
+          }
+          if (node.type === "AssignmentExpression" && node.left.type === "Identifier" && names.indexOf(node.left.name) !== -1) assigned.add(node.left.name);
+          if (node.type === "UpdateExpression" && node.argument.type === "Identifier" && names.indexOf(node.argument.name) !== -1) assigned.add(node.argument.name);
+          for (const key in node) {
+            if (key === "loc" || key === "range" || key === "parent") continue;
+            const child = node[key];
+            if (child && typeof child === "object") walk(child);
+          }
+        };
+        walk(this.getJsAST());
+        return this._assignedArguments = assigned;
+      }
+      markupUserName(name) {
+        if (this.isRootKernel && this.getAssignedArguments().has(name)) return `user_${name}$cell`;
+        return `user_${name}`;
+      }
       astFunction(ast, retArr) {
         if (!this.isRootKernel) {
           retArr.push("function");
@@ -7640,10 +7665,15 @@
           }
           retArr.push(") {\n");
         }
+        if (this.isRootKernel) {
+          for (const name of this.getAssignedArguments()) retArr.push(`let user_${name}$cell = user_${name};\n`);
+          retArr.push("kernelBody: {\n");
+        }
         for (let i = 0; i < ast.body.body.length; ++i) {
           this.astGeneric(ast.body.body[i], retArr);
           retArr.push("\n");
         }
+        if (this.isRootKernel) retArr.push("}\n");
         if (!this.isRootKernel) retArr.push("}\n");
         return retArr;
       }
@@ -7655,7 +7685,7 @@
           this.astGeneric(ast.argument, retArr);
           retArr.push(";\n");
           retArr.push(this.followingReturnStatement);
-          retArr.push("continue;\n");
+          retArr.push("break kernelBody;\n");
         } else if (this.isSubKernel) {
           retArr.push(`subKernelResult_${this.name} = `);
           this.astGeneric(ast.argument, retArr);
@@ -7689,7 +7719,7 @@
           break;
 
          default:
-          if (!this.getDeclaration(idtNode) && this.constants && this.constants.hasOwnProperty(idtNode.name)) retArr.push("constants_" + idtNode.name); else retArr.push("user_" + idtNode.name);
+          if (!this.getDeclaration(idtNode) && this.constants && this.constants.hasOwnProperty(idtNode.name)) retArr.push("constants_" + idtNode.name); else if (!this.getDeclaration(idtNode) && this.isRootKernel && this.getAssignedArguments().has(idtNode.name)) retArr.push(this.markupUserName(idtNode.name)); else retArr.push("user_" + idtNode.name);
         }
         return retArr;
       }
@@ -7747,14 +7777,13 @@
       }
       astDoWhileStatement(doWhileNode, retArr) {
         if (doWhileNode.type !== "DoWhileStatement") throw this.astErrorOutput("Invalid while statement", doWhileNode);
-        retArr.push("for (let i = 0; i < LOOP_MAX; i++) {");
+        const safeName = `safeI${this.astKey(doWhileNode, "_")}`;
+        retArr.push(`let ${safeName} = 0;\n`);
+        retArr.push("do {");
         this.astGeneric(doWhileNode.body, retArr);
-        retArr.push("if (!");
+        retArr.push("} while ((");
         this.astGeneric(doWhileNode.test, retArr);
-        retArr.push(") {\n");
-        retArr.push("break;\n");
-        retArr.push("}\n");
-        retArr.push("}\n");
+        retArr.push(`) && ++${safeName} < LOOP_MAX);\n`);
         return retArr;
       }
       astAssignmentExpression(assNode, retArr) {
@@ -7925,10 +7954,10 @@
          case "Integer":
          case "Float":
          case "Boolean":
-          retArr.push(`${origin}_${name}`);
+          retArr.push(origin === "user" ? this.markupUserName(name) : `${origin}_${name}`);
           return retArr;
         }
-        const markupName = `${origin}_${name}`;
+        const markupName = origin === "user" ? this.markupUserName(name) : `${origin}_${name}`;
         switch (type) {
          default:
           let size;
