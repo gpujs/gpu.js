@@ -155,7 +155,11 @@ class FunctionNode {
     }
 
     if (!this.name) {
-      throw new Error('this.name could not be set');
+      throw new Error(
+        'Function name could not be determined: the source has no name ' +
+        '(bundlers strip the name off a named function expression) and no ' +
+        '{ name } setting was given. Pass a function declaration by ' +
+        "reference, or add { name: '...' } to the addFunction settings.");
     }
 
     if (this.argumentTypes.length > 0 && this.argumentTypes.length !== this.argumentNames.length) {

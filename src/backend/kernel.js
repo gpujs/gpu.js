@@ -979,7 +979,13 @@ class Kernel {
     }
 
     return {
-      name: utils.getFunctionNameFromString(sourceString) || null,
+      // settings.name first: bundlers strip the name off a named function
+      // expression (nothing in JS scope references it), so the source string
+      // often has none (#863). Function.prototype.name still knows inferred
+      // names (`const dbl = function (x) {...}`) that the string never had.
+      name: settings.name ||
+        utils.getFunctionNameFromString(sourceString) ||
+        (typeof source === 'function' && source.name ? source.name : null),
       source: sourceString,
       argumentTypes,
       returnType: settings.returnType || null,

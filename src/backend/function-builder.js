@@ -154,6 +154,7 @@ class FunctionBuilder {
     let functionNodes = null;
     if (functions) {
       functionNodes = functions.map((fn) => new FunctionNode(fn.source, {
+        name: fn.name || undefined,
         returnType: fn.returnType,
         argumentTypes: fn.argumentTypes,
         output,

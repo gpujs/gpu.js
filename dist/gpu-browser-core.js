@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.20.0
- * @date Sun Aug 02 2026 23:48:33 GMT+0800 (Singapore Standard Time)
+ * @date Sun Aug 02 2026 23:57:33 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -1459,7 +1459,7 @@
         let argumentTypes = [];
         if (Array.isArray(settings.argumentTypes)) argumentTypes = settings.argumentTypes; else if (typeof settings.argumentTypes === "object") argumentTypes = utils.getArgumentNamesFromString(sourceString).map(name => settings.argumentTypes[name]) || []; else argumentTypes = settings.argumentTypes || [];
         return {
-          name: utils.getFunctionNameFromString(sourceString) || null,
+          name: settings.name || utils.getFunctionNameFromString(sourceString) || (typeof source === "function" && source.name ? source.name : null),
           source: sourceString,
           argumentTypes: argumentTypes,
           returnType: settings.returnType || null
@@ -1588,6 +1588,7 @@
           const rootNode = new FunctionNode(source, rootNodeOptions);
           let functionNodes = null;
           if (functions) functionNodes = functions.map(fn => new FunctionNode(fn.source, {
+            name: fn.name || void 0,
             returnType: fn.returnType,
             argumentTypes: fn.argumentTypes,
             output: output,
@@ -2198,7 +2199,7 @@
       validate() {
         if (typeof this.source !== "string" && !this.ast) throw new Error("this.source not a string");
         if (!this.ast && !utils.isFunctionString(this.source)) throw new Error("this.source not a function string");
-        if (!this.name) throw new Error("this.name could not be set");
+        if (!this.name) throw new Error("Function name could not be determined: the source has no name (bundlers strip the name off a named function expression) and no { name } setting was given. Pass a function declaration by reference, or add { name: '...' } to the addFunction settings.");
         if (this.argumentTypes.length > 0 && this.argumentTypes.length !== this.argumentNames.length) throw new Error(`argumentTypes count of ${this.argumentTypes.length} exceeds ${this.argumentNames.length}`);
         if (this.output.length < 1) throw new Error("this.output is not big enough");
       }
