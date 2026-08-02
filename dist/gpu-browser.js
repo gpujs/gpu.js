@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.20.0
- * @date Sun Aug 02 2026 23:40:32 GMT+0800 (Singapore Standard Time)
+ * @date Sun Aug 02 2026 23:48:33 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -12304,6 +12304,7 @@
         return `${this.origin}_${utils.sanitizeName(this.name)}`;
       }
       setup() {}
+      rebind() {}
       getTransferArrayType(value) {
         if (Array.isArray(value[0])) return this.getTransferArrayType(value[0]);
         switch (value.constructor) {
@@ -12415,6 +12416,12 @@
     const {WebGLKernelValue: WebGLKernelValue} = require_kernel_value();
     const {Input: Input} = require_input();
     var WebGLKernelArray = class extends WebGLKernelValue {
+      rebind() {
+        if (!this.texture || this.contextHandle === void 0 || this.contextHandle === null) return;
+        const {context: gl} = this;
+        gl.activeTexture(this.contextHandle);
+        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+      }
       checkSize(width, height) {
         if (!this.kernel.validate) return;
         const {maxTextureSize: maxTextureSize} = this.kernel.constructor.features;
@@ -13754,7 +13761,7 @@
         }
       }
       run() {
-        const {kernelArguments: kernelArguments, texSize: texSize, forceUploadKernelConstants: forceUploadKernelConstants, context: gl} = this;
+        const {kernelArguments: kernelArguments, kernelConstants: kernelConstants, texSize: texSize, forceUploadKernelConstants: forceUploadKernelConstants, context: gl} = this;
         gl.useProgram(this.program);
         gl.scissor(0, 0, texSize[0], texSize[1]);
         if (this.dynamicOutput) {
@@ -13762,6 +13769,7 @@
           this.setUniform2iv("uTexSize", texSize);
         }
         this.setUniform2f("ratio", texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
+        for (let i = 0; i < kernelConstants.length; i++) kernelConstants[i].rebind();
         for (let i = 0; i < forceUploadKernelConstants.length; i++) {
           const constant = forceUploadKernelConstants[i];
           constant.updateValue(this.constants[constant.name]);

@@ -642,7 +642,7 @@ class WebGLKernel extends GLKernel {
   }
 
   run() {
-    const { kernelArguments, texSize, forceUploadKernelConstants, context: gl } = this;
+    const { kernelArguments, kernelConstants, texSize, forceUploadKernelConstants, context: gl } = this;
 
     gl.useProgram(this.program);
     gl.scissor(0, 0, texSize[0], texSize[1]);
@@ -653,6 +653,13 @@ class WebGLKernel extends GLKernel {
 
     this.setUniform2f('ratio', texSize[0] / this.maxTexSize[0], texSize[1] / this.maxTexSize[1]);
 
+    // texture units belong to the shared context while every kernel counts
+    // its own from zero, so another kernel's run leaves its textures on this
+    // kernel's units (#862). Arguments re-upload below; constants were
+    // uploaded at setup and only need their binding put back.
+    for (let i = 0; i < kernelConstants.length; i++) {
+      kernelConstants[i].rebind();
+    }
     for (let i = 0; i < forceUploadKernelConstants.length; i++) {
       const constant = forceUploadKernelConstants[i];
       constant.updateValue(this.constants[constant.name]);

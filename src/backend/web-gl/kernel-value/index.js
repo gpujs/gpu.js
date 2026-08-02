@@ -25,6 +25,12 @@ class WebGLKernelValue extends KernelValue {
 
   setup() {}
 
+  /**
+   * Re-establishes whatever this value put on shared context state before a
+   * run. Scalar uniforms live on the program and need nothing.
+   */
+  rebind() {}
+
   getTransferArrayType(value) {
     if (Array.isArray(value[0])) {
       return this.getTransferArrayType(value[0]);
