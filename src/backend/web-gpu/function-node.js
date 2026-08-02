@@ -1331,7 +1331,10 @@ class WGSLFunctionNode extends FunctionNode {
     let emitName = functionName;
     if (isMathFunction) {
       if (functionName === 'random') {
-        throw this.astErrorOutput('WebGPU backend does not yet support Math.random', ast);
+        // PCG, injected by the assembler; per-thread state seeded from the
+        // params seed slot, so draws advance per call within a thread
+        retArr.push('pcg_random()');
+        return retArr;
       }
       if (mathFunctionRenames[functionName]) {
         functionName = mathFunctionRenames[functionName];

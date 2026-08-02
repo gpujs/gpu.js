@@ -126,22 +126,7 @@ async function webgpuAdapter(assert) {
   await gpu.destroy();
 });
 
-(GPU.isWebGPUSupported ? test : skip)('Math.random throws deferred webgpu', async assert => {
-  if (!(await webgpuAdapter(assert))) return;
-  assert.expect(1);
-  const gpu = new GPU({ mode: 'webgpu' });
-  let error = null;
-  try {
-    const kernel = gpu.createKernel(function() {
-      return Math.random();
-    }, { output: [4] });
-    await kernel();
-  } catch (e) {
-    error = e;
-  }
-  assert.ok(error && DEFERRED.test(error.message), `deferred prefix, got: ${error && error.message}`);
-  await gpu.destroy();
-});
+
 
 // message not pinned by the contract; only the throw is
 (GPU.isWebGPUSupported ? test : skip)('combineKernels throws webgpu', async assert => {

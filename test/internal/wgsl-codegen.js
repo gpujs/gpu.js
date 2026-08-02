@@ -161,3 +161,33 @@ test('every user function name is mangled, reserved or not', t => {
     t.ok(new RegExp(`fn_${ name }\\(`).test(wgsl.split(`fn fn_${ name }`)[1] || ''), `${ name } call site uses the mangled name`);
   }
 });
+
+test('Math.random compiles to the seeded PCG generator', t => {
+  const { WebGPUKernel } = require('../../src');
+  const kernel = new WebGPUKernel('function () { return Math.random(); }', {
+    output: [8], precision: 'single', functions: [], nativeFunctions: [],
+  });
+  kernel.setupConstants();
+  kernel.setupArguments([]);
+  kernel.translateSource();
+  kernel.paramsLayout = kernel.computeParamsLayout();
+  const wgsl = kernel.assembleWGSL();
+  t.ok(/pcg_random\(\)/.test(wgsl), 'the call site draws from the generator');
+  t.ok(/fn pcg_random/.test(wgsl), 'the generator is injected');
+  t.ok(/randomSeed : u32/.test(wgsl), 'the params struct carries the seed');
+  t.ok(/pcgState = \(params\.randomSeed \+ u32\(data_index\)/.test(wgsl), 'state seeds from seed and thread id');
+  t.ok(kernel.paramsLayout.randomSeedOffset !== null, 'the layout reserves the slot');
+});
+
+test('a kernel without Math.random carries no seed machinery', t => {
+  const { WebGPUKernel } = require('../../src');
+  const kernel = new WebGPUKernel('function () { return 1; }', {
+    output: [8], precision: 'single', functions: [], nativeFunctions: [],
+  });
+  kernel.setupConstants();
+  kernel.setupArguments([]);
+  kernel.translateSource();
+  kernel.paramsLayout = kernel.computeParamsLayout();
+  t.notOk(/pcg/.test(kernel.assembleWGSL()), 'no generator');
+  t.equal(kernel.paramsLayout.randomSeedOffset, null, 'no slot');
+});

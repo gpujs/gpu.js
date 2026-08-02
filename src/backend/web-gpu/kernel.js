@@ -350,6 +350,13 @@ class WebGPUKernel extends Kernel {
       scalarArgs[i].offset = offset;
       offset += 4;
     }
+    // runs after translateSource, so the translated text already says whether
+    // this kernel draws randomness; the seed slot only exists when it does
+    let randomSeedOffset = null;
+    if (/\bpcg_random\(/.test(`${ this.translatedFunctions }\n${ this.translatedBody }`)) {
+      randomSeedOffset = offset;
+      offset += 4;
+    }
     const bufferConstants = [];
     if (this.constants) {
       for (const name in this.constants) {
@@ -368,6 +375,7 @@ class WebGPUKernel extends Kernel {
       arrayArgs,
       scalarArgs,
       bufferConstants,
+      randomSeedOffset,
       byteLength: Math.ceil(offset / 16) * 16,
     };
   }
@@ -399,6 +407,9 @@ class WebGPUKernel extends Kernel {
     for (let i = 0; i < scalarArgs.length; i++) {
       structMembers.push(`  user_${ scalarArgs[i].name } : ${ this.scalarWGSLType(scalarArgs[i].type) },`);
     }
+    if (this.paramsLayout.randomSeedOffset !== null) {
+      structMembers.push('  randomSeed : u32,');
+    }
     wgsl.push('struct Params {', structMembers.join('\n'), '}');
     wgsl.push('@group(0) @binding(0) var<uniform> params : Params;');
 
@@ -425,6 +436,21 @@ class WebGPUKernel extends Kernel {
     // helper functions can read the invocation id through this mirror; the
     // entry parameter itself is scoped to main
     wgsl.push('var<private> threadGid : vec3<u32>;');
+
+    if (this.paramsLayout.randomSeedOffset !== null) {
+      // PCG (permuted congruential): u32 state advanced per draw, RXS-M-XS
+      // output permutation. Integer arithmetic end to end, so unlike the GL
+      // backends' sin-fract hash the stream is bit-exact across drivers; the
+      // top 24 bits scale into [0, 1) at full f32 mantissa resolution.
+      wgsl.push(
+        'var<private> pcgState : u32;\n' +
+        'fn pcg_random() -> f32 {\n' +
+        '  pcgState = pcgState * 747796405u + 2891336453u;\n' +
+        '  let word = ((pcgState >> ((pcgState >> 28u) + 4u)) ^ pcgState) * 277803737u;\n' +
+        '  let mixed = (word >> 22u) ^ word;\n' +
+        '  return f32(mixed >> 8u) / 16777216.0;\n' +
+        '}');
+    }
 
     const translated = `${ this.translatedFunctions }\n${ this.translatedBody }`;
     if (/\bLOOP_MAX\b/.test(translated)) {
@@ -473,6 +499,7 @@ class WebGPUKernel extends Kernel {
         `  threadGid = vec3<u32>(flat_index, 0u, 0u);\n` +
         `  if (flat_index >= params.outputX) { return; }\n` +
         `  let data_index : i32 = i32(flat_index);\n` +
+        `${ this.paramsLayout.randomSeedOffset !== null ? '  pcgState = (params.randomSeed + u32(data_index) * 2654435769u) * 747796405u + 2891336453u;\n' : '' }` +
         `${ this.translatedBody }\n` +
         `}`);
     } else {
@@ -482,6 +509,7 @@ class WebGPUKernel extends Kernel {
         `  threadGid = gid;\n` +
         `  if (gid.x >= params.outputX || gid.y >= params.outputY || gid.z >= params.outputZ) { return; }\n` +
         `  let data_index : i32 = i32(gid.x + params.outputX * (gid.y + params.outputY * gid.z));\n` +
+        `${ this.paramsLayout.randomSeedOffset !== null ? '  pcgState = (params.randomSeed + u32(data_index) * 2654435769u) * 747796405u + 2891336453u;\n' : '' }` +
         `${ this.translatedBody }\n` +
         `}`);
     }
@@ -809,6 +837,14 @@ class WebGPUKernel extends Kernel {
     }
     this._ensureOutputBuffer();
 
+    if (this.paramsLayout.randomSeedOffset !== null) {
+      // unseeded kernels draw differently every run, like the GL backends;
+      // randomSeed pins the whole stream bit-exactly
+      const seed = this.randomSeed !== null ?
+        (this.randomSeed >>> 0) :
+        ((Math.random() * 0x100000000) >>> 0);
+      this.paramsU32[this.paramsLayout.randomSeedOffset / 4] = seed;
+    }
     this.paramsU32[0] = threadDim[0];
     this.paramsU32[1] = threadDim[1];
     this.paramsU32[2] = threadDim[2];

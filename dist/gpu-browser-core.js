@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.20.0
- * @date Mon Aug 03 2026 00:43:43 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 00:55:27 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -12409,7 +12409,10 @@
         if (!functionName) throw this.astErrorOutput(`Unhandled function, couldn't find name`, ast);
         let emitName = functionName;
         if (isMathFunction) {
-          if (functionName === "random") throw this.astErrorOutput("WebGPU backend does not yet support Math.random", ast);
+          if (functionName === "random") {
+            retArr.push("pcg_random()");
+            return retArr;
+          }
           if (mathFunctionRenames[functionName]) functionName = mathFunctionRenames[functionName];
           emitName = functionName;
         } else emitName = this.mangleFunctionName(functionName);
@@ -12933,6 +12936,11 @@
           scalarArgs[i].offset = offset;
           offset += 4;
         }
+        let randomSeedOffset = null;
+        if (/\bpcg_random\(/.test(`${this.translatedFunctions}\n${this.translatedBody}`)) {
+          randomSeedOffset = offset;
+          offset += 4;
+        }
         const bufferConstants = [];
         if (this.constants) for (const name in this.constants) {
           if (!this.constants.hasOwnProperty(name)) continue;
@@ -12947,6 +12955,7 @@
           arrayArgs: arrayArgs,
           scalarArgs: scalarArgs,
           bufferConstants: bufferConstants,
+          randomSeedOffset: randomSeedOffset,
           byteLength: Math.ceil(offset / 16) * 16
         };
       }
@@ -12968,6 +12977,7 @@
         const structMembers = [ "  outputX : u32,", "  outputY : u32,", "  outputZ : u32,", "  dispatchWidth : u32," ];
         for (let i = 0; i < arrayArgs.length; i++) structMembers.push(`  user_${arrayArgs[i].name}_dims : vec4<u32>,`);
         for (let i = 0; i < scalarArgs.length; i++) structMembers.push(`  user_${scalarArgs[i].name} : ${this.scalarWGSLType(scalarArgs[i].type)},`);
+        if (this.paramsLayout.randomSeedOffset !== null) structMembers.push("  randomSeed : u32,");
         wgsl.push("struct Params {", structMembers.join("\n"), "}");
         wgsl.push("@group(0) @binding(0) var<uniform> params : Params;");
         for (let i = 0; i < arrayArgs.length; i++) wgsl.push(`@group(0) @binding(${1 + i}) var<storage, read> user_${arrayArgs[i].name} : array<f32>;`);
@@ -12976,6 +12986,7 @@
         if (this.graphical) wgsl.push("fn kernelColor(index : i32, r : f32, g : f32, b : f32, a : f32) {\n  result[index * 4] = r;\n  result[index * 4 + 1] = g;\n  result[index * 4 + 2] = b;\n  result[index * 4 + 3] = a;\n}");
         for (let i = 0; i < bufferConstants.length; i++) wgsl.push(`@group(0) @binding(${outBinding + 1 + i}) var<storage, read> constants_${bufferConstants[i].name} : array<f32>;`);
         wgsl.push("var<private> threadGid : vec3<u32>;");
+        if (this.paramsLayout.randomSeedOffset !== null) wgsl.push("var<private> pcgState : u32;\nfn pcg_random() -> f32 {\n  pcgState = pcgState * 747796405u + 2891336453u;\n  let word = ((pcgState >> ((pcgState >> 28u) + 4u)) ^ pcgState) * 277803737u;\n  let mixed = (word >> 22u) ^ word;\n  return f32(mixed >> 8u) / 16777216.0;\n}");
         const translated = `${this.translatedFunctions}\n${this.translatedBody}`;
         if (/\bLOOP_MAX\b/.test(translated)) wgsl.push(`const LOOP_MAX : i32 = ${parseInt(this.loopMaxIterations, 10) || 1e3};`);
         for (const helperName in wgslHelpers) if (new RegExp(`\\b${helperName}\\(`).test(translated)) wgsl.push(wgslHelpers[helperName]);
@@ -12992,7 +13003,7 @@
         if (this.translatedFunctions) wgsl.push(this.translatedFunctions);
         const workgroupSize = this.output.length === 1 ? [ 64, 1, 1 ] : [ 8, 8, 1 ];
         this.workgroupSize = workgroupSize;
-        if (this.output.length === 1) wgsl.push(`@compute @workgroup_size(${workgroupSize[0]}, ${workgroupSize[1]}, ${workgroupSize[2]})\nfn main(@builtin(global_invocation_id) gid : vec3<u32>) {\n  let flat_index : u32 = gid.x + gid.y * params.dispatchWidth;\n  threadGid = vec3<u32>(flat_index, 0u, 0u);\n  if (flat_index >= params.outputX) { return; }\n  let data_index : i32 = i32(flat_index);\n${this.translatedBody}\n}`); else wgsl.push(`@compute @workgroup_size(${workgroupSize[0]}, ${workgroupSize[1]}, ${workgroupSize[2]})\nfn main(@builtin(global_invocation_id) gid : vec3<u32>) {\n  threadGid = gid;\n  if (gid.x >= params.outputX || gid.y >= params.outputY || gid.z >= params.outputZ) { return; }\n  let data_index : i32 = i32(gid.x + params.outputX * (gid.y + params.outputY * gid.z));\n${this.translatedBody}\n}`);
+        if (this.output.length === 1) wgsl.push(`@compute @workgroup_size(${workgroupSize[0]}, ${workgroupSize[1]}, ${workgroupSize[2]})\nfn main(@builtin(global_invocation_id) gid : vec3<u32>) {\n  let flat_index : u32 = gid.x + gid.y * params.dispatchWidth;\n  threadGid = vec3<u32>(flat_index, 0u, 0u);\n  if (flat_index >= params.outputX) { return; }\n  let data_index : i32 = i32(flat_index);\n${this.paramsLayout.randomSeedOffset !== null ? "  pcgState = (params.randomSeed + u32(data_index) * 2654435769u) * 747796405u + 2891336453u;\n" : ""}${this.translatedBody}\n}`); else wgsl.push(`@compute @workgroup_size(${workgroupSize[0]}, ${workgroupSize[1]}, ${workgroupSize[2]})\nfn main(@builtin(global_invocation_id) gid : vec3<u32>) {\n  threadGid = gid;\n  if (gid.x >= params.outputX || gid.y >= params.outputY || gid.z >= params.outputZ) { return; }\n  let data_index : i32 = i32(gid.x + params.outputX * (gid.y + params.outputY * gid.z));\n${this.paramsLayout.randomSeedOffset !== null ? "  pcgState = (params.randomSeed + u32(data_index) * 2654435769u) * 747796405u + 2891336453u;\n" : ""}${this.translatedBody}\n}`);
         return wgsl.join("\n");
       }
       constantDimensions(value) {
@@ -13261,6 +13272,10 @@
         const threadDim = this.threadDim = Array.from(this.output);
         while (threadDim.length < 3) threadDim.push(1);
         this._ensureOutputBuffer();
+        if (this.paramsLayout.randomSeedOffset !== null) {
+          const seed = this.randomSeed !== null ? this.randomSeed >>> 0 : Math.random() * 4294967296 >>> 0;
+          this.paramsU32[this.paramsLayout.randomSeedOffset / 4] = seed;
+        }
         this.paramsU32[0] = threadDim[0];
         this.paramsU32[1] = threadDim[1];
         this.paramsU32[2] = threadDim[2];
