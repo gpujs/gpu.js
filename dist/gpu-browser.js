@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.20.0
- * @date Sun Aug 02 2026 23:57:32 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 00:03:09 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -5651,7 +5651,12 @@
         if (typeof source !== "string" && typeof source !== "function") throw new Error("source not a string or function");
         const sourceString = typeof source === "string" ? source : source.toString();
         let argumentTypes = [];
-        if (Array.isArray(settings.argumentTypes)) argumentTypes = settings.argumentTypes; else if (typeof settings.argumentTypes === "object") argumentTypes = utils.getArgumentNamesFromString(sourceString).map(name => settings.argumentTypes[name]) || []; else argumentTypes = settings.argumentTypes || [];
+        if (Array.isArray(settings.argumentTypes)) argumentTypes = settings.argumentTypes; else if (typeof settings.argumentTypes === "object") {
+          const argumentNames = utils.getArgumentNamesFromString(sourceString);
+          argumentTypes = argumentNames.map(name => settings.argumentTypes[name]) || [];
+          const keys = Object.keys(settings.argumentTypes);
+          if (keys.length > 0 && argumentNames.length > 0 && argumentTypes.every(type => type === void 0)) throw new Error(`argumentTypes keys [${keys.join(", ")}] match none of the function's parameters [${argumentNames.join(", ")}] \u2014 a bundler may have renamed them. Use the array form: argumentTypes: ['${keys.map(k => settings.argumentTypes[k]).join("', '")}']`);
+        } else argumentTypes = settings.argumentTypes || [];
         return {
           name: settings.name || utils.getFunctionNameFromString(sourceString) || (typeof source === "function" && source.name ? source.name : null),
           source: sourceString,

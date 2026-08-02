@@ -972,8 +972,19 @@ class Kernel {
     if (Array.isArray(settings.argumentTypes)) {
       argumentTypes = settings.argumentTypes;
     } else if (typeof settings.argumentTypes === 'object') {
-      argumentTypes = utils.getArgumentNamesFromString(sourceString)
-        .map(name => settings.argumentTypes[name]) || [];
+      const argumentNames = utils.getArgumentNamesFromString(sourceString);
+      argumentTypes = argumentNames.map(name => settings.argumentTypes[name]) || [];
+      // keyed by parameter name, and no parameter matched any key: the
+      // typical cause is a minifier having renamed every parameter (#863's
+      // sibling trap), and silently untyped arguments compute wrong values.
+      // The array form is position-based and immune.
+      const keys = Object.keys(settings.argumentTypes);
+      if (keys.length > 0 && argumentNames.length > 0 && argumentTypes.every(type => type === undefined)) {
+        throw new Error(
+          `argumentTypes keys [${ keys.join(', ') }] match none of the function's parameters ` +
+          `[${ argumentNames.join(', ') }] — a bundler may have renamed them. ` +
+          `Use the array form: argumentTypes: ['${ keys.map(k => settings.argumentTypes[k]).join("', '") }']`);
+      }
     } else {
       argumentTypes = settings.argumentTypes || [];
     }

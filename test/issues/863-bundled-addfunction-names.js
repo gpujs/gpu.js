@@ -71,3 +71,25 @@ test('createKernel functions setting takes names too', assert => {
   assert.deepEqual(Array.from(kernel([1, 2])), [3, 6]);
   gpu.destroy();
 });
+
+test('object argumentTypes that match no parameter throw with guidance', assert => {
+  // the minifier renames parameters, so object-keyed types silently become
+  // untyped -- and untyped inference computes wrong values; a total mismatch
+  // now points at the array form instead
+  const gpu = new GPU({ mode: 'cpu' });
+  assert.throws(() => {
+    gpu.addFunction(function (s, r, h) { return s + r + h; }, {
+      name: 'f',
+      argumentTypes: { px: 'Number', py: 'Number', pz: 'Number' },
+    });
+    gpu.createKernel('function () { return f(1, 2, 3); }').setOutput([1])();
+  }, /match none of the function's parameters|array form/);
+  gpu.destroy();
+});
+
+test('partially-typed object argumentTypes keep working', assert => {
+  const gpu = new GPU({ mode: 'cpu' });
+  gpu.addFunction(function (a, b) { return a + b; }, { name: 'g', argumentTypes: { a: 'Number' } });
+  assert.deepEqual(Array.from(gpu.createKernel('function () { return g(1, 2); }').setOutput([1])()), [3]);
+  gpu.destroy();
+});
