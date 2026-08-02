@@ -370,3 +370,32 @@ test('a webgpu pipeline handle feeds a kernel that declined its upgrade', async 
   assert.ok(firedBeforeResolve > 0, 'a queued macrotask ran while at least one readback was in flight');
   gpu.destroy();
 });
+
+function getPixelsContract(mode, assert) {
+  // under the async contract getPixels returns a Promise on every backend,
+  // so `await kernel.getPixels()` is portable to webgpu, where the readback
+  // is genuinely asynchronous; without the contract it stays synchronous
+  const gpu = new GPU({ mode });
+  const kernel = gpu.createKernel(function () {
+    this.color(1, 0, 0, 1);
+  }, { output: [2, 2], graphical: true });
+  kernel();
+  const syncPixels = kernel.getPixels();
+  assert.notOk(syncPixels instanceof Promise, 'sync kernel: raw bytes');
+  assert.equal(syncPixels.length, 16);
+  kernel.setAsyncMode(true);
+  return kernel().then(() => {
+    const pending = kernel.getPixels();
+    assert.ok(pending instanceof Promise, 'async contract: a Promise');
+    return pending.then(pixels => {
+      assert.deepEqual(Array.from(pixels.slice(0, 4)), [255, 0, 0, 255]);
+      gpu.destroy();
+    });
+  });
+}
+
+(GPU.isCanvasSupported ? test : skip)('getPixels follows the async contract cpu', assert => getPixelsContract('cpu', assert));
+
+(GPU.isHeadlessGLSupported ? test : skip)('getPixels follows the async contract headlessgl', assert => getPixelsContract('headlessgl', assert));
+
+(GPU.isWebGL2Supported ? test : skip)('getPixels follows the async contract webgl2', assert => getPixelsContract('webgl2', assert));

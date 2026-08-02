@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.20.0
- * @date Mon Aug 03 2026 00:30:31 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 00:43:43 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -4215,7 +4215,8 @@
       }
       getPixels(flip) {
         const [width, height] = this.output;
-        return flip ? utils.flipPixels(this._imageData.data, width, height) : this._imageData.data.slice(0);
+        const result = flip ? utils.flipPixels(this._imageData.data, width, height) : this._imageData.data.slice(0);
+        return this.asyncMode ? Promise.resolve(result) : result;
       }
       _imageTo3DArray(images) {
         const imagesArray = new Array(images.length);
@@ -5413,7 +5414,8 @@
         const [width, height] = output;
         const pixels = new Uint8Array(width * height * 4);
         gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-        return new Uint8ClampedArray((flip ? pixels : utils.flipPixels(pixels, width, height)).buffer);
+        const result = new Uint8ClampedArray((flip ? pixels : utils.flipPixels(pixels, width, height)).buffer);
+        return this.asyncMode ? Promise.resolve(result) : result;
       }
       renderKernelsToArrays() {
         const result = {

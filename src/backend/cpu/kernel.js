@@ -403,7 +403,9 @@ class CPUKernel extends Kernel {
   getPixels(flip) {
     const [width, height] = this.output;
     // cpu is not flipped by default
-    return flip ? utils.flipPixels(this._imageData.data, width, height) : this._imageData.data.slice(0);
+    const result = flip ? utils.flipPixels(this._imageData.data, width, height) : this._imageData.data.slice(0);
+    // a Promise under the async contract, matching every other backend
+    return this.asyncMode ? Promise.resolve(result) : result;
   }
 
   _imageTo3DArray(images) {

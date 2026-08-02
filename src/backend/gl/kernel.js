@@ -848,7 +848,9 @@ class GLKernel extends Kernel {
   /**
    *
    * @param {Boolean} [flip]
-   * @return {Uint8ClampedArray}
+   * @return {Uint8ClampedArray|Promise<Uint8ClampedArray>} a Promise under
+   *   the async contract, so `await kernel.getPixels()` is portable across
+   *   every backend including webgpu, where the readback is genuinely async
    */
   getPixels(flip) {
     const {
@@ -859,7 +861,8 @@ class GLKernel extends Kernel {
     const pixels = new Uint8Array(width * height * 4);
     gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
     // flipped by default, so invert
-    return new Uint8ClampedArray((flip ? pixels : utils.flipPixels(pixels, width, height)).buffer);
+    const result = new Uint8ClampedArray((flip ? pixels : utils.flipPixels(pixels, width, height)).buffer);
+    return this.asyncMode ? Promise.resolve(result) : result;
   }
 
   renderKernelsToArrays() {

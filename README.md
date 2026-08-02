@@ -79,7 +79,7 @@ const c = multiplyMatrix(a, b) as number[][];
 ## v3 Will Be Async by Default
 
 > [!WARNING]
-> **The next major version of GPU.js will make every kernel call return a `Promise`.**  This is a breaking API change: synchronous kernel calls as you write them today will not survive the v3 upgrade unchanged.  Code written against `mode: 'async'` (new in 2.20.0) already conforms and will run on v3 unchanged — the [migration guide](#migrating-a-sync-kernel-to-async) below is five steps.
+> **The next major version of GPU.js will make every kernel call return a `Promise`.**  This is a breaking API change: synchronous kernel calls as you write them today will not survive the v3 upgrade unchanged.  Code written against `mode: 'async'` (new in 2.20.0) already conforms and will run on v3 unchanged — the [migration guide](#migrating-a-sync-kernel-to-async) below is six steps.
 
 This breaks the API you are using today, so it warrants both notice and an apology.  We owe you the apology because the original synchronous design was not forward-thinking, and we should have started async in the first place.  A GPU is an asynchronous device: you hand it work, and the results are ready later.  WebGL let this library pretend otherwise — `readPixels` silently freezes the page until the GPU catches up, and we built our API on that pretense because it made the first example look like an ordinary function call.  The cost has been paid by every user since: every kernel readback blocks the main thread for its full duration (measurably ~96% of a readback-heavy loop frozen, in one stall as long as the whole loop), and WebGPU — which has no synchronous readback at all, correctly — cannot be offered under the synchronous contract except as a walled-off special mode.  An async-first API would have cost one `await` in the examples and none of this debt.
 
@@ -124,7 +124,8 @@ const result = await kernel(a, b);
 2. **Sequential loops just gain the `await`:** `for (…) { total = await step(total); }` — iteration order and semantics are unchanged.
 3. **Pipeline results: `await result.toArray()`.**  `await` is harmless on the synchronous backends' textures, so this form is portable across all backends today.
 4. **Chains of kernels: keep `pipeline: true` and await only the end.**  Handles pass between kernels without readback, exactly as before; you pay one `await` at the final readback instead of a main-thread stall at every stage.
-5. **Library authors:** return the Promise; don't resolve it on your callers' behalf.  Code written against `mode: 'async'` in v2 will run unchanged on v3.
+5. **Graphical kernels: `await kernel.getPixels()`.**  Under the async contract `getPixels()` returns a Promise on every backend — resolved immediately on the GL and cpu backends, genuinely asynchronous on webgpu — so the awaited form is the portable one.  (A graphical kernel call itself stays fire-and-forget: an un-awaited `kernel()` per animation frame is fine.)
+6. **Library authors:** return the Promise; don't resolve it on your callers' behalf.  Code written against `mode: 'async'` in v2 will run unchanged on v3.
 
 # Table of Contents
 
