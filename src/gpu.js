@@ -140,6 +140,27 @@ class GPU {
     this.context = settings.context || null;
     this.mode = settings.mode;
     this.Kernel = null;
+    /**
+     * mode 'async' only: the adapter probe's settled answer (true/false), or
+     * null while it is in flight. Started at construction so that by kernel
+     * creation -- usually at least a task later in real applications -- the
+     * backend for a graphical kernel can be decided BEFORE its canvas is
+     * exposed, since a canvas is permanently committed to its first context
+     * type and can never be swapped between backends afterwards.
+     * @type {Boolean|null}
+     */
+    this._webGPUDecision = null;
+    if (settings.mode === 'async') {
+      if (WebGPUKernel.isSupported) {
+        GPU.isWebGPUAvailable().then(available => {
+          this._webGPUDecision = available;
+        }, () => {
+          this._webGPUDecision = false;
+        });
+      } else {
+        this._webGPUDecision = false;
+      }
+    }
     this.kernels = [];
     this.functions = [];
     this.nativeFunctions = [];
@@ -388,7 +409,36 @@ class GPU {
       mergedSettings.asyncMode = true;
     }
 
-    const kernel = new this.Kernel(source, mergedSettings);
+    let ChosenKernel = this.Kernel;
+    if (this.mode === 'async' && settingsCopy.graphical && this._webGPUDecision === true) {
+      // graphical kernels bind to their backend at creation: the canvas the
+      // user appends must be the final one. The probe settled webgpu-yes, so
+      // construct there directly -- no upgrade, no canvas swap, ever. A
+      // still-pending probe (kernel created in the same tick as the GPU)
+      // stays on the proven backend; `await GPU.isWebGPUAvailable()` before
+      // createKernel settles it deterministically.
+      ChosenKernel = WebGPUKernel;
+      // the GPU instance's shared canvas/context belong to the GL backend;
+      // a webgpu kernel must not inherit them
+      if (mergedSettings.canvas === this.canvas) mergedSettings.canvas = settingsCopy.canvas || null;
+      if (mergedSettings.context === this.context) mergedSettings.context = settingsCopy.context || null;
+      mergedSettings.asyncMode = true;
+    }
+    let kernel;
+    try {
+      kernel = new ChosenKernel(source, mergedSettings);
+    } catch (e) {
+      if (ChosenKernel !== this.Kernel) {
+        // anything the webgpu backend cannot take falls back to the proven
+        // backend at construction, exactly as the upgrade path declines
+        kernel = new this.Kernel(source, Object.assign({}, mergedSettings, {
+          canvas: this.canvas,
+          context: this.context,
+        }));
+      } else {
+        throw e;
+      }
+    }
     const kernelRun = kernelRunShortcut(kernel);
 
     if (this.mode === 'async' && WebGPUKernel.isSupported && !(kernel instanceof WebGPUKernel)) {

@@ -1335,7 +1335,7 @@ What that buys depends on the backend, but the contract never changes:
 * **webgpu** — kernels are natively asynchronous; `asyncMode` is always on.
 * **cpu, webgl, headlessgl** — the synchronous result is resolved, so the calling contract stays uniform and your code stays portable.
 
-`mode: 'async'` puts the whole `GPU` instance under this contract and picks the backend for you — the best synchronously-provable one immediately (webgl2 → webgl → cpu), upgraded to WebGPU on a kernel's first call if an adapter actually answers.  The Promise contract is exactly what buys the room for that probe.  A kernel the WebGPU backend cannot take yet (a kernel map, say) simply stays on the proven backend:
+`mode: 'async'` puts the whole `GPU` instance under this contract and picks the backend for you — the best synchronously-provable one immediately (webgl2 → webgl → cpu), upgraded to WebGPU on a kernel's first call if an adapter actually answers.  **Graphical kernels bind at creation instead**: a canvas is permanently committed to its first context type, so the backend is decided before `kernel.canvas` is ever exposed — `await GPU.isWebGPUAvailable()` before `createKernel` to guarantee the probe has settled; a kernel created before it settles stays on the proven backend, and either way the canvas never changes identity.  The Promise contract is exactly what buys the room for that probe.  A kernel the WebGPU backend cannot take yet (a kernel map, say) simply stays on the proven backend:
 
 ```js
 const gpu = new GPU({ mode: 'async' });

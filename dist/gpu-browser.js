@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.20.0
- * @date Mon Aug 03 2026 00:18:42 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 00:30:31 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -17994,6 +17994,12 @@
         this.context = settings.context || null;
         this.mode = settings.mode;
         this.Kernel = null;
+        this._webGPUDecision = null;
+        if (settings.mode === "async") if (WebGPUKernel.isSupported) GPU.isWebGPUAvailable().then(available => {
+          this._webGPUDecision = available;
+        }, () => {
+          this._webGPUDecision = false;
+        }); else this._webGPUDecision = false;
         this.kernels = [];
         this.functions = [];
         this.nativeFunctions = [];
@@ -18157,7 +18163,22 @@
           onRequestSwitchKernel: onRequestSwitchKernel
         }, settingsCopy);
         if (this.mode === "async") mergedSettings.asyncMode = true;
-        const kernel = new this.Kernel(source, mergedSettings);
+        let ChosenKernel = this.Kernel;
+        if (this.mode === "async" && settingsCopy.graphical && this._webGPUDecision === true) {
+          ChosenKernel = WebGPUKernel;
+          if (mergedSettings.canvas === this.canvas) mergedSettings.canvas = settingsCopy.canvas || null;
+          if (mergedSettings.context === this.context) mergedSettings.context = settingsCopy.context || null;
+          mergedSettings.asyncMode = true;
+        }
+        let kernel;
+        try {
+          kernel = new ChosenKernel(source, mergedSettings);
+        } catch (e) {
+          if (ChosenKernel !== this.Kernel) kernel = new this.Kernel(source, Object.assign({}, mergedSettings, {
+            canvas: this.canvas,
+            context: this.context
+          })); else throw e;
+        }
         const kernelRun = kernelRunShortcut(kernel);
         if (this.mode === "async" && WebGPUKernel.isSupported && !(kernel instanceof WebGPUKernel)) {
           const gpu = this;

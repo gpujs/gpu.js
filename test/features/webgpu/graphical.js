@@ -89,18 +89,47 @@ async function webgpuAdapter(assert) {
   await gpu.destroy();
 });
 
-test('mode async keeps graphical kernels on the proven backend', async assert => {
-  // the webgpu canvas is a different element; upgrading would swap the one
-  // the user may already have in the DOM
+test('mode async binds a graphical kernel to its backend at creation', async assert => {
+  // a canvas is permanently committed to its first context type, so the
+  // backend must be decided before the canvas is exposed -- with the probe
+  // settled, a graphical kernel constructs directly on webgpu and its canvas
+  // is the final one from the first read, never swapped
   if (!GPU.isWebGL2Supported && !GPU.isWebGLSupported) {
     assert.ok(true, 'no GL backend here');
     return;
   }
+  const adapterAnswered = GPU.isWebGPUSupported ? await GPU.isWebGPUAvailable() : false;
+  const gpu = new GPU({ mode: 'async' });
+  await GPU.isWebGPUAvailable().catch(() => false); // settle this instance's probe
+  const kernel = gpu.createKernel(function () {
+    this.color(1, 0, 0, 1);
+  }, { output: [4, 4], graphical: true });
+  const canvasBefore = kernel.canvas;
+  await kernel();
+  await kernel();
+  assert.equal(kernel.canvas, canvasBefore, 'the canvas never changes identity');
+  if (adapterAnswered) {
+    assert.equal(kernel.kernel.constructor.name, 'WebGPUKernel', 'bound to webgpu at creation');
+  } else {
+    assert.notEqual(kernel.kernel.constructor.name, 'WebGPUKernel', 'no adapter: proven backend');
+  }
+  await gpu.destroy();
+});
+
+test('mode async graphical created before the probe settles stays on the proven backend', async assert => {
+  if (!GPU.isWebGL2Supported && !GPU.isWebGLSupported) {
+    assert.ok(true, 'no GL backend here');
+    return;
+  }
+  // same tick as the GPU: the probe cannot have settled, and a graphical
+  // kernel must not gamble on it -- the canvas handed out is final
   const gpu = new GPU({ mode: 'async' });
   const kernel = gpu.createKernel(function () {
     this.color(1, 0, 0, 1);
   }, { output: [4, 4], graphical: true });
+  const canvasBefore = kernel.canvas;
   await kernel();
-  assert.notEqual(kernel.kernel.constructor.name, 'WebGPUKernel', 'stayed on GL');
+  assert.notEqual(kernel.kernel.constructor.name, 'WebGPUKernel', 'stayed on the proven backend');
+  assert.equal(kernel.canvas, canvasBefore, 'canvas identity held across the first call');
   await gpu.destroy();
 });
