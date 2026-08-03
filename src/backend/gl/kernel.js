@@ -398,7 +398,8 @@ class GLKernel extends Kernel {
           case 'Array(2)':
           case 'Array(3)':
           case 'Array(4)':
-            return this.requestFallback(args);
+            return this.requestFallback(args,
+              `${ this.returnType } output requires single precision, which this context does not support`);
         }
       } else {
         if (this.subKernels !== null) {
@@ -426,7 +427,8 @@ class GLKernel extends Kernel {
           case 'Array(2)':
           case 'Array(3)':
           case 'Array(4)':
-            return this.requestFallback(args);
+            return this.requestFallback(args,
+              `${ this.returnType } output requires single precision, which this context does not support`);
         }
       }
     } else if (this.precision === 'single') {

@@ -165,6 +165,7 @@ Notice documentation is off?  We do try our hardest, but if you find something,
 * [Destructured Assignments](#destructured-assignments-new-in-v2)
 * [Dealing With Transpilation](#dealing-with-transpilation)
 * [WebGPU](#webgpu)
+* [WebAssembly](#webassembly)
 * [Asynchronous Kernels](#asynchronous-kernels)
 * [Full API reference](#full-api-reference)
 * [How possible in node](#how-possible-in-node)
@@ -203,6 +204,7 @@ Representative performance factor: 1024×1024 matrix multiplication including re
 | `webgl2` | Browser | GLSL ES 3.00 fragment shaders | ~127× | The default browser backend.  2.20.0 renders scalar single-precision kernels to `R32F` and reads back one float per value where the driver allows |
 | `webgl` | Browser | GLSL ES 1.00 fragment shaders | ~87× | Fallback for older browsers |
 | `headlessgl` | Node | GLSL ES 1.00 via ANGLE | ~123× | The default Node backend |
+| `webasm` **New!** | Anywhere | WebAssembly + f32x4 SIMD + threads | | Auto-selected only where no GL backend works; explicit via `mode: 'webasm'`.  Threads engage under the async contract |
 | `cpu` | Anywhere | Plain JavaScript | 1× | Guaranteed fallback; also the reference for correctness |
 
 ## Demos
@@ -295,7 +297,8 @@ Settings are an object used to create an instance of `GPU`.  Example: `new GPU(s
   * 'headlessgl' **New in V2!**: Use the `HeadlessGLKernel` for transpiling a kernel
   * 'cpu': Use the `CPUKernel` for transpiling a kernel
   * 'webgpu' **New!**: Use the `WebGPUKernel` — kernels compile to WGSL compute shaders over storage buffers.  Explicit opt-in only, never auto-selected, because every kernel call returns a `Promise` of its result (WebGPU readback is inherently asynchronous).  Check `GPU.isWebGPUSupported` (synchronous, `navigator.gpu` presence) or `await GPU.isWebGPUAvailable()` (requests an actual adapter).
-  * 'async' **New!**: Auto-selection under the Promise contract.  Picks the best available backend (webgl2 → webgl → cpu), turns `asyncMode` on for every kernel, and upgrades a kernel to webgpu on its first call if an adapter answers — falling back to the proven backend if the upgraded kernel cannot handle it.  Write `await kernel(...)` once and the same code runs everywhere:
+  * 'webasm' **New!**: Use the `WebAssemblyKernel` — kernels compile to WebAssembly bytecode with f32x4 SIMD, and split across a worker pool under the async contract.  Last in the automatic fallback chain, one step above `cpu`.  See [WebAssembly](#webassembly).
+  * 'async' **New!**: Auto-selection under the Promise contract.  Picks the best available backend (headlessgl → webgl2 → webgl → webasm → cpu), turns `asyncMode` on for every kernel, and upgrades a kernel to webgpu on its first call if an adapter answers — falling back to the proven backend if the upgraded kernel cannot handle it.  Write `await kernel(...)` once and the same code runs everywhere:
   ```js
   const gpu = new GPU({ mode: 'async' });
   const kernel = gpu.createKernel(function(a) {
@@ -1319,6 +1322,37 @@ await GPU.isWebGPUAvailable(); // async: an adapter actually answered
 
 The mode is explicit opt-in and is never auto-selected — a synchronous caller handed a Promise would fail in silent, confusing ways.  If you want automatic selection, that is exactly what [`mode: 'async'`](#asynchronous-kernels) is for.  Graphical mode works: the kernel writes `this.color(...)` into a storage buffer and a fixed render pass presents it to the kernel's canvas — with one API difference, `getPixels()` returns a **Promise** (WebGPU readback is asynchronous). Since presentation needs no readback, an un-awaited `kernel()` per animation frame works.  `Math.random()` works, and differently than on the GL backends: it is a PCG generator in integer WGSL, so with `randomSeed` the stream is **bit-exact across runs and drivers** — the GL backends' float-hash generator cannot promise that.  Not yet supported (each throws a clear error): kernel maps, `toString()`, `precision: 'unsigned'`.
 
+## WebAssembly
+
+**New!**
+
+The `webasm` backend compiles your kernel to a WebAssembly module and runs it on the CPU — but not the way the `cpu` backend does.  Three things separate it from transpiled JavaScript:
+
+* **f32x4 SIMD.**  Every kernel also compiles to a vectorized body that computes four cells per step, divergent control flow handled with lane masks the way real SIMD hardware does it.  The scalar and vector paths are bit-identical — same operations, same order, per cell.
+* **Threads, under the async contract.**  With `asyncMode: true` (or `mode: 'async'`), a kernel with at least 4096 output cells splits across a lazy worker pool over one shared `WebAssembly.Memory` — `worker_threads` in Node, `Worker` in the browser (which needs the usual [cross-origin isolation headers](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer#security_requirements) for `SharedArrayBuffer`).  Results are identical whatever the split, `Math.random()` included.  The main thread never blocks.  Synchronous calls stay synchronous, single-threaded, and still SIMD.
+* **f32 semantics for free.**  Wasm arithmetic *is* IEEE-754 `f32`, so results match the GPU backends' float model without the rounding shims the `cpu` backend needs.
+
+`Math.random()` is the same PCG generator as the webgpu backend, in native i32 arithmetic: with `randomSeed` the stream is bit-exact across runs, platforms, and thread counts.
+
+Honesty about where it sits: any working GL backend outranks it.  In auto-selection (`mode: 'gpu'`, default, or `'async'`) it is chosen only where no GL context exists — a Node build without headless-gl, a browser with WebGL disabled — one step above the `cpu` fallback.  Opt in explicitly to benchmark it:
+
+```js
+const gpu = new GPU({ mode: 'webasm' });
+const kernel = gpu.createKernel(function(a, b) {
+  let sum = 0;
+  for (let i = 0; i < 512; i++) {
+    sum += a[this.thread.y][i] * b[i][this.thread.x];
+  }
+  return sum;
+}).setOutput([512, 512]);
+
+const c = kernel(a, b);        // synchronous, SIMD
+```
+
+A kernel is priced by the work it describes.  A scatter algorithm rewritten gather-style so every thread computes its own cell — compaction as a binary search per output slot, a histogram as a per-bin scan — does log-factor or bin-count times the reads of the plain loop it replaces; a GL backend hides that multiplier under thousands of parallel threads, while cpu and webasm execute it serially and pay it in full.  Measured against hand-written JavaScript of the *same* transposed algorithm, the cpu backend is within 2% and webasm within ±1.5× (its SIMD gather is often faster) — the cost is the transposition, not the transpilation.  When cpu or webasm is a likely destination, prefer the direct algorithm over the GPU-shaped rewrite.
+
+`GPU.isWebAssemblySupported` reports the platform answer.  `pipeline: true` is accepted the way the cpu backend accepts it: there is no device memory to pipeline into, so the result is a plain typed array (a fresh copy per call) that passes straight into downstream kernels.  Not yet supported: graphical mode, kernel maps, and texture/image arguments all **degrade to the cpu backend** — in auto modes and under explicit `mode: 'webasm'` alike — the console warning names the reason and `kernel.kernel.fallbackReason` carries it queryably; a graphical fallback renders into the kernel's own canvas; `toString()` throws.  Threaded runs accept a `poolSize` setting to cap the worker pool (defaults to `hardwareConcurrency`, or 4 when it cannot be read).  `precision: 'unsigned'` is accepted and computed as single precision — wasm has no packed storage to be lossy in.
+
 ## Asynchronous Kernels
 
 **New in 2.20.0!**
@@ -1336,7 +1370,7 @@ What that buys depends on the backend, but the contract never changes:
 * **webgpu** — kernels are natively asynchronous; `asyncMode` is always on.
 * **cpu, webgl, headlessgl** — the synchronous result is resolved, so the calling contract stays uniform and your code stays portable.
 
-`mode: 'async'` puts the whole `GPU` instance under this contract and picks the backend for you — the best synchronously-provable one immediately (webgl2 → webgl → cpu), upgraded to WebGPU on a kernel's first call if an adapter actually answers.  **Graphical kernels bind at creation instead**: a canvas is permanently committed to its first context type, so the backend is decided before `kernel.canvas` is ever exposed — `await GPU.isWebGPUAvailable()` before `createKernel` to guarantee the probe has settled; a kernel created before it settles stays on the proven backend, and either way the canvas never changes identity.  The Promise contract is exactly what buys the room for that probe.  A kernel the WebGPU backend cannot take yet (a kernel map, say) simply stays on the proven backend:
+`mode: 'async'` puts the whole `GPU` instance under this contract and picks the backend for you — the best synchronously-provable one immediately (headlessgl → webgl2 → webgl → webasm → cpu), upgraded to WebGPU on a kernel's first call if an adapter actually answers.  On a GL-less platform that means webasm, where the async contract also unlocks its worker-pool threading — see the WebAssembly section for the SharedArrayBuffer caveat.  **Graphical kernels bind at creation instead**: a canvas is permanently committed to its first context type, so the backend is decided before `kernel.canvas` is ever exposed — `await GPU.isWebGPUAvailable()` before `createKernel` to guarantee the probe has settled; a kernel created before it settles stays on the proven backend, and either way the canvas never changes identity.  The Promise contract is exactly what buys the room for that probe.  A kernel the WebGPU backend cannot take yet (a kernel map, say) simply stays on the proven backend:
 
 ```js
 const gpu = new GPU({ mode: 'async' });

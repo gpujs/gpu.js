@@ -6,14 +6,16 @@ const { HeadlessGLKernel } = require('./backend/headless-gl/kernel');
 const { WebGL2Kernel } = require('./backend/web-gl2/kernel');
 const { WebGLKernel } = require('./backend/web-gl/kernel');
 const { WebGPUKernel } = require('./backend/web-gpu/kernel');
+const { WebAssemblyKernel } = require('./backend/web-assembly/kernel');
 const { kernelRunShortcut } = require('./kernel-run-shortcut');
 
 
 /**
- *
+ * webasm sits last, one step above the cpu fallback: any working GL backend
+ * outranks it, so auto modes only reach it where no GL context exists
  * @type {Array.<Kernel>}
  */
-const kernelOrder = [HeadlessGLKernel, WebGL2Kernel, WebGLKernel];
+const kernelOrder = [HeadlessGLKernel, WebGL2Kernel, WebGLKernel, WebAssemblyKernel];
 
 /**
  *
@@ -29,6 +31,7 @@ const internalKernels = {
   // (navigator.gpu presence) does not prove an adapter exists, so webgpu is
   // explicit opt-in via `new GPU({ mode: 'webgpu' })` only
   'webgpu': WebGPUKernel,
+  'webasm': WebAssemblyKernel,
 };
 
 let validate = true;
@@ -104,6 +107,13 @@ class GPU {
   static isWebGPUAvailable() {
     if (!WebGPUKernel.isSupported) return Promise.resolve(false);
     return navigator.gpu.requestAdapter().then(adapter => adapter !== null, () => false);
+  }
+
+  /**
+   * @desc TRUE if platform supports WebAssembly
+   */
+  static get isWebAssemblySupported() {
+    return WebAssemblyKernel.isSupported;
   }
 
   /**
@@ -291,8 +301,10 @@ class GPU {
       settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(argumentName => settings.argumentTypes[argumentName]);
     }
 
+    const gpuInstance = this;
+
     function onRequestFallback(args) {
-      console.warn('Falling back to CPU');
+      console.warn(`Falling back to CPU${ kernelRun.fallbackReason ? `: ${ kernelRun.fallbackReason }` : '' }`);
       const fallbackKernel = new CPUKernel(source, {
         argumentTypes: kernelRun.argumentTypes,
         constantTypes: kernelRun.constantTypes,
@@ -315,10 +327,33 @@ class GPU {
         randomSeed: kernelRun.randomSeed,
         debug: kernelRun.debug,
         asyncMode: kernelRun.asyncMode,
+        // the fallback kernel lives as long as the shortcut: without these
+        // hooks a later argument-type change on it throws instead of
+        // switching (the run shortcut assumes every kernel carries them)
+        onRequestFallback,
+        onRequestSwitchKernel,
+        // ONLY a graphical fallback whose canvas is still uncommitted (webasm
+        // creates the element but never touches a context) inherits it, so
+        // the element the user appended keeps rendering. Any canvas that
+        // already has a rendering context -- every GL kernel's -- is
+        // permanently committed to it and would break the cpu kernel's 2d
+        // context instead.
+        canvas: kernelRun.graphical && !kernelRun.context ? kernelRun.canvas : null,
       });
+      // the requesting kernel is about to be swapped out; the reason stays
+      // queryable on the kernel that survives
+      fallbackKernel.fallbackReason = kernelRun.fallbackReason;
       fallbackKernel.build.apply(fallbackKernel, args);
       const result = fallbackKernel.run.apply(fallbackKernel, args);
       kernelRun.replaceKernel(fallbackKernel);
+      // gpu.canvas was sampled once at createKernel, possibly from a kernel
+      // with no canvas; the fallback may be the first to have one
+      if (!gpuInstance.canvas && fallbackKernel.canvas) {
+        gpuInstance.canvas = fallbackKernel.canvas;
+      }
+      if (!gpuInstance.context && fallbackKernel.context) {
+        gpuInstance.context = fallbackKernel.context;
+      }
       return result;
     }
 
@@ -583,7 +618,13 @@ class GPU {
         if (this.Kernel.mode === 'webgpu') {
           throw new Error('WebGPU backend does not yet support createKernelMap');
         }
-        if (this.mode && kernelTypes.indexOf(this.mode) < 0) {
+        // webasm sits in the auto chain one step above cpu; its build()
+        // degrades kernel maps to cpu via requestFallback, so throwing here
+        // would remove the cpu fallback from exactly the GL-less environments
+        // the backend exists for. chooseKernel rewrites this.mode to the
+        // chosen backend's name, so the mode check alone cannot tell an
+        // explicit request from auto-selection -- let webasm fall through.
+        if (this.mode && kernelTypes.indexOf(this.mode) < 0 && this.Kernel.mode !== 'webasm') {
           throw new Error(`kernelMap not supported on ${this.Kernel.name}`);
         }
       }

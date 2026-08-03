@@ -121,6 +121,23 @@ class WebGLFunctionNode extends FunctionNode {
     // Function opening
     retArr.push(') {\n');
 
+    if (this.isRootKernel) {
+      // Scalar arguments are uniforms, and GLSL rejects assignment to a
+      // uniform outright. Assigned scalar arguments get a per-invocation
+      // shadow local instead, mirroring the cpu backend's `user_X$cell`
+      // shadows (#867). The `cellShadow_` namespace cannot collide: every
+      // user identifier emits with a `user_` prefix.
+      const assignedArguments = this.getAssignedArguments();
+      for (let i = 0; i < this.argumentNames.length; ++i) {
+        const argumentName = this.argumentNames[i];
+        if (!assignedArguments.has(argumentName)) continue;
+        const type = typeMap[this.argumentTypes[i]];
+        if (type !== 'float' && type !== 'int' && type !== 'bool') continue;
+        const name = utils.sanitizeName(argumentName);
+        retArr.push(`${type} cellShadow_user_${name}=user_${name};\n`);
+      }
+    }
+
     // Body statement iteration
     for (let i = 0; i < ast.body.body.length; ++i) {
       this.astStatementWithHoisting(ast.body.body[i], retArr);
@@ -628,15 +645,36 @@ class WebGLFunctionNode extends FunctionNode {
       retArr.push('3.402823466e+38');
     } else if (type === 'Boolean') {
       if (this.argumentNames.indexOf(name) > -1) {
-        retArr.push(`bool(user_${name})`);
+        const marked = this.markupUserName(idtNode.name);
+        // a shadow local is declared bool already; wrapping it would also
+        // break assignment targets (`bool(x) = ...` is not an lvalue)
+        retArr.push(marked.startsWith('cellShadow_') ? marked : `bool(${marked})`);
       } else {
         retArr.push(`user_${name}`);
       }
     } else {
-      retArr.push(`user_${name}`);
+      retArr.push(this.markupUserName(idtNode.name));
     }
 
     return retArr;
+  }
+
+  /**
+   * @desc Emitted name for a user identifier. Assigned scalar arguments in
+   * the root kernel route through their per-invocation `cellShadow_` local
+   * (declared in astFunction) because the argument itself is an unassignable
+   * uniform (#867).
+   */
+  markupUserName(name) {
+    const sanitized = utils.sanitizeName(name);
+    if (this.isRootKernel && this.getAssignedArguments().has(name)) {
+      const index = this.argumentNames.indexOf(name);
+      const type = index === -1 ? null : typeMap[this.argumentTypes[index]];
+      if (type === 'float' || type === 'int' || type === 'bool') {
+        return `cellShadow_user_${sanitized}`;
+      }
+    }
+    return `user_${sanitized}`;
   }
 
   /**
@@ -747,6 +785,18 @@ class WebGLFunctionNode extends FunctionNode {
    * @param {Array} retArr - return array string
    * @returns {Array} the parsed webgl string
    */
+  /**
+   * @desc Parses the abstract syntax tree for *do while* loop. GLSL ES 1.00
+   * has no do-while, so the loop is rotated into a for: the exit test sits
+   * at the TOP, guarded to skip the first iteration. A `continue` in the
+   * body then lands on the test naturally — JavaScript's exact do-while
+   * continue semantics (#867) — with no body rewriting, so it holds inside
+   * switch lowerings and unbraced bodies alike, and the test is evaluated
+   * exactly once per iteration boundary.
+   * @param {Object} doWhileNode - An ast Node
+   * @param {Array} retArr - return array string
+   * @returns {Array} the parsed webgl string
+   */
   astDoWhileStatement(doWhileNode, retArr) {
     if (doWhileNode.type !== 'DoWhileStatement') {
       throw this.astErrorOutput('Invalid while statement', doWhileNode);
@@ -754,10 +804,10 @@ class WebGLFunctionNode extends FunctionNode {
 
     const iVariableName = this.getInternalVariableName('safeI');
     retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
-    this.astGeneric(doWhileNode.body, retArr);
-    retArr.push('if (!');
+    retArr.push(`if (${iVariableName}>0){if (!`);
     this.astGeneric(doWhileNode.test, retArr);
-    retArr.push(') break;\n');
+    retArr.push(') break;}\n');
+    this.astGeneric(doWhileNode.body, retArr);
     retArr.push('}\n');
 
     return retArr;
@@ -807,6 +857,11 @@ class WebGLFunctionNode extends FunctionNode {
         retArr.push('float(');
         this.astGeneric(assNode.right, retArr);
         retArr.push(')');
+      } else if (leftType === 'Integer' && rightType === 'LiteralInteger') {
+        // an int lvalue (an Integer argument's shadow local) with a literal
+        // right side: the literal must print as int, GLSL has no implicit
+        // float conversion
+        this.castLiteralToInteger(assNode.right, retArr);
       } else {
         this.astGeneric(assNode.right, retArr);
       }
@@ -1101,7 +1156,16 @@ class WebGLFunctionNode extends FunctionNode {
       ],
     };
 
-    // synthetic nodes need the unique positions the type cache expects
+    this.stampSyntheticNodes(replacement);
+
+    return replacement;
+  }
+
+  /**
+   * @desc Synthetic nodes need the unique positions the type cache expects;
+   * cloned nodes keep their original positions and are left alone.
+   */
+  stampSyntheticNodes(root) {
     let syntheticId = this.syntheticNodeId || 0x40000000;
     const stamp = node => {
       if (!node || typeof node !== 'object') return;
@@ -1119,10 +1183,8 @@ class WebGLFunctionNode extends FunctionNode {
         stamp(node[key]);
       }
     };
-    stamp(replacement);
+    stamp(root);
     this.syntheticNodeId = syntheticId;
-
-    return replacement;
   }
 
   linearizeStatement(statement) {

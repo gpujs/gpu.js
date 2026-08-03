@@ -380,6 +380,9 @@ const utils = {
   },
 
   getAstString(source, ast) {
+    // synthetic nodes (loop normalization) carry no loc; a diagnostic on one
+    // must still report rather than crash the error path itself
+    if (!ast.loc) return '[synthetic node]';
     const lines = Array.isArray(source) ? source : source.split(/\r?\n/g);
     const start = ast.loc.start;
     const end = ast.loc.end;

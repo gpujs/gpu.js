@@ -11,6 +11,7 @@ export class GPU {
   /** WebGPU API surface exists (navigator.gpu); an adapter may still be absent — await isWebGPUAvailable() for the authoritative answer */
   static isWebGPUSupported: boolean;
   static isWebGPUAvailable(): Promise<boolean>;
+  static isWebAssemblySupported: boolean;
   constructor(settings?: IGPUSettings);
   functions: GPUFunction<ThreadKernelVariable[]>[];
   nativeFunctions: IGPUNativeFunction[];
@@ -104,7 +105,7 @@ export interface INativeFunctionList {
 }
 
 export type GPUMode = 'gpu' | 'cpu' | 'dev' | 'async';
-export type GPUInternalMode = 'webgl' | 'webgl2' | 'headlessgl' | 'webgpu';
+export type GPUInternalMode = 'webgl' | 'webgl2' | 'headlessgl' | 'webgpu' | 'webasm';
 
 export interface IGPUSettings {
   mode?: GPUMode | GPUInternalMode;
@@ -191,6 +192,8 @@ export class Kernel {
   hasPrependString(value: string): boolean;
   constructor(kernel: KernelFunction|IKernelJSON|string, settings?: IDirectKernelSettings);
   onRequestSwitchKernel?: Kernel;
+  /** why this kernel's work was degraded to the cpu backend, when it was (#868) */
+  fallbackReason: string | null;
   onActivate(previousKernel: Kernel): void;
   build(...args: KernelVariable[]): void;
   run(...args: KernelVariable[]): KernelVariable;
@@ -258,6 +261,12 @@ export type Precision = 'single' | 'unsigned';
 
 export class CPUKernel extends Kernel {
 
+}
+export class WebAssemblyKernel extends Kernel {
+  /** LRU bound on cached per-size-signature wasm instantiations (#870) */
+  moduleCacheLimit: number;
+  /** worker-pool size cap for threaded runs; null lets the pool decide */
+  poolSize: number | null;
 }
 export class GLKernel extends Kernel {
 
@@ -343,6 +352,8 @@ export interface IKernelSettings {
   graphical?: boolean;
   /** every call returns a Promise of the result; non-blocking readback where the backend supports it (webgl2, webgpu) */
   asyncMode?: boolean;
+  /** webasm only: caps the worker pool for threaded runs; defaults to hardwareConcurrency (or 4 when unreadable) */
+  poolSize?: number;
   onRequestFallback?: () => Kernel;
   optimizeFloatMemory?: boolean;
   dynamicOutput?: boolean;
@@ -573,6 +584,7 @@ export interface IFunctionNodeSettings extends IFunctionSettings {
 export class WebGLFunctionNode extends FunctionNode {}
 export class WebGL2FunctionNode extends WebGLFunctionNode {}
 export class CPUFunctionNode extends FunctionNode {}
+export class WebAssemblyFunctionNode extends FunctionNode {}
 
 export interface IGPUTextureSettings {
   texture: WebGLTexture;

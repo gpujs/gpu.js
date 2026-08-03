@@ -98,7 +98,11 @@ test('CPUFunctionNode', () => {
   assert.equal(numberFunctionCompositionFunctionBuilder(CPUFunctionNode), 'function inner() {'
     + '\nreturn 1;'
     + '\n}'
-    + '\nresultX[x] = inner();\ncontinue;');
+    + '\nkernelBody: {'
+    + '\n'
+    + '\nresultX[x] = inner();\nbreak kernelBody;'
+    + '\n'
+    + '\n}');
 });
 test('WebGLFunctionNode', () => {
   assert.equal(numberFunctionCompositionFunctionBuilder(WebGLFunctionNode), 'float inner() {'
@@ -144,7 +148,11 @@ test('CPUFunctionNode', () => {
   assert.equal(array2FunctionCompositionFunctionBuilder(CPUFunctionNode), 'function inner() {'
     + '\nreturn new Float32Array([1, 2, 3, 4]);'
     + '\n}'
-    + '\nresultX[x] = inner()[0];\ncontinue;');
+    + '\nkernelBody: {'
+    + '\n'
+    + '\nresultX[x] = inner()[0];\nbreak kernelBody;'
+    + '\n'
+    + '\n}');
 });
 test('WebGLFunctionNode', () => {
   assert.equal(array2FunctionCompositionFunctionBuilder(WebGLFunctionNode), 'vec4 inner() {'

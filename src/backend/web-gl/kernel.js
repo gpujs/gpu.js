@@ -399,7 +399,8 @@ class WebGLKernel extends GLKernel {
       }
       const KernelValue = this.constructor.lookupKernelValueType(type, this.dynamicArguments ? 'dynamic' : 'static', this.precision, args[index]);
       if (KernelValue === null) {
-        return this.requestFallback(args);
+        return this.requestFallback(args,
+          `argument "${ this.argumentNames[index] }" of type ${ type } is not supported by ${ this.constructor.name }`);
       }
       const kernelArgument = new KernelValue(value, {
         name,
@@ -466,7 +467,8 @@ class WebGLKernel extends GLKernel {
       }
       const KernelValue = this.constructor.lookupKernelValueType(type, 'static', this.precision, value);
       if (KernelValue === null) {
-        return this.requestFallback(args);
+        return this.requestFallback(args,
+          `constant "${ name }" of type ${ type } is not supported by ${ this.constructor.name }`);
       }
       const kernelValue = new KernelValue(value, {
         name,

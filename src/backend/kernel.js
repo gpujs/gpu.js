@@ -57,6 +57,7 @@ class Kernel {
     }
     this.useLegacyEncoder = false;
     this.fallbackRequested = false;
+    this.fallbackReason = null;
     this.onRequestFallback = null;
 
     /**
@@ -783,11 +784,18 @@ class Kernel {
     return this;
   }
 
-  requestFallback(args) {
+  /**
+   * @param {IArguments} args
+   * @param {String} [reason] - why this kernel cannot run here; carried onto
+   * the replacement kernel as `fallbackReason` and named in the console
+   * warning, so the degradation is discoverable (#868)
+   */
+  requestFallback(args, reason) {
     if (!this.onRequestFallback) {
       throw new Error(`"onRequestFallback" not defined on ${ this.constructor.name }`);
     }
     this.fallbackRequested = true;
+    this.fallbackReason = reason || null;
     return this.onRequestFallback(args);
   }
 
