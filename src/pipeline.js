@@ -253,11 +253,25 @@ class Pipeline {
     this.plan = null;
     /**
      * executor identity probe for tests and later phases: 'generic' executes
-     * step-by-step through the normal kernel machinery on every backend; the
-     * webasm fused executors (phase 2) claim their own names
+     * step-by-step through the normal kernel machinery on every backend;
+     * 'fused-sync' is the webasm executor running every step over one shared
+     * wasm memory
      * @type {String}
      */
     this.executorKind = 'generic';
+    /**
+     * why the fused executor declined this plan; null while fused (or before
+     * the first call decides)
+     * @type {String|null}
+     */
+    this.fallbackReason = null;
+    /**
+     * undefined: not yet attempted for this plan; false: attempted and
+     * declined (generic runs); otherwise the compiled fused executor
+     */
+    this._executor = undefined;
+    /** test/benchmark hook: forces the generic executor when true */
+    this._fusionDisabled = false;
     this.destroyed = false;
     /**
      * concurrent calls to one pipeline serialize on this tail, the same
@@ -282,6 +296,34 @@ class Pipeline {
       if (this.destroyed) throw new Error(MSG_DESTROYED);
       if (!this.plan) {
         this.plan = this._buildPlan();
+        this._executor = undefined;
+      }
+      if (this._executor === undefined) {
+        this._prepareExecutor(sampled);
+      }
+      if (this._executor) {
+        try {
+          return this._executor.execute(sampled);
+        } catch (e) {
+          if (!e || !e.isFusionFallback) throw e;
+          this._dropExecutor();
+          if (e.recompilable) {
+            // argument sizes/types drifted: recompile fused for the new
+            // signature, like the kernel's own per-size-signature rebuild
+            this._prepareExecutor(sampled);
+            if (this._executor) {
+              try {
+                return this._executor.execute(sampled);
+              } catch (e2) {
+                if (!e2 || !e2.isFusionFallback) throw e2;
+                this._dropExecutor();
+                this._degrade(e2.message);
+              }
+            }
+          } else {
+            this._degrade(e.message);
+          }
+        }
       }
       return this._executeGeneric(this.plan, sampled);
     });
@@ -362,6 +404,42 @@ class Pipeline {
       results,
       kernels,
     };
+  }
+
+  /**
+   * Attempts the webasm fused executor for the current plan against this
+   * call's sampled arguments. Anything the webasm backend cannot take —
+   * including a non-webasm backend — degrades to the generic executor with
+   * the reason recorded, its usual degradation contract.
+   * @param {Array} args - sampled pipeline arguments; sizes/types bake into
+   * the fused layout
+   */
+  _prepareExecutor(args) {
+    if (this._fusionDisabled) {
+      this._executor = false;
+      return;
+    }
+    try {
+      const { WebAssemblyPipelineExecutor } = require('./backend/web-assembly/pipeline-executor');
+      this._executor = WebAssemblyPipelineExecutor.compile(this, this.plan, args);
+      this.executorKind = this._executor.kind;
+      this.fallbackReason = null;
+    } catch (e) {
+      this._degrade((e && e.message) || 'fused executor unavailable');
+    }
+  }
+
+  _dropExecutor() {
+    if (this._executor) {
+      this._executor.destroy();
+    }
+    this._executor = undefined;
+  }
+
+  _degrade(reason) {
+    this._executor = false;
+    this.executorKind = 'generic';
+    this.fallbackReason = reason;
   }
 
   /**
@@ -463,6 +541,12 @@ class Pipeline {
   }
 
   _releasePlan() {
+    if (this._executor) {
+      this._executor.destroy();
+    }
+    this._executor = undefined;
+    this.executorKind = 'generic';
+    this.fallbackReason = null;
     if (!this.plan) return;
     const kernels = this.plan.kernels;
     const gpuKernels = this.gpu && this.gpu.kernels;

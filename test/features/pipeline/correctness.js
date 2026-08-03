@@ -4,9 +4,10 @@ const { GPU } = require('../../../src');
 describe('features: pipeline correctness');
 
 // Every scenario runs against a plain-JS reference on every backend
-// available here (cpu, webasm, and headlessgl where supported), through the
-// generic executor -- asserted by executorKind so a later fused executor
-// cannot silently take these tests over.
+// available here (cpu, webasm, and headlessgl where supported). executorKind
+// is asserted per mode: webasm compiles these plans to the fused executor,
+// and a forced-generic webasm variant keeps the correctness-reference
+// executor covered on that backend too.
 
 function assertClose(assert, actual, expected, label) {
   const values = Array.from(actual);
@@ -19,12 +20,20 @@ function assertClose(assert, actual, expected, label) {
 }
 
 function eachMode(name, body) {
-  test(`${ name } cpu`, assert => body(assert, 'cpu'));
-  test(`${ name } webasm`, assert => body(assert, 'webasm'));
-  (GPU.isHeadlessGLSupported ? test : skip)(`${ name } headlessgl`, assert => body(assert, 'headlessgl'));
+  test(`${ name } cpu`, assert => body(assert, 'cpu', 'generic'));
+  test(`${ name } webasm`, assert => body(assert, 'webasm', 'fused-sync'));
+  test(`${ name } webasm (generic forced)`, assert => body(assert, 'webasm', 'generic'));
+  (GPU.isHeadlessGLSupported ? test : skip)(`${ name } headlessgl`, assert => body(assert, 'headlessgl', 'generic'));
 }
 
-eachMode('jacobi-like ping-pong through one kernel', async (assert, mode) => {
+// the test/benchmark hook: fusion is skipped entirely, the plan runs generic
+function applyExecutor(shortcut, expectedKind) {
+  if (expectedKind === 'generic') {
+    shortcut.pipeline._fusionDisabled = true;
+  }
+}
+
+eachMode('jacobi-like ping-pong through one kernel', async (assert, mode, kind) => {
   const gpu = new GPU({ mode });
   const sweep = gpu.createKernel(function (u, q) {
     let left = this.thread.x - 1;
@@ -39,6 +48,7 @@ eachMode('jacobi-like ping-pong through one kernel', async (assert, mode) => {
     }
     return u;
   }, { constants: { sweeps: 6 } });
+  applyExecutor(solve, kind);
 
   const u0 = [0, 1, 2, 3, 4, 5, 6, 7];
   const q = [1, 0.5, 1, 0.5, 1, 0.5, 1, 0.5];
@@ -48,12 +58,12 @@ eachMode('jacobi-like ping-pong through one kernel', async (assert, mode) => {
   for (let s = 0; s < 6; s++) {
     expected = expected.map((_, x) => 0.25 * (expected[Math.max(x - 1, 0)] + expected[Math.min(x + 1, 7)]) + q[x]);
   }
-  assert.equal(solve.executorKind, 'generic', 'phase 1 runs the generic executor');
+  assert.equal(solve.executorKind, kind, `runs the ${ kind } executor`);
   assertClose(assert, result, expected, 'jacobi');
   gpu.destroy();
 });
 
-eachMode('multi-kernel chain', async (assert, mode) => {
+eachMode('multi-kernel chain', async (assert, mode, kind) => {
   const gpu = new GPU({ mode });
   const double = gpu.createKernel(function (a) {
     return a[this.thread.x] * 2;
@@ -69,16 +79,17 @@ eachMode('multi-kernel chain', async (assert, mode) => {
     const b = addOne(a);
     return mix(b, a);
   });
+  applyExecutor(chain, kind);
 
   const x = [1, 2, 3, 4, 5, 6];
   const result = await chain(x);
   const expected = x.map(v => (v * 2 + 1) * (v * 2));
-  assert.equal(chain.executorKind, 'generic');
+  assert.equal(chain.executorKind, kind);
   assertClose(assert, result, expected, 'chain');
   gpu.destroy();
 });
 
-eachMode('multi-output object return', async (assert, mode) => {
+eachMode('multi-output object return', async (assert, mode, kind) => {
   const gpu = new GPU({ mode });
   const double = gpu.createKernel(function (a) {
     return a[this.thread.x] * 2;
@@ -92,16 +103,18 @@ eachMode('multi-output object return', async (assert, mode) => {
       negated: negate(x),
     };
   });
+  applyExecutor(both, kind);
 
   const x = [1, 2, 3, 4];
   const result = await both(x);
+  assert.equal(both.executorKind, kind);
   assert.deepEqual(Object.keys(result).sort(), ['doubled', 'negated'], 'resolves to the same object shape');
   assertClose(assert, result.doubled, [2, 4, 6, 8], 'doubled');
   assertClose(assert, result.negated, [-1, -2, -3, -4], 'negated');
   gpu.destroy();
 });
 
-eachMode('array return resolves to an array of plain results', async (assert, mode) => {
+eachMode('array return resolves to an array of plain results', async (assert, mode, kind) => {
   const gpu = new GPU({ mode });
   const double = gpu.createKernel(function (a) {
     return a[this.thread.x] * 2;
@@ -110,14 +123,16 @@ eachMode('array return resolves to an array of plain results', async (assert, mo
     const once = double(x);
     return [once, double(once)];
   });
+  applyExecutor(pair, kind);
   const result = await pair([1, 2, 3, 4]);
+  assert.equal(pair.executorKind, kind);
   assert.equal(result.length, 2);
   assertClose(assert, result[0], [2, 4, 6, 8], 'first');
   assertClose(assert, result[1], [4, 8, 12, 16], 'second');
   gpu.destroy();
 });
 
-eachMode('literal and closure-captured kernel arguments', async (assert, mode) => {
+eachMode('literal and closure-captured kernel arguments', async (assert, mode, kind) => {
   const gpu = new GPU({ mode });
   const scale = gpu.createKernel(function (a, k) {
     return a[this.thread.x] * k;
@@ -129,13 +144,15 @@ eachMode('literal and closure-captured kernel arguments', async (assert, mode) =
   const solve = gpu.createPipeline(function (x) {
     return offset(scale(x, 3), captured);
   });
+  applyExecutor(solve, kind);
 
   const result = await solve([1, 2, 3, 4]);
+  assert.equal(solve.executorKind, kind);
   assertClose(assert, result, [13, 26, 39, 52], 'literal scalar and captured array');
   gpu.destroy();
 });
 
-eachMode('pipeline arg reused by several steps', async (assert, mode) => {
+eachMode('pipeline arg reused by several steps', async (assert, mode, kind) => {
   const gpu = new GPU({ mode });
   const add = gpu.createKernel(function (a, b) {
     return a[this.thread.x] + b[this.thread.x];
@@ -145,13 +162,15 @@ eachMode('pipeline arg reused by several steps', async (assert, mode) => {
     const b = add(a, q);
     return add(b, q);
   });
+  applyExecutor(solve, kind);
 
   const result = await solve([1, 2, 3, 4], [10, 10, 10, 10]);
+  assert.equal(solve.executorKind, kind);
   assertClose(assert, result, [31, 32, 33, 34], 'q consumed by three steps');
   gpu.destroy();
 });
 
-eachMode('2d output kernels', async (assert, mode) => {
+eachMode('2d output kernels', async (assert, mode, kind) => {
   const gpu = new GPU({ mode });
   const grow = gpu.createKernel(function (m) {
     return m[this.thread.y][this.thread.x] + 1;
@@ -162,8 +181,10 @@ eachMode('2d output kernels', async (assert, mode) => {
     }
     return m;
   }, { constants: { passes: 3 } });
+  applyExecutor(solve, kind);
 
   const result = await solve([[0, 1, 2], [10, 11, 12]]);
+  assert.equal(solve.executorKind, kind);
   assert.equal(result.length, 2, '2d shape survives readback');
   assertClose(assert, result[0], [3, 4, 5], 'row 0');
   assertClose(assert, result[1], [13, 14, 15], 'row 1');

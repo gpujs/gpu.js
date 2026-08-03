@@ -417,8 +417,14 @@ export interface IPipelineRunShortcut {
   (...args: KernelVariable[]): Promise<PipelineResult>;
   setConstants(constants: IConstants): this;
   destroy(): Promise<void>;
-  /** 'generic' runs step-by-step through the normal kernel machinery on every backend */
+  /**
+   * 'generic' runs step-by-step through the normal kernel machinery on every
+   * backend; 'fused-sync' runs every step over one shared wasm memory on the
+   * webasm backend
+   */
   readonly executorKind: string;
+  /** why the fused executor declined this plan; null while fused */
+  readonly fallbackReason: string | null;
   /** the compiled plan IR; null until the first call builds it */
   readonly plan: object | null;
 }

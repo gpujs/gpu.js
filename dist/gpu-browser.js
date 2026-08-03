@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.22.0
- * @date Mon Aug 03 2026 12:40:32 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 13:04:04 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -22587,6 +22587,24 @@
           return "webasm" + (argumentTypes.length > 0 ? ":" + argumentTypes.join(",") : "");
         }
         static destroyContext(context) {}
+        static dispatchSpans(run, runSimd, cells, sizeX, seed) {
+          if (!runSimd || cells === 0) {
+            run(0, cells, seed);
+            return "scalar";
+          }
+          if ((sizeX & 3) === 0) {
+            runSimd(0, cells, seed);
+            return "simd";
+          }
+          const quadSpan = sizeX & -4;
+          const rows = cells / sizeX;
+          for (let row = 0; row < rows; row++) {
+            const base = row * sizeX;
+            if (quadSpan > 0) runSimd(base, base + quadSpan, seed);
+            run(base + quadSpan, base + sizeX, seed);
+          }
+          return quadSpan > 0 ? "simd+scalar-tail" : "scalar";
+        }
         static nativeFunctionArguments() {
           throw new Error("WebAssembly backend does not yet support native functions");
         }
@@ -22791,7 +22809,7 @@
         }
         _assembleModule(layout, cells, shared) {
           const builder = new WasmModuleBuilder;
-          const totalBytes = layout.outputOffset + cells * this.componentCount * 4;
+          const totalBytes = layout.totalBytes || layout.outputOffset + cells * this.componentCount * 4;
           const initial = Math.ceil(totalBytes / PAGE_BYTES) + 16;
           const maximum = Math.max(initial, 4096);
           builder.addMemoryImport(initial, maximum, shared);
@@ -23090,25 +23108,7 @@
           let seed = 0;
           if (this.usesRandom) seed = this.randomSeed !== null ? this.randomSeed >>> 0 : Math.random() * 4294967296 >>> 0;
           seed = seed | 0;
-          if (runSimd && cells > 0) {
-            const sizeX = threadDim[0];
-            if ((sizeX & 3) === 0) {
-              runSimd(0, cells, seed);
-              this._lastRunPath = "simd";
-            } else {
-              const quadSpan = sizeX & -4;
-              const rows = cells / sizeX;
-              for (let row = 0; row < rows; row++) {
-                const base = row * sizeX;
-                if (quadSpan > 0) runSimd(base, base + quadSpan, seed);
-                run(base + quadSpan, base + sizeX, seed);
-              }
-              this._lastRunPath = quadSpan > 0 ? "simd+scalar-tail" : "scalar";
-            }
-          } else {
-            run(0, cells, seed);
-            this._lastRunPath = "scalar";
-          }
+          this._lastRunPath = WebAssemblyKernel.dispatchSpans(run, runSimd, cells, threadDim[0], seed);
           const base = layout.outputOffset / 4;
           const data = f32.slice(base, base + cells * this.componentCount);
           return this._shapeOutput(data, Array.from(this.output), this.componentCount);
@@ -23258,6 +23258,418 @@
           }
         }
       }
+    };
+  });
+  var require_pipeline_executor = __commonJSMin((exports, module) => {
+    const {utils: utils} = require_utils();
+    const {Input: Input} = require_input();
+    const {WebAssemblyKernel: WebAssemblyKernel} = require_kernel();
+    const SUPPORTED_VALUE_TYPES = [ "Array", "Input", "Number", "Float", "Integer", "Boolean" ];
+    var FusionFallback = class extends Error {
+      constructor(reason, recompilable) {
+        super(reason);
+        this.isFusionFallback = true;
+        this.recompilable = Boolean(recompilable);
+      }
+    };
+    function valueDimensions(value) {
+      const dims = value instanceof Input ? Array.from(value.size) : Array.from(utils.getDimensions(value));
+      while (dims.length < 3) dims.push(1);
+      return dims;
+    }
+    function scalarMatches(type, value) {
+      switch (type) {
+       case "Integer":
+        return typeof value === "number" && Number.isInteger(value);
+
+       case "Boolean":
+        return typeof value === "boolean";
+
+       default:
+        return typeof value === "number";
+      }
+    }
+    module.exports = {
+      WebAssemblyPipelineExecutor: class WebAssemblyPipelineExecutor {
+        static compile(pipeline, plan, args) {
+          for (let i = 0; i < plan.kernels.length; i++) {
+            const kernel = plan.kernels[i].clone.kernel;
+            if (kernel.constructor.mode !== "webasm") throw new FusionFallback(`pipeline backend is ${kernel.constructor.mode}; the fused executor requires webasm`);
+          }
+          if (plan.steps.length === 0) throw new FusionFallback("plan has no kernel steps to fuse");
+          const executor = new WebAssemblyPipelineExecutor(pipeline, plan);
+          executor._compile(args);
+          return executor;
+        }
+        constructor(pipeline, plan) {
+          this.pipeline = pipeline;
+          this.gpu = pipeline.gpu;
+          this.plan = plan;
+          this.kind = "fused-sync";
+          this.destroyed = false;
+          this.memory = null;
+          this.f32 = null;
+          this.i32 = null;
+          this._stepRuns = null;
+          this._argArrayRegions = null;
+          this._argScalarSlots = null;
+          this._resultReads = null;
+          this._extraShortcuts = [];
+          this._scratch = new Map;
+        }
+        _compile(args) {
+          const plan = this.plan;
+          const programs = new Map;
+          const cloneClaimed = new Array(plan.kernels.length).fill(false);
+          const stepPrograms = new Array(plan.steps.length);
+          const stepReps = new Array(plan.steps.length);
+          for (let i = 0; i < plan.steps.length; i++) {
+            const step = plan.steps[i];
+            const kernelEntry = plan.kernels[step.kernel];
+            const reps = this._representativeArgs(step, args);
+            const strict = kernelEntry.clone.kernel.strictIntegers;
+            const programKey = step.kernel + ":" + reps.map(value => utils.getVariableType(value, strict)).join(",");
+            let program = programs.get(programKey);
+            if (!program) {
+              let kernel;
+              if (!cloneClaimed[step.kernel]) {
+                cloneClaimed[step.kernel] = true;
+                kernel = kernelEntry.clone.kernel;
+              } else {
+                const extra = this.pipeline._cloneKernel(kernelEntry.shortcut);
+                this._extraShortcuts.push(extra);
+                kernel = extra.kernel;
+              }
+              this._prepareKernel(kernel, reps);
+              program = {
+                id: programs.size,
+                kernel: kernel,
+                constantRegions: null
+              };
+              programs.set(programKey, program);
+            }
+            stepPrograms[i] = program;
+            stepReps[i] = reps;
+          }
+          for (let i = 0; i < plan.steps.length; i++) {
+            const bindings = plan.steps[i].argBindings;
+            for (let j = 0; j < bindings.length; j++) {
+              const binding = bindings[j];
+              if (binding.source === "step" && stepPrograms[binding.step].kernel.componentCount !== 1) throw new FusionFallback(`a step returning ${stepPrograms[binding.step].kernel.returnType} cannot feed another step in the fused executor`);
+            }
+          }
+          const align16 = value => Math.ceil(value / 16) * 16;
+          let offset = 0;
+          const alloc = bytes => {
+            const at = offset;
+            offset = align16(offset + bytes);
+            return at;
+          };
+          const argArrayRegions = new Map;
+          const argScalarSlots = new Map;
+          const literalArrayRegions = new Map;
+          const uploadArrays = [];
+          const uploadScalars = [];
+          const bufferPatches = [];
+          const stepLayouts = new Array(plan.steps.length);
+          for (let i = 0; i < plan.steps.length; i++) {
+            const step = plan.steps[i];
+            const program = stepPrograms[i];
+            const local = program.kernel.computeLayout(stepReps[i]);
+            const arrays = {};
+            for (const name in local.arrays) {
+              const record = local.arrays[name];
+              const binding = step.argBindings[record.index];
+              const relocated = {
+                index: record.index,
+                offset: 0,
+                dims: record.dims,
+                flatLength: record.flatLength
+              };
+              if (binding.source === "pipelineArg") {
+                let region = argArrayRegions.get(binding.index);
+                if (!region) {
+                  region = {
+                    offset: alloc(record.flatLength * 4),
+                    dims: record.dims,
+                    flatLength: record.flatLength
+                  };
+                  argArrayRegions.set(binding.index, region);
+                }
+                relocated.offset = region.offset;
+              } else if (binding.source === "literal") {
+                let region = literalArrayRegions.get(binding.value);
+                if (!region) {
+                  region = {
+                    offset: alloc(record.flatLength * 4)
+                  };
+                  literalArrayRegions.set(binding.value, region);
+                  uploadArrays.push({
+                    offset: region.offset,
+                    flatLength: record.flatLength,
+                    value: binding.value
+                  });
+                }
+                relocated.offset = region.offset;
+              } else bufferPatches.push({
+                record: relocated,
+                buffer: plan.steps[binding.step].outputBuffer
+              });
+              arrays[name] = relocated;
+            }
+            const scalars = {};
+            for (const name in local.scalars) {
+              const record = local.scalars[name];
+              const binding = step.argBindings[record.index];
+              if (binding.source === "pipelineArg") {
+                const key = binding.index + ":" + record.type;
+                let slot = argScalarSlots.get(key);
+                if (!slot) {
+                  slot = {
+                    index: binding.index,
+                    offset: alloc(4),
+                    type: record.type
+                  };
+                  argScalarSlots.set(key, slot);
+                }
+                scalars[name] = {
+                  index: record.index,
+                  offset: slot.offset,
+                  type: record.type
+                };
+              } else if (binding.source === "literal") {
+                const slotOffset = alloc(4);
+                uploadScalars.push({
+                  offset: slotOffset,
+                  type: record.type,
+                  value: binding.value
+                });
+                scalars[name] = {
+                  index: record.index,
+                  offset: slotOffset,
+                  type: record.type
+                };
+              } else throw new FusionFallback("a step output cannot bind to a scalar argument");
+            }
+            if (!program.constantRegions) {
+              const regions = {};
+              for (const name in local.constantArrays) {
+                const record = local.constantArrays[name];
+                regions[name] = {
+                  offset: alloc(record.flatLength * 4),
+                  dims: record.dims,
+                  flatLength: record.flatLength
+                };
+                const value = program.kernel.constants[name];
+                uploadArrays.push({
+                  offset: regions[name].offset,
+                  flatLength: record.flatLength,
+                  value: value
+                });
+              }
+              program.constantRegions = regions;
+            }
+            stepLayouts[i] = {
+              arrays: arrays,
+              scalars: scalars
+            };
+          }
+          const bufferComponents = new Array(plan.buffers.length).fill(1);
+          for (let i = 0; i < plan.steps.length; i++) {
+            const b = plan.steps[i].outputBuffer;
+            bufferComponents[b] = Math.max(bufferComponents[b], stepPrograms[i].kernel.componentCount);
+          }
+          const bufferRegions = new Array(plan.buffers.length);
+          for (let b = 0; b < plan.buffers.length; b++) {
+            const dims = plan.buffers[b].output;
+            let cells = 1;
+            for (let d = 0; d < dims.length; d++) cells *= dims[d];
+            bufferRegions[b] = {
+              offset: alloc(cells * bufferComponents[b] * 4),
+              cells: cells
+            };
+          }
+          for (let i = 0; i < bufferPatches.length; i++) bufferPatches[i].record.offset = bufferRegions[bufferPatches[i].buffer].offset;
+          const totalBytes = offset;
+          const moduleCache = new Map;
+          const stepRuns = new Array(plan.steps.length);
+          for (let i = 0; i < plan.steps.length; i++) {
+            const program = stepPrograms[i];
+            const kernel = program.kernel;
+            const stepLayout = stepLayouts[i];
+            const outputOffset = bufferRegions[plan.steps[i].outputBuffer].offset;
+            const offsets = [];
+            for (const name of kernel.argumentNames) {
+              const record = stepLayout.arrays[name] || stepLayout.scalars[name];
+              offsets.push(record ? record.offset : -1);
+            }
+            const moduleKey = `${program.id}:${offsets.join(",")}>${outputOffset}`;
+            let compiled = moduleCache.get(moduleKey);
+            if (!compiled) {
+              const layout = {
+                arrays: stepLayout.arrays,
+                scalars: stepLayout.scalars,
+                constantArrays: program.constantRegions,
+                outputOffset: outputOffset,
+                totalBytes: totalBytes
+              };
+              const cells = bufferRegions[plan.steps[i].outputBuffer].cells;
+              const assembled = kernel._assembleModule(layout, cells, false);
+              if (this.memory === null) {
+                this.memory = new WebAssembly.Memory({
+                  initial: assembled.initial,
+                  maximum: assembled.maximum
+                });
+                this.f32 = new Float32Array(this.memory.buffer);
+                this.i32 = new Int32Array(this.memory.buffer);
+              }
+              const imports = {
+                env: {
+                  memory: this.memory
+                }
+              };
+              for (const name of kernel.usedMathImports) imports.env["math_" + name] = Math[name];
+              const instance = new WebAssembly.Instance(new WebAssembly.Module(assembled.bytes), imports);
+              compiled = {
+                run: instance.exports.run,
+                runSimd: instance.exports.run_simd || null
+              };
+              moduleCache.set(moduleKey, compiled);
+            }
+            stepRuns[i] = {
+              run: compiled.run,
+              runSimd: compiled.runSimd,
+              cells: bufferRegions[plan.steps[i].outputBuffer].cells,
+              sizeX: kernel.threadDim[0],
+              usesRandom: kernel.usesRandom,
+              randomSeed: kernel.randomSeed
+            };
+          }
+          for (let i = 0; i < uploadArrays.length; i++) {
+            const upload = uploadArrays[i];
+            utils.flattenTo(upload.value instanceof Input ? upload.value.value : upload.value, this.f32.subarray(upload.offset / 4, upload.offset / 4 + upload.flatLength));
+          }
+          for (let i = 0; i < uploadScalars.length; i++) this._writeScalar(uploadScalars[i], uploadScalars[i].value);
+          this._resultReads = plan.results.entries.map(entry => {
+            const binding = entry.binding;
+            if (binding.source === "step") {
+              const stepIndex = binding.step;
+              const region = bufferRegions[plan.steps[stepIndex].outputBuffer];
+              const kernel = stepPrograms[stepIndex].kernel;
+              return {
+                kind: "step",
+                base: region.offset / 4,
+                count: region.cells * kernel.componentCount,
+                output: plan.steps[stepIndex].output,
+                componentCount: kernel.componentCount,
+                kernel: kernel
+              };
+            }
+            if (binding.source === "pipelineArg") return {
+              kind: "arg",
+              index: binding.index
+            };
+            return {
+              kind: "literal",
+              value: binding.value
+            };
+          });
+          this._stepRuns = stepRuns;
+          this._argArrayRegions = argArrayRegions;
+          this._argScalarSlots = argScalarSlots;
+          this._scratch = null;
+        }
+        _representativeArgs(step, args) {
+          const reps = new Array(step.argBindings.length);
+          for (let j = 0; j < step.argBindings.length; j++) {
+            const binding = step.argBindings[j];
+            if (binding.source === "pipelineArg") reps[j] = args[binding.index]; else if (binding.source === "literal") reps[j] = binding.value; else {
+              const output = this.plan.steps[binding.step].output;
+              let flatLength = 1;
+              for (let d = 0; d < output.length; d++) flatLength *= output[d];
+              let scratch = this._scratch.get(flatLength);
+              if (!scratch) {
+                scratch = new Float32Array(flatLength);
+                this._scratch.set(flatLength, scratch);
+              }
+              reps[j] = new Input(scratch, Array.from(output));
+            }
+          }
+          return reps;
+        }
+        _prepareKernel(kernel, reps) {
+          kernel.argumentTypes = null;
+          kernel.setupConstants();
+          kernel.setupArguments(reps);
+          for (let i = 0; i < kernel.argumentTypes.length; i++) if (SUPPORTED_VALUE_TYPES.indexOf(kernel.argumentTypes[i]) === -1) throw new FusionFallback(`argument "${kernel.argumentNames[i]}" of type ${kernel.argumentTypes[i]} is not supported on the webasm backend`);
+          for (const name in kernel.constantTypes) if (SUPPORTED_VALUE_TYPES.indexOf(kernel.constantTypes[name]) === -1) throw new FusionFallback(`constant "${name}" of type ${kernel.constantTypes[name]} is not supported on the webasm backend`);
+          kernel.validateSettings(reps);
+          const threadDim = kernel.threadDim = Array.from(kernel.output);
+          while (threadDim.length < 3) threadDim.push(1);
+          if (!kernel.translateSource()) throw new FusionFallback(`return type ${kernel.returnType} is not supported on the webasm backend`);
+        }
+        _checkArguments(args) {
+          for (const [index, region] of this._argArrayRegions) {
+            const value = args[index];
+            if (!value || typeof value !== "object") throw new FusionFallback(`pipeline argument ${index} is no longer an array`, true);
+            const dims = valueDimensions(value);
+            if (dims[0] !== region.dims[0] || dims[1] !== region.dims[1] || dims[2] !== region.dims[2]) throw new FusionFallback(`pipeline argument ${index} changed size from [${region.dims.join(", ")}] to [${dims.join(", ")}]`, true);
+          }
+          for (const slot of this._argScalarSlots.values()) if (!scalarMatches(slot.type, args[slot.index])) throw new FusionFallback(`pipeline argument ${slot.index} is no longer of type ${slot.type}`, true);
+        }
+        _writeScalar(slot, value) {
+          if (slot.type === "Integer") this.i32[slot.offset / 4] = value | 0; else if (slot.type === "Boolean") this.i32[slot.offset / 4] = value ? 1 : 0; else this.f32[slot.offset / 4] = value;
+        }
+        execute(args) {
+          if (this.destroyed) throw new Error("pipeline fused executor has been destroyed");
+          this._checkArguments(args);
+          const f32 = this.f32;
+          for (const [index, region] of this._argArrayRegions) {
+            const value = args[index];
+            utils.flattenTo(value instanceof Input ? value.value : value, f32.subarray(region.offset / 4, region.offset / 4 + region.flatLength));
+          }
+          for (const slot of this._argScalarSlots.values()) this._writeScalar(slot, args[slot.index]);
+          const stepRuns = this._stepRuns;
+          for (let i = 0; i < stepRuns.length; i++) {
+            const stepRun = stepRuns[i];
+            let seed = 0;
+            if (stepRun.usesRandom) seed = stepRun.randomSeed !== null ? stepRun.randomSeed >>> 0 : Math.random() * 4294967296 >>> 0;
+            WebAssemblyKernel.dispatchSpans(stepRun.run, stepRun.runSimd, stepRun.cells, stepRun.sizeX, seed | 0);
+          }
+          const results = this.plan.results;
+          const values = new Array(this._resultReads.length);
+          for (let i = 0; i < this._resultReads.length; i++) {
+            const read = this._resultReads[i];
+            if (read.kind === "step") {
+              const data = f32.slice(read.base, read.base + read.count);
+              values[i] = read.kernel._shapeOutput(data, read.output, read.componentCount);
+            } else if (read.kind === "arg") values[i] = args[read.index]; else values[i] = read.value;
+          }
+          if (results.kind === "single") return values[0];
+          if (results.kind === "array") return values;
+          const shaped = {};
+          for (let i = 0; i < values.length; i++) shaped[results.entries[i].key] = values[i];
+          return shaped;
+        }
+        destroy() {
+          if (this.destroyed) return;
+          this.destroyed = true;
+          const gpuKernels = this.gpu && this.gpu.kernels;
+          for (let i = 0; i < this._extraShortcuts.length; i++) {
+            const shortcut = this._extraShortcuts[i];
+            if (!gpuKernels || gpuKernels.indexOf(shortcut.kernel) !== -1) shortcut.destroy();
+          }
+          this._extraShortcuts = [];
+          this._stepRuns = null;
+          this._resultReads = null;
+          this._argArrayRegions = null;
+          this._argScalarSlots = null;
+          this.memory = null;
+          this.f32 = null;
+          this.i32 = null;
+        }
+      },
+      FusionFallback: FusionFallback
     };
   });
   var require_pipeline = __commonJSMin((exports, module) => {
@@ -23423,6 +23835,9 @@
         this.constants = Object.assign({}, settings.constants || {});
         this.plan = null;
         this.executorKind = "generic";
+        this.fallbackReason = null;
+        this._executor = void 0;
+        this._fusionDisabled = false;
         this.destroyed = false;
         this._tail = Promise.resolve();
       }
@@ -23432,7 +23847,27 @@
         for (let i = 0; i < args.length; i++) sampled[i] = snapshotValue(args[i]);
         const promise = this._tail.then(() => {
           if (this.destroyed) throw new Error(MSG_DESTROYED);
-          if (!this.plan) this.plan = this._buildPlan();
+          if (!this.plan) {
+            this.plan = this._buildPlan();
+            this._executor = void 0;
+          }
+          if (this._executor === void 0) this._prepareExecutor(sampled);
+          if (this._executor) try {
+            return this._executor.execute(sampled);
+          } catch (e) {
+            if (!e || !e.isFusionFallback) throw e;
+            this._dropExecutor();
+            if (e.recompilable) {
+              this._prepareExecutor(sampled);
+              if (this._executor) try {
+                return this._executor.execute(sampled);
+              } catch (e2) {
+                if (!e2 || !e2.isFusionFallback) throw e2;
+                this._dropExecutor();
+                this._degrade(e2.message);
+              }
+            } else this._degrade(e.message);
+          }
           return this._executeGeneric(this.plan, sampled);
         });
         this._tail = promise.then(noop, noop);
@@ -23493,6 +23928,29 @@
           kernels: kernels
         };
       }
+      _prepareExecutor(args) {
+        if (this._fusionDisabled) {
+          this._executor = false;
+          return;
+        }
+        try {
+          const {WebAssemblyPipelineExecutor: WebAssemblyPipelineExecutor} = require_pipeline_executor();
+          this._executor = WebAssemblyPipelineExecutor.compile(this, this.plan, args);
+          this.executorKind = this._executor.kind;
+          this.fallbackReason = null;
+        } catch (e) {
+          this._degrade(e && e.message || "fused executor unavailable");
+        }
+      }
+      _dropExecutor() {
+        if (this._executor) this._executor.destroy();
+        this._executor = void 0;
+      }
+      _degrade(reason) {
+        this._executor = false;
+        this.executorKind = "generic";
+        this.fallbackReason = reason;
+      }
       _cloneKernel(shortcut) {
         const kernel = shortcut.kernel;
         const settings = {
@@ -23546,6 +24004,10 @@
         }
       }
       _releasePlan() {
+        if (this._executor) this._executor.destroy();
+        this._executor = void 0;
+        this.executorKind = "generic";
+        this.fallbackReason = null;
         if (!this.plan) return;
         const kernels = this.plan.kernels;
         const gpuKernels = this.gpu && this.gpu.kernels;
@@ -24045,6 +24507,9 @@
         };
         Object.defineProperty(shortcut, "executorKind", {
           get: () => pipeline.executorKind
+        });
+        Object.defineProperty(shortcut, "fallbackReason", {
+          get: () => pipeline.fallbackReason
         });
         Object.defineProperty(shortcut, "plan", {
           get: () => pipeline.plan

@@ -103,6 +103,32 @@ class WebAssemblyKernel extends Kernel {
 
   static destroyContext(context) {}
 
+  /**
+   * SIMD quads must not cross an x-row (thread.y/z are uniform per quad):
+   * rows a multiple of 4 wide vectorize in one span, otherwise each row gets
+   * a vector span plus a scalar epilogue for its remainder cells. Shared with
+   * the pipeline executor, which drives per-step instances directly.
+   * @returns {String} the path taken, for _lastRunPath
+   */
+  static dispatchSpans(run, runSimd, cells, sizeX, seed) {
+    if (!runSimd || cells === 0) {
+      run(0, cells, seed);
+      return 'scalar';
+    }
+    if ((sizeX & 3) === 0) {
+      runSimd(0, cells, seed);
+      return 'simd';
+    }
+    const quadSpan = sizeX & ~3;
+    const rows = cells / sizeX;
+    for (let row = 0; row < rows; row++) {
+      const base = row * sizeX;
+      if (quadSpan > 0) runSimd(base, base + quadSpan, seed);
+      run(base + quadSpan, base + sizeX, seed);
+    }
+    return quadSpan > 0 ? 'simd+scalar-tail' : 'scalar';
+  }
+
   static nativeFunctionArguments() {
     throw new Error('WebAssembly backend does not yet support native functions');
   }
@@ -404,7 +430,10 @@ class WebAssemblyKernel extends Kernel {
    */
   _assembleModule(layout, cells, shared) {
     const builder = new WasmModuleBuilder();
-    const totalBytes = layout.outputOffset + cells * this.componentCount * 4;
+    // the pipeline executor passes layout.totalBytes: its modules run over
+    // one shared memory whose extent exceeds this kernel's own regions, and
+    // every module of a fused plan must declare identical memory limits
+    const totalBytes = layout.totalBytes || (layout.outputOffset + cells * this.componentCount * 4);
     const initial = Math.ceil(totalBytes / PAGE_BYTES) + 16;
     const maximum = Math.max(initial, 4096);
     builder.addMemoryImport(initial, maximum, shared);
@@ -794,28 +823,7 @@ class WebAssemblyKernel extends Kernel {
         ((Math.random() * 0x100000000) >>> 0);
     }
     seed = seed | 0;
-    // SIMD quads must not cross an x-row (thread.y/z are uniform per quad):
-    // rows a multiple of 4 wide vectorize in one span, otherwise each row
-    // gets a vector span plus a scalar epilogue for its remainder cells
-    if (runSimd && cells > 0) {
-      const sizeX = threadDim[0];
-      if ((sizeX & 3) === 0) {
-        runSimd(0, cells, seed);
-        this._lastRunPath = 'simd';
-      } else {
-        const quadSpan = sizeX & ~3;
-        const rows = cells / sizeX;
-        for (let row = 0; row < rows; row++) {
-          const base = row * sizeX;
-          if (quadSpan > 0) runSimd(base, base + quadSpan, seed);
-          run(base + quadSpan, base + sizeX, seed);
-        }
-        this._lastRunPath = quadSpan > 0 ? 'simd+scalar-tail' : 'scalar';
-      }
-    } else {
-      run(0, cells, seed);
-      this._lastRunPath = 'scalar';
-    }
+    this._lastRunPath = WebAssemblyKernel.dispatchSpans(run, runSimd, cells, threadDim[0], seed);
 
     const base = layout.outputOffset / 4;
     const data = f32.slice(base, base + cells * this.componentCount);

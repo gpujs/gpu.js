@@ -608,6 +608,9 @@ class GPU {
     Object.defineProperty(shortcut, 'executorKind', {
       get: () => pipeline.executorKind,
     });
+    Object.defineProperty(shortcut, 'fallbackReason', {
+      get: () => pipeline.fallbackReason,
+    });
     Object.defineProperty(shortcut, 'plan', {
       get: () => pipeline.plan,
     });
