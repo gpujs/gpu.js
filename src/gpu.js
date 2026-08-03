@@ -614,6 +614,15 @@ class GPU {
     Object.defineProperty(shortcut, 'plan', {
       get: () => pipeline.plan,
     });
+    // the backend that actually EXECUTES: the plan clones', not the user
+    // kernels' -- under degradation the clone swaps to cpu and this says so,
+    // which is the silent-degradation safety net benchmark suites probe
+    Object.defineProperty(shortcut, 'backend', {
+      get: () => {
+        if (!pipeline.plan || pipeline.plan.kernels.length === 0) return null;
+        return pipeline.plan.kernels[0].clone.kernel.constructor.mode;
+      },
+    });
     return shortcut;
   }
 

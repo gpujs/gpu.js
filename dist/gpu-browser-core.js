@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.22.0
- * @date Mon Aug 03 2026 16:46:36 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 16:54:01 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -20369,12 +20369,12 @@
         this.fn = fn;
         this.argumentCount = fn.length;
         this.constants = Object.assign({}, settings.constants || {});
+        this._threadsDisabled = settings.threads === false;
         this.plan = null;
         this.executorKind = "generic";
         this.fallbackReason = null;
         this._executor = void 0;
         this._fusionDisabled = false;
-        this._threadsDisabled = false;
         this.destroyed = false;
         this._tail = Promise.resolve();
       }
@@ -21145,6 +21145,12 @@
         });
         Object.defineProperty(shortcut, "plan", {
           get: () => pipeline.plan
+        });
+        Object.defineProperty(shortcut, "backend", {
+          get: () => {
+            if (!pipeline.plan || pipeline.plan.kernels.length === 0) return null;
+            return pipeline.plan.kernels[0].clone.kernel.constructor.mode;
+          }
         });
         return shortcut;
       }

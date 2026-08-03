@@ -205,3 +205,27 @@ test('the user kernel is not observably reconfigured by pipeline use', async ass
   assert.ok(peak <= 3, `peak live intermediates bounded by the two plan buffers, saw ${ peak }`);
   gpu.destroy();
 });
+
+test('threads: false pins the webasm lowering to fused-sync', async assert => {
+  if (!GPU.isWebAssemblySupported || typeof SharedArrayBuffer === 'undefined') { assert.ok(true, 'no threads here anyway'); return; }
+  const gpu = new GPU({ mode: 'webasm' });
+  const k = gpu.createKernel(function (a) { return a[this.thread.x] + 1; }, { output: [16384] });
+  const threaded = gpu.createPipeline(function (v) { return k(v); });
+  const pinned = gpu.createPipeline(function (v) { return k(v); }, { threads: false });
+  const data = new Float32Array(16384).fill(3);
+  await threaded(data);
+  await pinned(data);
+  assert.equal(threaded.executorKind, 'fused-threaded', 'big plans thread by default');
+  assert.equal(pinned.executorKind, 'fused-sync', 'threads: false keeps the plan single-threaded');
+  await gpu.destroy();
+});
+
+test('backend reports the executing clones\' mode, cpu', async assert => {
+  const gpu = new GPU({ mode: 'cpu' });
+  const k = gpu.createKernel(function (a) { return a[this.thread.x] + 1; }, { output: [4] });
+  const p = gpu.createPipeline(function (v) { return k(v); });
+  assert.equal(p.backend, null, 'null before the first call builds the plan');
+  await p([1, 2, 3, 4]);
+  assert.equal(p.backend, 'cpu');
+  await gpu.destroy();
+});

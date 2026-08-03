@@ -410,6 +410,8 @@ export type PipelineFunction = (this: { constants: IConstantsThis }, ...args: IP
   IPipelineHandle | IPipelineHandle[] | { [key: string]: IPipelineHandle };
 
 export interface IPipelineSettings {
+  /** false pins the webasm lowering to its sync path (no worker pool) */
+  threads?: boolean;
   /** trace-time facts; change via setConstants, which re-traces on the next call */
   constants?: IConstants;
 }
@@ -429,6 +431,8 @@ export interface IPipeline {
 }
 
 export interface IPipelineRunShortcut {
+  /** the backend mode that actually executes the plan (the clones'), null before the first call */
+  readonly backend: string | null;
   (...args: KernelVariable[]): Promise<PipelineResult>;
   pipeline: IPipeline;
   setConstants(constants: IConstants): this;

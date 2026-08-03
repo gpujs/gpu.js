@@ -310,6 +310,11 @@ class Pipeline {
     this.fn = fn;
     this.argumentCount = fn.length;
     this.constants = Object.assign({}, settings.constants || {});
+    // threads: false pins the webasm lowering to its sync path -- a
+    // benchmark comparing single-threaded columns needs the plan's win
+    // without the pool's (the fused-encoder and generic paths are
+    // unaffected; they were never threaded)
+    this._threadsDisabled = settings.threads === false;
     this.plan = null;
     /**
      * executor identity probe for tests and later phases: 'generic' executes
@@ -336,7 +341,6 @@ class Pipeline {
     /** test/benchmark hook: forces the generic executor when true */
     this._fusionDisabled = false;
     /** test/benchmark hook: keeps a fused executor off the worker pool */
-    this._threadsDisabled = false;
     this.destroyed = false;
     /**
      * concurrent calls to one pipeline serialize on this tail, the same
