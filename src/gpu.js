@@ -304,7 +304,7 @@ class GPU {
     const gpuInstance = this;
 
     function onRequestFallback(args) {
-      console.warn('Falling back to CPU');
+      console.warn(`Falling back to CPU${ kernelRun.fallbackReason ? `: ${ kernelRun.fallbackReason }` : '' }`);
       const fallbackKernel = new CPUKernel(source, {
         argumentTypes: kernelRun.argumentTypes,
         constantTypes: kernelRun.constantTypes,
@@ -335,6 +335,9 @@ class GPU {
         // context instead.
         canvas: kernelRun.graphical && !kernelRun.context ? kernelRun.canvas : null,
       });
+      // the requesting kernel is about to be swapped out; the reason stays
+      // queryable on the kernel that survives
+      fallbackKernel.fallbackReason = kernelRun.fallbackReason;
       fallbackKernel.build.apply(fallbackKernel, args);
       const result = fallbackKernel.run.apply(fallbackKernel, args);
       kernelRun.replaceKernel(fallbackKernel);

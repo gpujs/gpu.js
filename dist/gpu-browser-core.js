@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.21.0
- * @date Mon Aug 03 2026 07:49:45 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 08:18:18 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -1067,6 +1067,7 @@
         }
         this.useLegacyEncoder = false;
         this.fallbackRequested = false;
+        this.fallbackReason = null;
         this.onRequestFallback = null;
         this.onRequestSwitchKernel = null;
         this.argumentNames = typeof source === "string" ? utils.getArgumentNamesFromString(source) : null;
@@ -1363,9 +1364,10 @@
         this.tactic = tactic;
         return this;
       }
-      requestFallback(args) {
+      requestFallback(args, reason) {
         if (!this.onRequestFallback) throw new Error(`"onRequestFallback" not defined on ${this.constructor.name}`);
         this.fallbackRequested = true;
+        this.fallbackReason = reason || null;
         return this.onRequestFallback(args);
       }
       validateSettings() {
@@ -5099,7 +5101,7 @@
              case "Array(2)":
              case "Array(3)":
              case "Array(4)":
-              return this.requestFallback(args);
+              return this.requestFallback(args, `${this.returnType} output requires single precision, which this context does not support`);
             }
           } else {
             if (this.subKernels !== null) this.renderKernels = this.renderKernelsToArrays;
@@ -5126,7 +5128,7 @@
              case "Array(2)":
              case "Array(3)":
              case "Array(4)":
-              return this.requestFallback(args);
+              return this.requestFallback(args, `${this.returnType} output requires single precision, which this context does not support`);
             }
           }
         } else if (this.precision === "single") {
@@ -9528,7 +9530,7 @@
             this.argumentTypes.push(type);
           } else type = this.argumentTypes[index];
           const KernelValue = this.constructor.lookupKernelValueType(type, this.dynamicArguments ? "dynamic" : "static", this.precision, args[index]);
-          if (KernelValue === null) return this.requestFallback(args);
+          if (KernelValue === null) return this.requestFallback(args, `argument "${this.argumentNames[index]}" of type ${type} is not supported by ${this.constructor.name}`);
           const kernelArgument = new KernelValue(value, {
             name: name,
             type: type,
@@ -9576,7 +9578,7 @@
             this.constantTypes[name] = type;
           } else type = this.constantTypes[name];
           const KernelValue = this.constructor.lookupKernelValueType(type, "static", this.precision, value);
-          if (KernelValue === null) return this.requestFallback(args);
+          if (KernelValue === null) return this.requestFallback(args, `constant "${name}" of type ${type} is not supported by ${this.constructor.name}`);
           const kernelValue = new KernelValue(value, {
             name: name,
             type: type,
@@ -18401,9 +18403,8 @@
         build() {
           if (this.built) return;
           if (this.gpu && this.gpu.kernels && this.gpu.kernels.indexOf(this) === -1) this.gpu.kernels.push(this);
-          if (this.graphical) return this.requestFallback(arguments);
-          if (this.subKernels && this.subKernels.length > 0) return this.requestFallback(arguments);
-          if (this.pipeline) return this.requestFallback(arguments);
+          if (this.graphical) return this.requestFallback(arguments, "graphical mode is not supported on the webasm backend");
+          if (this.subKernels && this.subKernels.length > 0) return this.requestFallback(arguments, "kernel maps are not supported on the webasm backend");
           this.setupConstants();
           this.setupArguments(arguments);
           for (let i = 0; i < this.argumentTypes.length; i++) switch (this.argumentTypes[i]) {
@@ -18416,7 +18417,7 @@
             continue;
 
            default:
-            return this.requestFallback(arguments);
+            return this.requestFallback(arguments, `argument "${this.argumentNames[i]}" of type ${this.argumentTypes[i]} is not supported on the webasm backend`);
           }
           for (const name in this.constantTypes) switch (this.constantTypes[name]) {
            case "Array":
@@ -18428,12 +18429,12 @@
             continue;
 
            default:
-            return this.requestFallback(arguments);
+            return this.requestFallback(arguments, `constant "${name}" of type ${this.constantTypes[name]} is not supported on the webasm backend`);
           }
           this.validateSettings(arguments);
           const threadDim = this.threadDim = Array.from(this.output);
           while (threadDim.length < 3) threadDim.push(1);
-          if (!this.translateSource()) return this.requestFallback(arguments);
+          if (!this.translateSource()) return this.requestFallback(arguments, `return type ${this.returnType} is not supported on the webasm backend`);
           this.buildSignature(arguments);
           this._instantiate(this._entryKey(arguments), arguments);
           this.built = true;
@@ -19221,7 +19222,7 @@
         if (settings && typeof settings.argumentTypes === "object") settingsCopy.argumentTypes = Object.keys(settings.argumentTypes).map(argumentName => settings.argumentTypes[argumentName]);
         const gpuInstance = this;
         function onRequestFallback(args) {
-          console.warn("Falling back to CPU");
+          console.warn(`Falling back to CPU${kernelRun.fallbackReason ? `: ${kernelRun.fallbackReason}` : ""}`);
           const fallbackKernel = new CPUKernel(source, {
             argumentTypes: kernelRun.argumentTypes,
             constantTypes: kernelRun.constantTypes,
@@ -19246,6 +19247,7 @@
             asyncMode: kernelRun.asyncMode,
             canvas: kernelRun.graphical && !kernelRun.context ? kernelRun.canvas : null
           });
+          fallbackKernel.fallbackReason = kernelRun.fallbackReason;
           fallbackKernel.build.apply(fallbackKernel, args);
           const result = fallbackKernel.run.apply(fallbackKernel, args);
           kernelRun.replaceKernel(fallbackKernel);

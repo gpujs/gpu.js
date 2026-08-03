@@ -1349,7 +1349,7 @@ const kernel = gpu.createKernel(function(a, b) {
 const c = kernel(a, b);        // synchronous, SIMD
 ```
 
-`GPU.isWebAssemblySupported` reports the platform answer.  Not yet supported: graphical mode, kernel maps, pipeline, and texture/image arguments all **degrade to the cpu backend** — in auto modes and under explicit `mode: 'webasm'` alike — and a graphical fallback renders into the kernel's own canvas; `toString()` throws.  Threaded runs accept a `poolSize` setting to cap the worker pool (defaults to `hardwareConcurrency`, or 4 when it cannot be read).  `precision: 'unsigned'` is accepted and computed as single precision — wasm has no packed storage to be lossy in.
+`GPU.isWebAssemblySupported` reports the platform answer.  `pipeline: true` is accepted the way the cpu backend accepts it: there is no device memory to pipeline into, so the result is a plain typed array (a fresh copy per call) that passes straight into downstream kernels.  Not yet supported: graphical mode, kernel maps, and texture/image arguments all **degrade to the cpu backend** — in auto modes and under explicit `mode: 'webasm'` alike — the console warning names the reason and `kernel.kernel.fallbackReason` carries it queryably; a graphical fallback renders into the kernel's own canvas; `toString()` throws.  Threaded runs accept a `poolSize` setting to cap the worker pool (defaults to `hardwareConcurrency`, or 4 when it cannot be read).  `precision: 'unsigned'` is accepted and computed as single precision — wasm has no packed storage to be lossy in.
 
 ## Asynchronous Kernels
 

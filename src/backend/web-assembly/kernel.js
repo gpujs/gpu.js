@@ -186,14 +186,15 @@ class WebAssemblyKernel extends Kernel {
       this.gpu.kernels.push(this);
     }
     if (this.graphical) {
-      return this.requestFallback(arguments);
+      return this.requestFallback(arguments, 'graphical mode is not supported on the webasm backend');
     }
     if (this.subKernels && this.subKernels.length > 0) {
-      return this.requestFallback(arguments);
+      return this.requestFallback(arguments, 'kernel maps are not supported on the webasm backend');
     }
-    if (this.pipeline) {
-      return this.requestFallback(arguments);
-    }
+    // pipeline is accepted the way the cpu backend accepts it: there is no
+    // device memory to pipeline into, so the result is the plain typed array
+    // the run already produces -- a fresh copy per call, valid as input to
+    // any downstream kernel (#868)
     this.setupConstants();
     this.setupArguments(arguments);
     for (let i = 0; i < this.argumentTypes.length; i++) {
@@ -208,7 +209,8 @@ class WebAssemblyKernel extends Kernel {
         default:
           // HTMLImage, textures, pipeline handles: degrade like the GL
           // backends do for unsupported kernel values
-          return this.requestFallback(arguments);
+          return this.requestFallback(arguments,
+            `argument "${ this.argumentNames[i] }" of type ${ this.argumentTypes[i] } is not supported on the webasm backend`);
       }
     }
     for (const name in this.constantTypes) {
@@ -221,7 +223,8 @@ class WebAssemblyKernel extends Kernel {
         case 'Boolean':
           continue;
         default:
-          return this.requestFallback(arguments);
+          return this.requestFallback(arguments,
+            `constant "${ name }" of type ${ this.constantTypes[name] } is not supported on the webasm backend`);
       }
     }
     this.validateSettings(arguments);
@@ -230,7 +233,8 @@ class WebAssemblyKernel extends Kernel {
       threadDim.push(1);
     }
     if (!this.translateSource()) {
-      return this.requestFallback(arguments);
+      return this.requestFallback(arguments,
+        `return type ${ this.returnType } is not supported on the webasm backend`);
     }
     this.buildSignature(arguments);
     this._instantiate(this._entryKey(arguments), arguments);

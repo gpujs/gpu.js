@@ -7,17 +7,6 @@ describe('features: webasm fallbacks');
 // take must DEGRADE, not throw -- these tests pin every requestFallback path
 // so a reordering in build() cannot silently remove the degradation.
 
-test('pipeline: true degrades to cpu', () => {
-  const gpu = new GPU({ mode: 'webasm' });
-  const kernel = gpu.createKernel(function (a) {
-    return a[this.thread.x] + 1;
-  }, { output: [4], pipeline: true });
-  const result = kernel([1, 2, 3, 4]);
-  assert.deepEqual(Array.from(result), [2, 3, 4, 5]);
-  assert.equal(kernel.kernel.constructor.name, 'CPUKernel', 'replaced by the cpu kernel');
-  gpu.destroy();
-});
-
 test('kernel maps degrade to cpu', () => {
   const gpu = new GPU({ mode: 'webasm' });
   const kernel = gpu.createKernelMap({
@@ -29,6 +18,8 @@ test('kernel maps degrade to cpu', () => {
   assert.deepEqual(Array.from(result), [3, 5, 7, 9]);
   assert.deepEqual(Array.from(doubled), [2, 4, 6, 8]);
   assert.equal(kernel.kernel.constructor.name, 'CPUKernel');
+  // the degradation is queryable, not just a console line (#868)
+  assert.ok(/kernel maps/.test(kernel.kernel.fallbackReason), `names the reason: ${ kernel.kernel.fallbackReason }`);
   gpu.destroy();
 });
 
@@ -44,6 +35,7 @@ test('kernel maps degrade to cpu', () => {
   const result = kernel(texture);
   assert.deepEqual(Array.from(result), [1, 11, 21, 31]);
   assert.equal(kernel.kernel.constructor.name, 'CPUKernel');
+  assert.ok(/argument "v"/.test(kernel.kernel.fallbackReason), `names the argument: ${ kernel.kernel.fallbackReason }`);
   gpu.destroy();
   glGpu.destroy();
 });
