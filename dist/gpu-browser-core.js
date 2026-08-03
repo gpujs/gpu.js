@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.21.0
- * @date Mon Aug 03 2026 09:01:53 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 09:28:10 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -471,6 +471,10 @@
         const result = [];
         for (let i = 0; i < array.length; i += part) result.push(new array.constructor(array.buffer, i * 4 + array.byteOffset, part));
         return result;
+      },
+      glslFloatLiteral(value) {
+        const str = `${value}`;
+        return /[.eE]/.test(str) ? str : `${str}.0`;
       },
       getAstString(source, ast) {
         if (!ast.loc) return "[synthetic node]";
@@ -3599,8 +3603,6 @@
         return retArr;
       }
       astAssignmentExpression(assNode, retArr) {
-        const declaration = this.getDeclaration(assNode.left);
-        if (declaration && !declaration.assignable) throw this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
         const isStatement = this.isState("assignment-as-statement");
         if (isStatement) this.popState("assignment-as-statement"); else retArr.push("(");
         this.astGeneric(assNode.left, retArr);
@@ -5755,10 +5757,10 @@
           retArr.push(`${ast.value}`);
         } else if (this.isState("casting-to-float") || this.isState("building-float")) {
           this.literalTypes[key] = "Number";
-          retArr.push(`${ast.value}.0`);
+          retArr.push(utils.glslFloatLiteral(ast.value));
         } else {
           this.literalTypes[key] = "Number";
-          retArr.push(`${ast.value}.0`);
+          retArr.push(utils.glslFloatLiteral(ast.value));
         } else if (this.isState("casting-to-integer") || this.isState("building-integer")) {
           this.literalTypes[key] = "Integer";
           retArr.push(Math.round(ast.value));
@@ -6101,11 +6103,16 @@
         const updateArr = [];
         const bodyArr = [];
         let isSafe = null;
-        if (forNode.init) {
+        if (forNode.init) if (forNode.init.type !== "VariableDeclaration") {
+          isSafe = false;
+          this.astGeneric(forNode.init, initArr);
+          initArr.push(";");
+        } else {
           const {declarations: declarations} = forNode.init;
           if (declarations.length > 1) isSafe = false;
           this.astGeneric(forNode.init, initArr);
           for (let i = 0; i < declarations.length; i++) if (declarations[i].init && declarations[i].init.type !== "Literal") isSafe = false;
+          if (isSafe !== false && this.loopIndexAssignedInLoop(forNode, declarations)) isSafe = false;
         } else isSafe = false;
         if (forNode.test) this.astGeneric(forNode.test, testArr); else isSafe = false;
         if (forNode.update) {
@@ -6118,6 +6125,55 @@
           this.popState("loop-body");
         }
         if (isSafe === null) isSafe = this.isSafe(forNode.init) && this.isSafe(forNode.test);
+        return this.emitForParts({
+          initArr: initArr,
+          testArr: testArr,
+          updateArr: updateArr,
+          bodyArr: bodyArr,
+          isSafe: isSafe
+        }, retArr);
+      }
+      loopIndexAssignedInLoop(forNode, declarations) {
+        const targets = new Set;
+        const targetNames = new Set;
+        for (let i = 0; i < declarations.length; i++) if (declarations[i].id && declarations[i].id.type === "Identifier") {
+          targetNames.add(declarations[i].id.name);
+          const record = this.getDeclaration(declarations[i].id);
+          if (record) targets.add(record);
+        }
+        if (targets.size === 0) return false;
+        let found = false;
+        const hits = node => {
+          const record = this.getDeclaration(node);
+          return record !== null && targets.has(record);
+        };
+        const walk = node => {
+          if (!node || typeof node !== "object" || found) return;
+          if (Array.isArray(node)) {
+            for (const child of node) walk(child);
+            return;
+          }
+          if (node.type === "ForStatement" && node.init && node.init.type === "VariableDeclaration" && node.init.declarations.some(d => d.id && d.id.type === "Identifier" && targetNames.has(d.id.name))) return;
+          if (node.type === "AssignmentExpression" && node.left.type === "Identifier" && hits(node.left)) {
+            found = true;
+            return;
+          }
+          if (node.type === "UpdateExpression" && node.argument.type === "Identifier" && hits(node.argument)) {
+            found = true;
+            return;
+          }
+          for (const key in node) {
+            if (key === "loc" || key === "range" || key === "parent") continue;
+            const child = node[key];
+            if (child && typeof child === "object") walk(child);
+          }
+        };
+        walk(forNode.body);
+        if (!found && forNode.test) walk(forNode.test);
+        return found;
+      }
+      emitForParts(parts, retArr) {
+        const {initArr: initArr, testArr: testArr, updateArr: updateArr, bodyArr: bodyArr, isSafe: isSafe} = parts;
         if (isSafe) {
           const initString = initArr.join("");
           const initNeedsSemiColon = initString[initString.length - 1] !== ";";
@@ -8246,7 +8302,7 @@
       }
       getSource(value) {
         if (this.origin === "constants") {
-          if (Number.isInteger(value)) return `const float ${this.id} = ${value}.0;\n`;
+          if (Number.isInteger(value)) return `const float ${this.id} = ${utils.glslFloatLiteral(value)};\n`;
           return `const float ${this.id} = ${value};\n`;
         }
         return `uniform float ${this.id};\n`;

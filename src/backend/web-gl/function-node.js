@@ -257,10 +257,10 @@ class WebGLFunctionNode extends FunctionNode {
         retArr.push(`${ast.value}`);
       } else if (this.isState('casting-to-float') || this.isState('building-float')) {
         this.literalTypes[key] = 'Number';
-        retArr.push(`${ast.value}.0`);
+        retArr.push(utils.glslFloatLiteral(ast.value));
       } else {
         this.literalTypes[key] = 'Number';
-        retArr.push(`${ast.value}.0`);
+        retArr.push(utils.glslFloatLiteral(ast.value));
       }
     } else if (this.isState('casting-to-integer') || this.isState('building-integer')) {
       this.literalTypes[key] = 'Integer';
@@ -695,13 +695,30 @@ class WebGLFunctionNode extends FunctionNode {
     let isSafe = null;
 
     if (forNode.init) {
-      const { declarations } = forNode.init;
-      if (declarations.length > 1) {
+      if (forNode.init.type !== 'VariableDeclaration') {
+        // an expression init -- `for (i = 0, j = 1; ...)` -- cannot sit in
+        // WebGL1's canonical loop header; it hoists in front of the
+        // safe-wrapped form below, exactly where a declaration init lands
+        // when the loop is otherwise unsafe (#860)
         isSafe = false;
-      }
-      this.astGeneric(forNode.init, initArr);
-      for (let i = 0; i < declarations.length; i++) {
-        if (declarations[i].init && declarations[i].init.type !== 'Literal') {
+        this.astGeneric(forNode.init, initArr);
+        initArr.push(';');
+      } else {
+        const { declarations } = forNode.init;
+        if (declarations.length > 1) {
+          isSafe = false;
+        }
+        this.astGeneric(forNode.init, initArr);
+        for (let i = 0; i < declarations.length; i++) {
+          if (declarations[i].init && declarations[i].init.type !== 'Literal') {
+            isSafe = false;
+          }
+        }
+        // a loop index assigned outside the header (an inner loop reusing
+        // the counter, a body assignment) is legal JavaScript but violates
+        // WebGL1's canonical-loop grammar; the hoisted safe-wrapped form
+        // below runs it with JavaScript's exact semantics (#860)
+        if (isSafe !== false && this.loopIndexAssignedInLoop(forNode, declarations)) {
           isSafe = false;
         }
       }
@@ -734,6 +751,67 @@ class WebGLFunctionNode extends FunctionNode {
     if (isSafe === null) {
       isSafe = this.isSafe(forNode.init) && this.isSafe(forNode.test);
     }
+
+    return this.emitForParts({ initArr, testArr, updateArr, bodyArr, isSafe }, retArr);
+  }
+
+  /**
+   * @desc Whether any variable the for-init declares is assigned or updated
+   * inside the loop's own test or body — beyond the header slots the
+   * canonical form owns. Resolution goes through the tracer's declaration
+   * records, so an inner loop declaring its OWN variable of the same name
+   * does not count against the outer loop.
+   */
+  loopIndexAssignedInLoop(forNode, declarations) {
+    const targets = new Set();
+    const targetNames = new Set();
+    for (let i = 0; i < declarations.length; i++) {
+      if (declarations[i].id && declarations[i].id.type === 'Identifier') {
+        targetNames.add(declarations[i].id.name);
+        const record = this.getDeclaration(declarations[i].id);
+        if (record) targets.add(record);
+      }
+    }
+    if (targets.size === 0) return false;
+    let found = false;
+    const hits = node => {
+      const record = this.getDeclaration(node);
+      return record !== null && targets.has(record);
+    };
+    const walk = node => {
+      if (!node || typeof node !== 'object' || found) return;
+      if (Array.isArray(node)) {
+        for (const child of node) walk(child);
+        return;
+      }
+      // a nested for whose init DECLARES a matching name owns that name for
+      // its whole subtree (JavaScript's let scoping); the tracer's records
+      // blur exactly this case, so the shadow is honored by name
+      if (node.type === 'ForStatement' && node.init && node.init.type === 'VariableDeclaration' &&
+        node.init.declarations.some(d => d.id && d.id.type === 'Identifier' && targetNames.has(d.id.name))) {
+        return;
+      }
+      if (node.type === 'AssignmentExpression' && node.left.type === 'Identifier' && hits(node.left)) {
+        found = true;
+        return;
+      }
+      if (node.type === 'UpdateExpression' && node.argument.type === 'Identifier' && hits(node.argument)) {
+        found = true;
+        return;
+      }
+      for (const key in node) {
+        if (key === 'loc' || key === 'range' || key === 'parent') continue;
+        const child = node[key];
+        if (child && typeof child === 'object') walk(child);
+      }
+    };
+    walk(forNode.body);
+    if (!found && forNode.test) walk(forNode.test);
+    return found;
+  }
+
+  emitForParts(parts, retArr) {
+    const { initArr, testArr, updateArr, bodyArr, isSafe } = parts;
 
     if (isSafe) {
       const initString = initArr.join('');

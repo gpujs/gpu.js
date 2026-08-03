@@ -328,10 +328,11 @@ class CPUFunctionNode extends FunctionNode {
    * @returns {Array} the append retArr
    */
   astAssignmentExpression(assNode, retArr) {
-    const declaration = this.getDeclaration(assNode.left);
-    if (declaration && !declaration.assignable) {
-      throw this.astErrorOutput(`Variable ${assNode.left.name} is not assignable here`, assNode);
-    }
+    // assigning to a for-init variable (an inner `for (i = 0; ...)` reusing
+    // an outer counter, say) is legal JavaScript and the emitted JS runs it
+    // with JavaScript's exact semantics -- the old "not assignable here"
+    // throw guarded a GL grammar restriction the GL emitter now handles
+    // itself by un-safing the loop (#860)
     // see the WebGL emitter: subexpression assignments need parens (#854)
     const isStatement = this.isState('assignment-as-statement');
     if (isStatement) {

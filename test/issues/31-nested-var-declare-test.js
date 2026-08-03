@@ -19,13 +19,18 @@ function nestedVarRedeclareFunction() {
 }
 
 function nestedVarRedeclareTest(mode) {
+  // an inner `for (i = 0; ...)` reusing the outer counter is legal
+  // JavaScript: the inner loop drives i to 20, the outer test fails, and the
+  // function returns 20. This shape used to throw everywhere -- on the GL
+  // backends the "throw" was in fact the #860 expression-init crash, and the
+  // cpu backend's assignability guard fell with it. Every backend now runs
+  // it with JavaScript's exact semantics.
   const gpu = new GPU({ mode });
   const f = gpu.createKernel(nestedVarRedeclareFunction, {
     output: [1],
+    loopMaxIterations: 100,
   });
-  assert.throws(() => {
-    f();
-  });
+  assert.equal(f()[0], 20, 'matches plain JavaScript');
   gpu.destroy();
 }
 
@@ -58,9 +63,8 @@ test('Issue #31 - nestedVarRedeclare : AST handling webgl', () => {
     functionNodes: [new WebGLFunctionNode(nestedVarRedeclareFunction.toString(), { output: [1] })],
     output: [1]
   });
-  assert.throws(() => {
-    builder.getStringFromFunctionNames(['nestedVarRedeclareFunction']);
-  });
+  const source = builder.getStringFromFunctionNames(['nestedVarRedeclareFunction']);
+  assert.ok(source.length > 0, 'the legal-JavaScript shape emits');
 });
 
 test('Issue #31 - nestedVarRedeclare : AST handling webgl2', () => {
@@ -68,9 +72,8 @@ test('Issue #31 - nestedVarRedeclare : AST handling webgl2', () => {
     functionNodes: [new WebGL2FunctionNode(nestedVarRedeclareFunction.toString(), { output: [1] })],
     output: [1]
   });
-  assert.throws(() => {
-    builder.getStringFromFunctionNames(['nestedVarRedeclareFunction']);
-  });
+  const source = builder.getStringFromFunctionNames(['nestedVarRedeclareFunction']);
+  assert.ok(source.length > 0, 'the legal-JavaScript shape emits');
 });
 
 test('Issue #31 - nestedVarRedeclare : AST handling cpu', () => {
@@ -78,9 +81,8 @@ test('Issue #31 - nestedVarRedeclare : AST handling cpu', () => {
     functionNodes: [new CPUFunctionNode(nestedVarRedeclareFunction.toString(), { output: [1] })],
     output: [1]
   });
-  assert.throws(() => {
-    builder.getStringFromFunctionNames(['nestedVarRedeclareFunction']);
-  });
+  const source = builder.getStringFromFunctionNames(['nestedVarRedeclareFunction']);
+  assert.ok(source.length > 0, 'the legal-JavaScript shape emits');
 });
 
 

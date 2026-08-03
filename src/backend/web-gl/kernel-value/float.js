@@ -12,7 +12,7 @@ class WebGLKernelValueFloat extends WebGLKernelValue {
   getSource(value) {
     if (this.origin === 'constants') {
       if (Number.isInteger(value)) {
-        return `const float ${this.id} = ${value}.0;\n`;
+        return `const float ${this.id} = ${utils.glslFloatLiteral(value)};\n`;
       }
       return `const float ${this.id} = ${value};\n`;
     }

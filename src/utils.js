@@ -379,6 +379,16 @@ const utils = {
     return result;
   },
 
+  /**
+   * A number as a GLSL float literal. Integer-valued numbers at 1e21 and
+   * beyond stringify in exponential form, which is already a valid GLSL
+   * float literal — appending .0 to it is not (#864).
+   */
+  glslFloatLiteral(value) {
+    const str = `${ value }`;
+    return /[.eE]/.test(str) ? str : `${ str }.0`;
+  },
+
   getAstString(source, ast) {
     // synthetic nodes (loop normalization) carry no loc; a diagnostic on one
     // must still report rather than crash the error path itself
