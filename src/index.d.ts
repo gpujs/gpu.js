@@ -53,6 +53,14 @@ export class GPU {
     subKernels: ISubKernelObject,
     rootKernel: ThreadFunction<ArgTypes, ConstantsType>,
     settings?: IGPUKernelSettings): (((this: IKernelFunctionThis<ConstantsType>, ...args: ArgTypes) => IMappedKernelResult) & IKernelMapRunShortcut<typeof subKernels>);
+  /**
+   * Compile a whole multi-kernel computation into one callable plan. The
+   * orchestration function runs once, at build time (first call), with
+   * opaque handles for arguments; the kernel calls it makes are recorded
+   * and replayed on later calls with intermediates kept resident. Calling
+   * the pipeline always returns a Promise.
+   */
+  createPipeline(fn: PipelineFunction, settings?: IPipelineSettings): IPipelineRunShortcut;
   destroy(): Promise<void>;
   Kernel: typeof Kernel;
   mode: string;
@@ -386,6 +394,34 @@ export interface IKernelRunShortcut extends IKernelRunShortcutBase {
 
 export interface IKernelMapRunShortcut<SubKernelType> extends IKernelRunShortcutBase<
   { result: KernelOutput } & { [key in keyof SubKernelType]: KernelOutput }> {}
+
+/**
+ * Opaque stand-in for an intermediate result during pipeline orchestration.
+ * Reading elements or properties, or using it in arithmetic or conditions,
+ * throws at build time; its only legal uses are as a kernel argument and in
+ * the orchestration function's return value.
+ */
+export interface IPipelineHandle {}
+
+export type PipelineFunction = (this: { constants: IConstantsThis }, ...args: IPipelineHandle[]) =>
+  IPipelineHandle | IPipelineHandle[] | { [key: string]: IPipelineHandle };
+
+export interface IPipelineSettings {
+  /** trace-time facts; change via setConstants, which re-traces on the next call */
+  constants?: IConstants;
+}
+
+export type PipelineResult = KernelOutput | KernelOutput[] | { [key: string]: KernelOutput };
+
+export interface IPipelineRunShortcut {
+  (...args: KernelVariable[]): Promise<PipelineResult>;
+  setConstants(constants: IConstants): this;
+  destroy(): Promise<void>;
+  /** 'generic' runs step-by-step through the normal kernel machinery on every backend */
+  readonly executorKind: string;
+  /** the compiled plan IR; null until the first call builds it */
+  readonly plan: object | null;
+}
 
 export interface IKernelFeatures {
   isFloatRead: boolean;

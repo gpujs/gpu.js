@@ -8,6 +8,7 @@ const { WebGLKernel } = require('./backend/web-gl/kernel');
 const { WebGPUKernel } = require('./backend/web-gpu/kernel');
 const { WebAssemblyKernel } = require('./backend/web-assembly/kernel');
 const { kernelRunShortcut } = require('./kernel-run-shortcut');
+const { Pipeline } = require('./pipeline');
 
 
 /**
@@ -172,6 +173,7 @@ class GPU {
       }
     }
     this.kernels = [];
+    this.pipelines = [];
     this.functions = [];
     this.nativeFunctions = [];
     this.injectedNative = null;
@@ -573,6 +575,46 @@ class GPU {
   }
 
   /**
+   * @desc Compile a whole multi-kernel computation into one callable plan
+   * (docs/design/pipeline-compilation.md). The orchestration function runs
+   * once, at build time, with opaque handles for arguments; the kernel calls
+   * it makes are recorded and replayed on later calls with intermediates
+   * kept resident. Calling the pipeline always returns a Promise.
+   * @param {Function} fn - orchestration function; may only call kernels
+   * created by this GPU instance
+   * @param {IPipelineSettings} [settings] - `constants` only in v1
+   * @returns {IPipelineRunShortcut} callable pipeline
+   */
+  createPipeline(fn, settings) {
+    if (typeof fn !== 'function') {
+      throw new Error('createPipeline requires an orchestration function');
+    }
+    if (this.mode === 'dev') {
+      throw new Error('createPipeline is not supported in dev mode');
+    }
+    const pipeline = new Pipeline(this, fn, settings);
+    this.pipelines.push(pipeline);
+    const shortcut = function() {
+      return pipeline.call(arguments);
+    };
+    shortcut.pipeline = pipeline;
+    shortcut.setConstants = function(constants) {
+      pipeline.setConstants(constants);
+      return shortcut;
+    };
+    shortcut.destroy = function() {
+      return pipeline.destroy();
+    };
+    Object.defineProperty(shortcut, 'executorKind', {
+      get: () => pipeline.executorKind,
+    });
+    Object.defineProperty(shortcut, 'plan', {
+      get: () => pipeline.plan,
+    });
+    return shortcut;
+  }
+
+  /**
    *
    * Create a super kernel which executes sub kernels
    * and saves their output to be used with the next sub kernel.
@@ -779,6 +821,15 @@ class GPU {
       // if webGl is created and destroyed in the same run loop.
       setTimeout(() => {
         try {
+          // pipelines release their cloned kernel instances, which splice
+          // themselves out of this.kernels -- so pipelines go first, then
+          // the surviving kernels
+          if (this.pipelines) {
+            const pipelines = this.pipelines.slice();
+            for (let i = 0; i < pipelines.length; i++) {
+              pipelines[i].destroy();
+            }
+          }
           // kernel.destroy() splices itself out of this.kernels, so walk a copy:
           // mutating the list being indexed skipped every other kernel, and left
           // this.kernels[0] undefined below, which meant a single-kernel GPU

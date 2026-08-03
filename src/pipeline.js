@@ -1,0 +1,495 @@
+const { Input } = require('./input');
+
+/**
+ * Pipeline compilation (docs/design/pipeline-compilation.md): the
+ * orchestration function runs ONCE, at build time, against opaque handles;
+ * every kernel call made while the trace is open is recorded into a static
+ * plan, and later pipeline calls execute the plan without re-entering user
+ * code. JS loops in the orchestration therefore unroll at trace time, and
+ * closure-captured plain values freeze into the plan the same way constants
+ * do.
+ */
+
+const MSG_HANDLE_READ = 'pipeline intermediate results cannot be read during orchestration';
+const MSG_HANDLE_PRIMITIVE = 'pipeline intermediate results cannot be used in arithmetic or conditions during orchestration';
+const MSG_MATH_RANDOM = 'Math.random() is not allowed during pipeline orchestration; orchestration must be deterministic';
+const MSG_FOREIGN_KERNEL = 'pipelines can only call kernels created by the same GPU instance';
+const MSG_GRAPHICAL = 'graphical kernels are not supported inside pipelines';
+const MSG_KERNEL_MAP = 'kernel maps are not supported inside pipelines';
+const MSG_RETURN_SHAPE = 'a pipeline must return a handle, or an Array or plain object of handles';
+const MSG_FIXED_OUTPUT = 'kernels called inside a pipeline must have a fixed output size';
+const MSG_DESTROYED = 'pipeline has been destroyed';
+
+/**
+ * The class exists for instanceof and for its name in errors; all state
+ * lives in the trace's WeakMap so the frozen instance has no own properties
+ * for the Proxy get trap to conflict with.
+ */
+class PipelineHandle {}
+
+/**
+ * Consulted by kernelRunShortcut on every call; non-null only while an
+ * orchestration function is being traced, which is always synchronous, so a
+ * module-level slot cannot see two traces at once.
+ */
+let activeTrace = null;
+
+function getActiveTrace() {
+  return activeTrace;
+}
+
+/**
+ * Trace-time state: records kernel calls as plan steps and mints the opaque
+ * handles that stand in for values the orchestration never gets to see.
+ */
+class PipelineTrace {
+  constructor(gpu) {
+    this.gpu = gpu;
+    this.steps = [];
+    /**
+     * distinct kernel run-shortcuts, in first-use order; steps refer to them
+     * by index so the ping-pong loop shape compiles to ONE kernel entry
+     */
+    this.kernels = [];
+    this.kernelIndexes = new Map();
+    this.handleMeta = new WeakMap();
+  }
+
+  /**
+   * @param {Object} meta - {source: 'pipelineArg', index} | {source: 'step', step}
+   * @returns {Proxy<PipelineHandle>}
+   */
+  createHandle(meta) {
+    const trace = this;
+    // the target is frozen and own-property-free, so the get trap may throw
+    // for every key without violating a Proxy invariant
+    const target = Object.freeze(new PipelineHandle());
+    const handle = new Proxy(target, {
+      get(_, property) {
+        if (property === Symbol.toPrimitive || property === 'valueOf' || property === 'toString') {
+          return () => {
+            throw new Error(MSG_HANDLE_PRIMITIVE);
+          };
+        }
+        throw new Error(MSG_HANDLE_READ);
+      },
+      set() {
+        throw new Error(MSG_HANDLE_READ);
+      },
+    });
+    trace.handleMeta.set(handle, meta);
+    return handle;
+  }
+
+  /**
+   * Entry point from kernelRunShortcut while a trace is open: validate the
+   * kernel, bind the arguments, and answer with a fresh step-output handle
+   * instead of running anything.
+   * @param {IKernelRunShortcut} shortcut
+   * @param {IArguments} args
+   * @returns {Proxy<PipelineHandle>}
+   */
+  recordKernelCall(shortcut, args) {
+    const kernel = shortcut.kernel;
+    if (kernel.gpu !== this.gpu) {
+      throw new Error(MSG_FOREIGN_KERNEL);
+    }
+    if (kernel.graphical) {
+      throw new Error(MSG_GRAPHICAL);
+    }
+    if (kernel.subKernels && kernel.subKernels.length > 0) {
+      throw new Error(MSG_KERNEL_MAP);
+    }
+    if (!kernel.output) {
+      throw new Error(MSG_FIXED_OUTPUT);
+    }
+    let kernelIndex = this.kernelIndexes.get(shortcut);
+    if (kernelIndex === undefined) {
+      kernelIndex = this.kernels.length;
+      this.kernels.push(shortcut);
+      this.kernelIndexes.set(shortcut, kernelIndex);
+    }
+    const argBindings = new Array(args.length);
+    for (let i = 0; i < args.length; i++) {
+      argBindings[i] = this.bindValue(args[i]);
+    }
+    const stepIndex = this.steps.length;
+    this.steps.push({
+      kernel: kernelIndex,
+      argBindings,
+      output: Array.from(kernel.output),
+      outputBuffer: -1,
+    });
+    return this.createHandle({ source: 'step', step: stepIndex });
+  }
+
+  /**
+   * @returns {Object} argBinding per the plan IR; non-handles snapshot here,
+   * which is the moment closure-captured mutables freeze
+   */
+  bindValue(value) {
+    const meta = this.handleMeta.get(value);
+    if (meta) return meta;
+    return { source: 'literal', value: snapshotValue(value) };
+  }
+}
+
+/**
+ * Call-time sampling: mutable JS values copy before the call promise can
+ * yield, so `const p = pipeline(buf); buf[0] = 9;` computes on the value buf
+ * held at the call. Handles never reach this function -- bindValue checks
+ * the WeakMap first -- so property access here cannot trip a handle trap.
+ */
+function snapshotValue(value) {
+  if (!value || typeof value !== 'object') return value;
+  // GPU-resident values cannot be mutated from JS between now and the run
+  if (typeof value.delete === 'function' || typeof value.toArray === 'function') return value;
+  if (ArrayBuffer.isView(value)) return value.slice(0);
+  if (Array.isArray(value)) return value.map(snapshotValue);
+  if (value instanceof Input) return new Input(snapshotValue(value.value), value.size);
+  return value;
+}
+
+/**
+ * Static liveness over the unrolled DAG, then greedy slot reuse: a step may
+ * write a buffer only when the previous occupant's last reader ran strictly
+ * earlier -- a reader AT the writing step still needs the old contents while
+ * the new ones are produced, which is exactly what forces `u = sweep(u, q)`
+ * in a loop onto two alternating buffers. Slots are only shared between
+ * steps of identical output shape so the fused executor can lay them out as
+ * fixed regions.
+ * @param {Array} steps - mutated: outputBuffer assigned per step
+ * @param {Array} resultBindings
+ * @returns {Array} buffers
+ */
+function assignBuffers(steps, resultBindings) {
+  const lastRead = new Array(steps.length).fill(-1);
+  for (let i = 0; i < steps.length; i++) {
+    const bindings = steps[i].argBindings;
+    for (let j = 0; j < bindings.length; j++) {
+      const binding = bindings[j];
+      if (binding.source === 'step') {
+        lastRead[binding.step] = Math.max(lastRead[binding.step], i);
+      }
+    }
+  }
+  for (let i = 0; i < resultBindings.length; i++) {
+    const binding = resultBindings[i];
+    if (binding.source === 'step') {
+      lastRead[binding.step] = steps.length;
+    }
+  }
+  const buffers = [];
+  const occupantLastRead = [];
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+    let assigned = -1;
+    for (let b = 0; b < buffers.length; b++) {
+      if (occupantLastRead[b] < i && sameShape(buffers[b].output, step.output)) {
+        assigned = b;
+        break;
+      }
+    }
+    if (assigned === -1) {
+      assigned = buffers.length;
+      buffers.push({ output: step.output.slice() });
+      occupantLastRead.push(-1);
+    }
+    step.outputBuffer = assigned;
+    occupantLastRead[assigned] = lastRead[i];
+  }
+  return buffers;
+}
+
+function sameShape(a, b) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+/**
+ * @param {PipelineTrace} trace
+ * @param {*} returned - the orchestration function's return value
+ * @returns {Object} results descriptor {kind, entries: [{key?, binding}]}
+ */
+function bindResults(trace, returned) {
+  if (returned === null || returned === undefined) {
+    throw new Error(MSG_RETURN_SHAPE);
+  }
+  if (trace.handleMeta.has(returned)) {
+    return { kind: 'single', entries: [{ binding: trace.bindValue(returned) }] };
+  }
+  if (Array.isArray(returned)) {
+    return {
+      kind: 'array',
+      entries: returned.map((value, i) => ({ key: i, binding: trace.bindValue(value) })),
+    };
+  }
+  if (typeof returned === 'object' && !ArrayBuffer.isView(returned)) {
+    const entries = [];
+    for (const key in returned) {
+      if (!returned.hasOwnProperty(key)) continue;
+      entries.push({ key, binding: trace.bindValue(returned[key]) });
+    }
+    return { kind: 'object', entries };
+  }
+  throw new Error(MSG_RETURN_SHAPE);
+}
+
+class Pipeline {
+  /**
+   * @param {GPU} gpu
+   * @param {Function} fn - orchestration function, run once per (re)trace
+   * @param {IPipelineSettings} [settings]
+   */
+  constructor(gpu, fn, settings) {
+    settings = settings || {};
+    this.gpu = gpu;
+    this.fn = fn;
+    this.argumentCount = fn.length;
+    this.constants = Object.assign({}, settings.constants || {});
+    this.plan = null;
+    /**
+     * executor identity probe for tests and later phases: 'generic' executes
+     * step-by-step through the normal kernel machinery on every backend; the
+     * webasm fused executors (phase 2) claim their own names
+     * @type {String}
+     */
+    this.executorKind = 'generic';
+    this.destroyed = false;
+    /**
+     * concurrent calls to one pipeline serialize on this tail, the same
+     * contract as threaded webasm kernels
+     */
+    this._tail = Promise.resolve();
+  }
+
+  /**
+   * @desc Always a Promise; arguments sample now, execution queues behind
+   * any call already in flight.
+   * @param {IArguments|Array} args
+   * @returns {Promise<*>}
+   */
+  call(args) {
+    if (this.destroyed) return Promise.reject(new Error(MSG_DESTROYED));
+    const sampled = new Array(args.length);
+    for (let i = 0; i < args.length; i++) {
+      sampled[i] = snapshotValue(args[i]);
+    }
+    const promise = this._tail.then(() => {
+      if (this.destroyed) throw new Error(MSG_DESTROYED);
+      if (!this.plan) {
+        this.plan = this._buildPlan();
+      }
+      return this._executeGeneric(this.plan, sampled);
+    });
+    this._tail = promise.then(noop, noop);
+    return promise;
+  }
+
+  /**
+   * @desc Trace-time constants change: the plan is invalid, the next call
+   * re-traces. The release queues behind in-flight calls so their buffers
+   * are not ripped out from under them.
+   * @param {Object} constants
+   * @returns {Pipeline}
+   */
+  setConstants(constants) {
+    this.constants = Object.assign({}, constants || {});
+    const release = () => {
+      this._releasePlan();
+    };
+    this._tail = this._tail.then(release, release);
+    return this;
+  }
+
+  /**
+   * @desc Releases plan buffers and cloned kernel instances. Queued calls
+   * reject; the release itself waits for the call in flight.
+   * @returns {Promise}
+   */
+  destroy() {
+    this.destroyed = true;
+    if (this.gpu && this.gpu.pipelines) {
+      const index = this.gpu.pipelines.indexOf(this);
+      if (index !== -1) {
+        this.gpu.pipelines.splice(index, 1);
+      }
+    }
+    const release = () => {
+      this._releasePlan();
+    };
+    const tail = this._tail.then(release, release);
+    this._tail = tail;
+    return tail;
+  }
+
+  /**
+   * Runs the orchestration function once with handles for arguments; the
+   * recorded steps become the plan. Math.random is barred for the duration
+   * because a trace-time draw would freeze into every later call.
+   * @returns {Object} plan IR
+   */
+  _buildPlan() {
+    const trace = new PipelineTrace(this.gpu);
+    const argHandles = new Array(this.argumentCount);
+    for (let i = 0; i < this.argumentCount; i++) {
+      argHandles[i] = trace.createHandle({ source: 'pipelineArg', index: i });
+    }
+    const originalRandom = Math.random;
+    Math.random = function pipelineTraceRandom() {
+      throw new Error(MSG_MATH_RANDOM);
+    };
+    activeTrace = trace;
+    let returned;
+    try {
+      returned = this.fn.apply({ constants: Object.assign({}, this.constants) }, argHandles);
+    } finally {
+      activeTrace = null;
+      Math.random = originalRandom;
+    }
+    const results = bindResults(trace, returned);
+    const buffers = assignBuffers(trace.steps, results.entries.map(entry => entry.binding));
+    const kernels = trace.kernels.map(shortcut => ({
+      shortcut,
+      clone: this._cloneKernel(shortcut),
+    }));
+    return {
+      steps: trace.steps,
+      buffers,
+      results,
+      kernels,
+    };
+  }
+
+  /**
+   * The plan runs on private instances configured for pipeline use --
+   * `pipeline: true, immutable: true` -- so intermediates stay resident
+   * (textures on GL, fresh arrays on cpu) and the user's kernel settings
+   * are never observably touched. Kernels stay shared between pipelines and
+   * direct use through their own shortcuts.
+   * @param {IKernelRunShortcut} shortcut - the user's kernel
+   * @returns {IKernelRunShortcut} private clone
+   */
+  _cloneKernel(shortcut) {
+    const kernel = shortcut.kernel;
+    const settings = {
+      output: Array.from(kernel.output),
+      pipeline: true,
+      immutable: true,
+      // argument types can differ between plan positions of one kernel
+      // (texture in the ping-pong seat, plain array from a pipeline arg)
+      dynamicArguments: true,
+    };
+    const optional = ['constants', 'constantTypes', 'precision', 'loopMaxIterations', 'strictIntegers', 'fixIntegerDivisionAccuracy', 'optimizeFloatMemory', 'tactic', 'functions', 'nativeFunctions', 'injectedNative', 'debug'];
+    for (let i = 0; i < optional.length; i++) {
+      const name = optional[i];
+      if (kernel[name] !== null && kernel[name] !== undefined) {
+        settings[name] = kernel[name];
+      }
+    }
+    return this.gpu.createKernel(kernel.source, settings);
+  }
+
+  /**
+   * The correctness-reference executor: steps run sequentially through the
+   * cloned kernels, step outputs park in their assigned buffer slot, and
+   * the final results read back exactly once. Works on every backend; async
+   * backends are absorbed by awaiting whatever run and readback return.
+   * @param {Object} plan
+   * @param {Array} args - sampled pipeline arguments
+   * @returns {Promise<*>}
+   */
+  async _executeGeneric(plan, args) {
+    const slots = new Array(plan.buffers.length).fill(null);
+    try {
+      for (let i = 0; i < plan.steps.length; i++) {
+        const step = plan.steps[i];
+        const bindings = step.argBindings;
+        const resolved = new Array(bindings.length);
+        for (let j = 0; j < bindings.length; j++) {
+          const binding = bindings[j];
+          if (binding.source === 'pipelineArg') {
+            resolved[j] = args[binding.index];
+          } else if (binding.source === 'step') {
+            resolved[j] = slots[plan.steps[binding.step].outputBuffer];
+          } else {
+            resolved[j] = binding.value;
+          }
+        }
+        let output = plan.kernels[step.kernel].clone.apply(null, resolved);
+        if (output && typeof output.then === 'function') {
+          output = await output;
+        }
+        // the slot's previous occupant is past its last read (assignBuffers
+        // guarantees it), so its texture can go before the new one parks
+        releaseValue(slots[step.outputBuffer]);
+        slots[step.outputBuffer] = output;
+      }
+      const results = plan.results;
+      const values = new Array(results.entries.length);
+      for (let i = 0; i < results.entries.length; i++) {
+        const binding = results.entries[i].binding;
+        let value;
+        if (binding.source === 'pipelineArg') {
+          value = args[binding.index];
+        } else if (binding.source === 'step') {
+          value = slots[plan.steps[binding.step].outputBuffer];
+        } else {
+          value = binding.value;
+        }
+        if (value && typeof value.toArray === 'function') {
+          value = value.toArray();
+          if (value && typeof value.then === 'function') {
+            value = await value;
+          }
+        }
+        values[i] = value;
+      }
+      if (results.kind === 'single') return values[0];
+      if (results.kind === 'array') return values;
+      const shaped = {};
+      for (let i = 0; i < results.entries.length; i++) {
+        shaped[results.entries[i].key] = values[i];
+      }
+      return shaped;
+    } finally {
+      for (let i = 0; i < slots.length; i++) {
+        releaseValue(slots[i]);
+      }
+    }
+  }
+
+  _releasePlan() {
+    if (!this.plan) return;
+    const kernels = this.plan.kernels;
+    const gpuKernels = this.gpu && this.gpu.kernels;
+    for (let i = 0; i < kernels.length; i++) {
+      const clone = kernels[i].clone;
+      // gpu.destroy() may have reached the clone through gpu.kernels before
+      // this queued release runs; the GL destroy is not re-entrant (its
+      // splice would eat an unrelated kernel on indexOf -1), so only clones
+      // still registered are destroyed here
+      if (!gpuKernels || gpuKernels.indexOf(clone.kernel) !== -1) {
+        clone.destroy();
+      }
+    }
+    this.plan = null;
+  }
+}
+
+function releaseValue(value) {
+  if (value && typeof value.delete === 'function') {
+    value.delete();
+  }
+}
+
+function noop() {}
+
+module.exports = {
+  Pipeline,
+  PipelineHandle,
+  getActiveTrace,
+};

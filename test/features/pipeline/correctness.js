@@ -1,0 +1,171 @@
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU } = require('../../../src');
+
+describe('features: pipeline correctness');
+
+// Every scenario runs against a plain-JS reference on every backend
+// available here (cpu, webasm, and headlessgl where supported), through the
+// generic executor -- asserted by executorKind so a later fused executor
+// cannot silently take these tests over.
+
+function assertClose(assert, actual, expected, label) {
+  const values = Array.from(actual);
+  assert.equal(values.length, expected.length, `${ label }: length`);
+  for (let i = 0; i < values.length; i++) {
+    const delta = Math.abs(values[i] - expected[i]);
+    const scale = Math.max(Math.abs(expected[i]), 1);
+    assert.ok(delta / scale <= 1e-5, `${ label } cell ${ i }: ${ values[i] } vs ${ expected[i] }`);
+  }
+}
+
+function eachMode(name, body) {
+  test(`${ name } cpu`, assert => body(assert, 'cpu'));
+  test(`${ name } webasm`, assert => body(assert, 'webasm'));
+  (GPU.isHeadlessGLSupported ? test : skip)(`${ name } headlessgl`, assert => body(assert, 'headlessgl'));
+}
+
+eachMode('jacobi-like ping-pong through one kernel', async (assert, mode) => {
+  const gpu = new GPU({ mode });
+  const sweep = gpu.createKernel(function (u, q) {
+    let left = this.thread.x - 1;
+    if (left < 0) left = 0;
+    let right = this.thread.x + 1;
+    if (right > 7) right = 7;
+    return 0.25 * (u[left] + u[right]) + q[this.thread.x];
+  }, { output: [8] });
+  const solve = gpu.createPipeline(function (u, q) {
+    for (let s = 0; s < this.constants.sweeps; s++) {
+      u = sweep(u, q);
+    }
+    return u;
+  }, { constants: { sweeps: 6 } });
+
+  const u0 = [0, 1, 2, 3, 4, 5, 6, 7];
+  const q = [1, 0.5, 1, 0.5, 1, 0.5, 1, 0.5];
+  const result = await solve(u0, q);
+
+  let expected = u0.slice();
+  for (let s = 0; s < 6; s++) {
+    expected = expected.map((_, x) => 0.25 * (expected[Math.max(x - 1, 0)] + expected[Math.min(x + 1, 7)]) + q[x]);
+  }
+  assert.equal(solve.executorKind, 'generic', 'phase 1 runs the generic executor');
+  assertClose(assert, result, expected, 'jacobi');
+  gpu.destroy();
+});
+
+eachMode('multi-kernel chain', async (assert, mode) => {
+  const gpu = new GPU({ mode });
+  const double = gpu.createKernel(function (a) {
+    return a[this.thread.x] * 2;
+  }, { output: [6] });
+  const addOne = gpu.createKernel(function (a) {
+    return a[this.thread.x] + 1;
+  }, { output: [6] });
+  const mix = gpu.createKernel(function (a, b) {
+    return a[this.thread.x] * b[this.thread.x];
+  }, { output: [6] });
+  const chain = gpu.createPipeline(function (x) {
+    const a = double(x);
+    const b = addOne(a);
+    return mix(b, a);
+  });
+
+  const x = [1, 2, 3, 4, 5, 6];
+  const result = await chain(x);
+  const expected = x.map(v => (v * 2 + 1) * (v * 2));
+  assert.equal(chain.executorKind, 'generic');
+  assertClose(assert, result, expected, 'chain');
+  gpu.destroy();
+});
+
+eachMode('multi-output object return', async (assert, mode) => {
+  const gpu = new GPU({ mode });
+  const double = gpu.createKernel(function (a) {
+    return a[this.thread.x] * 2;
+  }, { output: [4] });
+  const negate = gpu.createKernel(function (a) {
+    return -a[this.thread.x];
+  }, { output: [4] });
+  const both = gpu.createPipeline(function (x) {
+    return {
+      doubled: double(x),
+      negated: negate(x),
+    };
+  });
+
+  const x = [1, 2, 3, 4];
+  const result = await both(x);
+  assert.deepEqual(Object.keys(result).sort(), ['doubled', 'negated'], 'resolves to the same object shape');
+  assertClose(assert, result.doubled, [2, 4, 6, 8], 'doubled');
+  assertClose(assert, result.negated, [-1, -2, -3, -4], 'negated');
+  gpu.destroy();
+});
+
+eachMode('array return resolves to an array of plain results', async (assert, mode) => {
+  const gpu = new GPU({ mode });
+  const double = gpu.createKernel(function (a) {
+    return a[this.thread.x] * 2;
+  }, { output: [4] });
+  const pair = gpu.createPipeline(function (x) {
+    const once = double(x);
+    return [once, double(once)];
+  });
+  const result = await pair([1, 2, 3, 4]);
+  assert.equal(result.length, 2);
+  assertClose(assert, result[0], [2, 4, 6, 8], 'first');
+  assertClose(assert, result[1], [4, 8, 12, 16], 'second');
+  gpu.destroy();
+});
+
+eachMode('literal and closure-captured kernel arguments', async (assert, mode) => {
+  const gpu = new GPU({ mode });
+  const scale = gpu.createKernel(function (a, k) {
+    return a[this.thread.x] * k;
+  }, { output: [4] });
+  const offset = gpu.createKernel(function (a, o) {
+    return a[this.thread.x] + o[this.thread.x];
+  }, { output: [4] });
+  const captured = [10, 20, 30, 40];
+  const solve = gpu.createPipeline(function (x) {
+    return offset(scale(x, 3), captured);
+  });
+
+  const result = await solve([1, 2, 3, 4]);
+  assertClose(assert, result, [13, 26, 39, 52], 'literal scalar and captured array');
+  gpu.destroy();
+});
+
+eachMode('pipeline arg reused by several steps', async (assert, mode) => {
+  const gpu = new GPU({ mode });
+  const add = gpu.createKernel(function (a, b) {
+    return a[this.thread.x] + b[this.thread.x];
+  }, { output: [4] });
+  const solve = gpu.createPipeline(function (u, q) {
+    const a = add(u, q);
+    const b = add(a, q);
+    return add(b, q);
+  });
+
+  const result = await solve([1, 2, 3, 4], [10, 10, 10, 10]);
+  assertClose(assert, result, [31, 32, 33, 34], 'q consumed by three steps');
+  gpu.destroy();
+});
+
+eachMode('2d output kernels', async (assert, mode) => {
+  const gpu = new GPU({ mode });
+  const grow = gpu.createKernel(function (m) {
+    return m[this.thread.y][this.thread.x] + 1;
+  }, { output: [3, 2] });
+  const solve = gpu.createPipeline(function (m) {
+    for (let i = 0; i < this.constants.passes; i++) {
+      m = grow(m);
+    }
+    return m;
+  }, { constants: { passes: 3 } });
+
+  const result = await solve([[0, 1, 2], [10, 11, 12]]);
+  assert.equal(result.length, 2, '2d shape survives readback');
+  assertClose(assert, result[0], [3, 4, 5], 'row 0');
+  assertClose(assert, result[1], [13, 14, 15], 'row 1');
+  gpu.destroy();
+});
