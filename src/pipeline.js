@@ -367,7 +367,10 @@ class Pipeline {
     // snapshot and the deep copy is skipped -- copying was a fixed ~30 ms
     // per call on image-sized arguments, which dominated short plans
     let preUploaded = null;
-    if (this._inFlight === 0 && this.plan && this._executor === null && this._genericEagerUploadsPay(this.plan)) {
+    // _executor === false is the settled has-degraded-to-generic sentinel
+    // (null was never it -- the first cut of this test made the fast path
+    // dead code on exactly the GL rows it was built for)
+    if (this._inFlight === 0 && this.plan && this._executor === false && this._genericEagerUploadsPay(this.plan)) {
       preUploaded = this._eagerUploads(this.plan, args);
     }
     for (let i = 0; i < args.length; i++) {
@@ -702,6 +705,15 @@ class Pipeline {
         const value = args[binding.index];
         if (!value || typeof value !== 'object') continue;
         if (typeof value.toArray === 'function' && !(value instanceof Input)) continue;
+        // size drift rebuilds the clones in the tail; an eager upload into
+        // the OLD upload kernel would write out of bounds -- decline and
+        // let the copy path carry this call
+        if (plan.genericArgDims) {
+          const known = plan.genericArgDims.get(binding.index);
+          if (known !== undefined && known !== argDimensions(value).join('x')) {
+            return null;
+          }
+        }
         const handle = this._uploadArg(plan, binding.index, value);
         if (handle && typeof handle.then === 'function') {
           // not synchronous after all: abandon the fast path for this call

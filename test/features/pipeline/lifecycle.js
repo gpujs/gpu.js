@@ -236,6 +236,9 @@ test('eager-upload fast path keeps call-time sampling headlessgl', async assert 
   const k = gpu.createKernel(function (a) { return a[this.thread.x] + 1; }, { output: [4] });
   const p = gpu.createPipeline(function (v) { return k(v); });
   await p([1, 2, 3, 4]); // plan built; pipeline quiescent -> next call is eager
+  // the settled-generic sentinel is what arms the fast path; testing null
+  // instead of false once made it dead code on every GL pipeline
+  assert.equal(p.pipeline._executor, false, 'eager fast path arms after generic settles');
   const data = new Float32Array([10, 20, 30, 40]);
   const pending = p(data);
   data.fill(0); // mutated between call and settlement

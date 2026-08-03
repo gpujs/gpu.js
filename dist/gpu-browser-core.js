@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.22.0
- * @date Mon Aug 03 2026 17:13:48 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 17:41:54 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -20385,7 +20385,7 @@
         const sampled = new Array(args.length);
         const held = [];
         let preUploaded = null;
-        if (this._inFlight === 0 && this.plan && this._executor === null && this._genericEagerUploadsPay(this.plan)) preUploaded = this._eagerUploads(this.plan, args);
+        if (this._inFlight === 0 && this.plan && this._executor === false && this._genericEagerUploadsPay(this.plan)) preUploaded = this._eagerUploads(this.plan, args);
         for (let i = 0; i < args.length; i++) if (preUploaded && preUploaded[i]) sampled[i] = args[i]; else sampled[i] = snapshotValue(args[i], held);
         this._inFlight++;
         const promise = this._tail.then(async () => {
@@ -20581,6 +20581,10 @@
             const value = args[binding.index];
             if (!value || typeof value !== "object") continue;
             if (typeof value.toArray === "function" && !(value instanceof Input)) continue;
+            if (plan.genericArgDims) {
+              const known = plan.genericArgDims.get(binding.index);
+              if (known !== void 0 && known !== argDimensions(value).join("x")) return null;
+            }
             const handle = this._uploadArg(plan, binding.index, value);
             if (handle && typeof handle.then === "function") return null;
             uploaded[binding.index] = handle;
