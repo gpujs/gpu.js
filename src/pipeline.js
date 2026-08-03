@@ -1,4 +1,5 @@
 const { Input } = require('./input');
+const { utils } = require('./utils');
 
 /**
  * Pipeline compilation (docs/design/pipeline-compilation.md): the
@@ -505,7 +506,41 @@ class Pipeline {
       results,
       kernels,
       held: trace.held,
+      // the generic executor's mutable per-(kernel, output-slot) clones,
+      // created lazily on first generic run; see _genericClone
+      genericClones: new Map(),
     };
+  }
+
+  /**
+   * The generic executor's writer for one (kernel, seat signature, output
+   * slot) triple. One MUTABLE, STATICALLY-TYPED clone per triple reproduces
+   * the hand-rolled two-kernel ping-pong mechanically: each clone owns one
+   * output texture/array for the life of the plan (steady state allocates
+   * nothing per step) and sees one argument-type signature (no per-call
+   * dynamicArguments re-typing -- the forced re-typing was most of a 7x
+   * loss even after the texture churn was gone). Static liveness
+   * (assignBuffers) is what makes mutability safe: no step ever reads a
+   * slot while that slot's writer renders. Argument drift across CALLS is
+   * the clones' own switch machinery's business, as for any kernel.
+   * @param {Object} plan
+   * @param {Object} step
+   * @returns {IKernelRunShortcut}
+   */
+  _genericClone(plan, step) {
+    // seat sources are plan-static: a step-fed seat is a pipeline handle,
+    // a pipelineArg seat types with that argument, a literal is frozen
+    const signature = step.argBindings.map(binding =>
+      binding.source === 'step' ? 'T' :
+      binding.source === 'pipelineArg' ? 'a' + binding.index :
+      'l').join(',');
+    const key = step.kernel + ':' + step.outputBuffer + ':' + signature;
+    let clone = plan.genericClones.get(key);
+    if (!clone) {
+      clone = this._cloneKernel(plan.kernels[step.kernel].clone, { immutable: false, dynamicArguments: false });
+      plan.genericClones.set(key, clone);
+    }
+    return clone;
   }
 
   /**
@@ -566,16 +601,16 @@ class Pipeline {
    * @param {IKernelRunShortcut} shortcut - the user's kernel
    * @returns {IKernelRunShortcut} private clone
    */
-  _cloneKernel(shortcut) {
+  _cloneKernel(shortcut, overrides) {
     const kernel = shortcut.kernel;
-    const settings = {
+    const settings = Object.assign({
       output: Array.from(kernel.output),
       pipeline: true,
       immutable: true,
       // argument types can differ between plan positions of one kernel
       // (texture in the ping-pong seat, plain array from a pipeline arg)
       dynamicArguments: true,
-    };
+    }, overrides || {});
     const optional = ['constants', 'constantTypes', 'precision', 'loopMaxIterations', 'strictIntegers', 'fixIntegerDivisionAccuracy', 'optimizeFloatMemory', 'tactic', 'functions', 'nativeFunctions', 'injectedNative', 'debug', 'randomSeed', 'returnType'];
     // types the USER declared pin the clone exactly as they pin the kernel;
     // types inferred by a build must not -- the clone re-infers per plan
@@ -601,8 +636,77 @@ class Pipeline {
    * @param {Array} args - sampled pipeline arguments
    * @returns {Promise<*>}
    */
+  /**
+   * Array pipeline arguments upload ONCE per call on backends where an
+   * upload costs (GL textures, webgpu buffers): a lazy per-arg identity
+   * kernel parks the value device-side and every consuming step binds the
+   * handle -- feeding the raw array to a 200-step plan re-uploaded it 200
+   * times, which was most of the remaining gap to hand-rolled ping-pong.
+   * cpu/webasm consume arrays natively, so there the raw value is optimal.
+   */
+  _uploadArg(plan, index, value) {
+    const key = 'up:' + index;
+    let upload = plan.genericClones.get(key);
+    if (!upload) {
+      const dims = argDimensions(value);
+      const source = dims[2] > 1 ?
+        'function (v) { return v[this.thread.z][this.thread.y][this.thread.x]; }' :
+        dims[1] > 1 ?
+        'function (v) { return v[this.thread.y][this.thread.x]; }' :
+        'function (v) { return v[this.thread.x]; }';
+      const output = dims[2] > 1 ? [dims[0], dims[1], dims[2]] : dims[1] > 1 ? [dims[0], dims[1]] : [dims[0]];
+      upload = this.gpu.createKernel(source, { output, pipeline: true, immutable: false });
+      plan.genericClones.set(key, upload);
+    }
+    return upload(value);
+  }
+
   async _executeGeneric(plan, args) {
     const slots = new Array(plan.buffers.length).fill(null);
+    // the clones are statically typed and the uploads statically shaped, so
+    // argument size drift rebuilds them (the fused executors' recompile
+    // contract); sizes re-derive from the current values on next use
+    if (!plan.genericArgDims) plan.genericArgDims = new Map();
+    for (let i = 0; i < args.length; i++) {
+      const value = args[i];
+      if (!value || typeof value !== 'object') continue;
+      // resident handles (textures, buffer results) size where they bind;
+      // only plain arrays and Inputs shape the clones and uploads
+      if (typeof value.toArray === 'function' && !(value instanceof Input)) continue;
+      const dims = argDimensions(value).join('x');
+      const known = plan.genericArgDims.get(i);
+      if (known === undefined) {
+        plan.genericArgDims.set(i, dims);
+      } else if (known !== dims) {
+        const gpuKernels = this.gpu && this.gpu.kernels;
+        for (const clone of plan.genericClones.values()) {
+          if (!gpuKernels || gpuKernels.indexOf(clone.kernel) !== -1) clone.destroy();
+        }
+        plan.genericClones.clear();
+        plan.genericArgDims = new Map([
+          [i, dims]
+        ]);
+        break;
+      }
+    }
+    const backendMode = plan.kernels.length > 0 ? plan.kernels[0].clone.kernel.constructor.mode : null;
+    const uploadsPay = backendMode === 'gpu' || backendMode === 'webgpu';
+    const uploaded = new Array(args.length).fill(null);
+    if (uploadsPay) {
+      for (let i = 0; i < plan.steps.length; i++) {
+        const bindings = plan.steps[i].argBindings;
+        for (let j = 0; j < bindings.length; j++) {
+          const binding = bindings[j];
+          if (binding.source !== 'pipelineArg' || uploaded[binding.index]) continue;
+          const value = args[binding.index];
+          if (!value || typeof value !== 'object') continue;
+          if (typeof value.toArray === 'function' && !(value instanceof Input)) continue; // already resident
+          let handle = this._uploadArg(plan, binding.index, value);
+          if (handle && typeof handle.then === 'function') handle = await handle;
+          uploaded[binding.index] = handle;
+        }
+      }
+    }
     try {
       for (let i = 0; i < plan.steps.length; i++) {
         const step = plan.steps[i];
@@ -611,20 +715,21 @@ class Pipeline {
         for (let j = 0; j < bindings.length; j++) {
           const binding = bindings[j];
           if (binding.source === 'pipelineArg') {
-            resolved[j] = args[binding.index];
+            resolved[j] = uploaded[binding.index] || args[binding.index];
           } else if (binding.source === 'step') {
             resolved[j] = slots[plan.steps[binding.step].outputBuffer];
           } else {
             resolved[j] = binding.value;
           }
         }
-        let output = plan.kernels[step.kernel].clone.apply(null, resolved);
+        let output = this._genericClone(plan, step).apply(null, resolved);
         if (output && typeof output.then === 'function') {
           output = await output;
         }
-        // the slot's previous occupant is past its last read (assignBuffers
-        // guarantees it), so its texture can go before the new one parks
-        releaseValue(slots[step.outputBuffer]);
+        // no release: the mutable clone OWNS its output for the plan's life
+        // and re-renders it in place next parity -- the previous occupant is
+        // past its last read (assignBuffers guarantees it), and per-step
+        // texture churn was a 29x loss on GL ping-pong plans
         slots[step.outputBuffer] = output;
       }
       const results = plan.results;
@@ -644,6 +749,10 @@ class Pipeline {
           if (value && typeof value.then === 'function') {
             value = await value;
           }
+        } else if (binding.source === 'step') {
+          // a cpu clone's mutable result is re-rendered in place by the next
+          // call; the caller's copy must be theirs to keep
+          value = copyPlainResult(value);
         }
         values[i] = value;
       }
@@ -655,9 +764,8 @@ class Pipeline {
       }
       return shaped;
     } finally {
-      for (let i = 0; i < slots.length; i++) {
-        releaseValue(slots[i]);
-      }
+      // slot occupants are clone-owned; they die with the plan, not the call
+      slots.length = 0;
     }
   }
 
@@ -681,11 +789,31 @@ class Pipeline {
         clone.destroy();
       }
     }
+    for (const clone of this.plan.genericClones.values()) {
+      if (!gpuKernels || gpuKernels.indexOf(clone.kernel) !== -1) {
+        clone.destroy();
+      }
+    }
+    this.plan.genericClones.clear();
     if (this.plan.held) {
       releaseSnapshots(this.plan.held);
     }
     this.plan = null;
   }
+}
+
+function argDimensions(value) {
+  const dims = value instanceof Input ? Array.from(value.size) : Array.from(utils.getDimensions(value));
+  while (dims.length < 3) {
+    dims.push(1);
+  }
+  return dims;
+}
+
+function copyPlainResult(value) {
+  if (ArrayBuffer.isView(value)) return value.slice(0);
+  if (Array.isArray(value)) return value.map(copyPlainResult);
+  return value;
 }
 
 function releaseValue(value) {

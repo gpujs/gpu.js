@@ -231,3 +231,32 @@ eachMode('2d output kernels', async (assert, mode, kind) => {
   assertClose(assert, result, [4, 8, 12, 16], 'fused run is correct');
   await gpu.destroy();
 });
+
+test('generic executor survives argument size drift across calls headlessgl', async assert => {
+  if (!GPU.isHeadlessGLSupported) { assert.ok(true, 'no headlessgl'); return; }
+  // clones are statically typed and shaped since the mutable-clone rework;
+  // a size change must rebuild them, not compute on stale dimensions
+  const gpu = new GPU({ mode: 'headlessgl' });
+  const k = gpu.createKernel(function (a) {
+    return a[this.thread.x] * 2;
+  }, { output: [4], dynamicOutput: true, dynamicArguments: true });
+  const p = gpu.createPipeline(function (v) { return k(v); });
+  assert.deepEqual(Array.from(await p([1, 2, 3, 4])), [2, 4, 6, 8]);
+  k.setOutput([6]);
+  p.setConstants({});
+  assert.deepEqual(Array.from(await p([1, 2, 3, 4, 5, 6])), [2, 4, 6, 8, 10, 12], 'rebuilt for the new size');
+  assert.deepEqual(Array.from(await p([6, 5, 4, 3, 2, 1])), [12, 10, 8, 6, 4, 2], 'steady after rebuild');
+  await gpu.destroy();
+});
+
+test('generic pipeline results are caller-owned, not clone-owned cpu', async assert => {
+  // mutable cpu clones re-render their arrays in place; a held result from
+  // call N must not change when call N+1 runs
+  const gpu = new GPU({ mode: 'cpu' });
+  const k = gpu.createKernel(function (a) { return a[this.thread.x] + 1; }, { output: [3] });
+  const p = gpu.createPipeline(function (v) { return k(v); });
+  const first = await p([1, 2, 3]);
+  await p([10, 20, 30]);
+  assert.deepEqual(Array.from(first), [2, 3, 4], 'call N result survives call N+1');
+  await gpu.destroy();
+});

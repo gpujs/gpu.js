@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.22.0
- * @date Mon Aug 03 2026 15:31:56 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 16:46:36 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -24375,6 +24375,7 @@
   });
   var require_pipeline = __commonJSMin((exports, module) => {
     const {Input: Input} = require_input();
+    const {utils: utils} = require_utils();
     const MSG_HANDLE_READ = "pipeline intermediate results cannot be read during orchestration";
     const MSG_HANDLE_PRIMITIVE = "pipeline intermediate results cannot be used in arithmetic or conditions during orchestration";
     const MSG_MATH_RANDOM = "Math.random() is not allowed during pipeline orchestration; orchestration must be deterministic";
@@ -24671,8 +24672,22 @@
           buffers: buffers,
           results: results,
           kernels: kernels,
-          held: trace.held
+          held: trace.held,
+          genericClones: new Map
         };
+      }
+      _genericClone(plan, step) {
+        const signature = step.argBindings.map(binding => binding.source === "step" ? "T" : binding.source === "pipelineArg" ? "a" + binding.index : "l").join(",");
+        const key = step.kernel + ":" + step.outputBuffer + ":" + signature;
+        let clone = plan.genericClones.get(key);
+        if (!clone) {
+          clone = this._cloneKernel(plan.kernels[step.kernel].clone, {
+            immutable: false,
+            dynamicArguments: false
+          });
+          plan.genericClones.set(key, clone);
+        }
+        return clone;
       }
       _prepareExecutor(args) {
         if (this._fusionDisabled) {
@@ -24708,14 +24723,14 @@
         this.executorKind = "generic";
         this.fallbackReason = reason;
       }
-      _cloneKernel(shortcut) {
+      _cloneKernel(shortcut, overrides) {
         const kernel = shortcut.kernel;
-        const settings = {
+        const settings = Object.assign({
           output: Array.from(kernel.output),
           pipeline: true,
           immutable: true,
           dynamicArguments: true
-        };
+        }, overrides || {});
         const optional = [ "constants", "constantTypes", "precision", "loopMaxIterations", "strictIntegers", "fixIntegerDivisionAccuracy", "optimizeFloatMemory", "tactic", "functions", "nativeFunctions", "injectedNative", "debug", "randomSeed", "returnType" ];
         if (kernel.declaredArgumentTypes) settings.argumentTypes = kernel.declaredArgumentTypes.slice();
         for (let i = 0; i < optional.length; i++) {
@@ -24724,8 +24739,55 @@
         }
         return this.gpu.createKernel(kernel.source, settings);
       }
+      _uploadArg(plan, index, value) {
+        const key = "up:" + index;
+        let upload = plan.genericClones.get(key);
+        if (!upload) {
+          const dims = argDimensions(value);
+          const source = dims[2] > 1 ? "function (v) { return v[this.thread.z][this.thread.y][this.thread.x]; }" : dims[1] > 1 ? "function (v) { return v[this.thread.y][this.thread.x]; }" : "function (v) { return v[this.thread.x]; }";
+          const output = dims[2] > 1 ? [ dims[0], dims[1], dims[2] ] : dims[1] > 1 ? [ dims[0], dims[1] ] : [ dims[0] ];
+          upload = this.gpu.createKernel(source, {
+            output: output,
+            pipeline: true,
+            immutable: false
+          });
+          plan.genericClones.set(key, upload);
+        }
+        return upload(value);
+      }
       async _executeGeneric(plan, args) {
         const slots = new Array(plan.buffers.length).fill(null);
+        if (!plan.genericArgDims) plan.genericArgDims = new Map;
+        for (let i = 0; i < args.length; i++) {
+          const value = args[i];
+          if (!value || typeof value !== "object") continue;
+          if (typeof value.toArray === "function" && !(value instanceof Input)) continue;
+          const dims = argDimensions(value).join("x");
+          const known = plan.genericArgDims.get(i);
+          if (known === void 0) plan.genericArgDims.set(i, dims); else if (known !== dims) {
+            const gpuKernels = this.gpu && this.gpu.kernels;
+            for (const clone of plan.genericClones.values()) if (!gpuKernels || gpuKernels.indexOf(clone.kernel) !== -1) clone.destroy();
+            plan.genericClones.clear();
+            plan.genericArgDims = new Map([ [ i, dims ] ]);
+            break;
+          }
+        }
+        const backendMode = plan.kernels.length > 0 ? plan.kernels[0].clone.kernel.constructor.mode : null;
+        const uploadsPay = backendMode === "gpu" || backendMode === "webgpu";
+        const uploaded = new Array(args.length).fill(null);
+        if (uploadsPay) for (let i = 0; i < plan.steps.length; i++) {
+          const bindings = plan.steps[i].argBindings;
+          for (let j = 0; j < bindings.length; j++) {
+            const binding = bindings[j];
+            if (binding.source !== "pipelineArg" || uploaded[binding.index]) continue;
+            const value = args[binding.index];
+            if (!value || typeof value !== "object") continue;
+            if (typeof value.toArray === "function" && !(value instanceof Input)) continue;
+            let handle = this._uploadArg(plan, binding.index, value);
+            if (handle && typeof handle.then === "function") handle = await handle;
+            uploaded[binding.index] = handle;
+          }
+        }
         try {
           for (let i = 0; i < plan.steps.length; i++) {
             const step = plan.steps[i];
@@ -24733,11 +24795,10 @@
             const resolved = new Array(bindings.length);
             for (let j = 0; j < bindings.length; j++) {
               const binding = bindings[j];
-              if (binding.source === "pipelineArg") resolved[j] = args[binding.index]; else if (binding.source === "step") resolved[j] = slots[plan.steps[binding.step].outputBuffer]; else resolved[j] = binding.value;
+              if (binding.source === "pipelineArg") resolved[j] = uploaded[binding.index] || args[binding.index]; else if (binding.source === "step") resolved[j] = slots[plan.steps[binding.step].outputBuffer]; else resolved[j] = binding.value;
             }
-            let output = plan.kernels[step.kernel].clone.apply(null, resolved);
+            let output = this._genericClone(plan, step).apply(null, resolved);
             if (output && typeof output.then === "function") output = await output;
-            releaseValue(slots[step.outputBuffer]);
             slots[step.outputBuffer] = output;
           }
           const results = plan.results;
@@ -24749,7 +24810,7 @@
             if (value && typeof value.toArray === "function") {
               value = value.toArray();
               if (value && typeof value.then === "function") value = await value;
-            }
+            } else if (binding.source === "step") value = copyPlainResult(value);
             values[i] = value;
           }
           if (results.kind === "single") return values[0];
@@ -24758,7 +24819,7 @@
           for (let i = 0; i < results.entries.length; i++) shaped[results.entries[i].key] = values[i];
           return shaped;
         } finally {
-          for (let i = 0; i < slots.length; i++) releaseValue(slots[i]);
+          slots.length = 0;
         }
       }
       _releasePlan() {
@@ -24773,12 +24834,21 @@
           const clone = kernels[i].clone;
           if (!gpuKernels || gpuKernels.indexOf(clone.kernel) !== -1) clone.destroy();
         }
+        for (const clone of this.plan.genericClones.values()) if (!gpuKernels || gpuKernels.indexOf(clone.kernel) !== -1) clone.destroy();
+        this.plan.genericClones.clear();
         if (this.plan.held) releaseSnapshots(this.plan.held);
         this.plan = null;
       }
     };
-    function releaseValue(value) {
-      if (value && typeof value.delete === "function") value.delete();
+    function argDimensions(value) {
+      const dims = value instanceof Input ? Array.from(value.size) : Array.from(utils.getDimensions(value));
+      while (dims.length < 3) dims.push(1);
+      return dims;
+    }
+    function copyPlainResult(value) {
+      if (ArrayBuffer.isView(value)) return value.slice(0);
+      if (Array.isArray(value)) return value.map(copyPlainResult);
+      return value;
     }
     function noop() {}
     module.exports = {
