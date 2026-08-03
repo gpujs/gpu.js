@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../../src');
+const { GPU, input } = require('../../../src');
 
 describe('features: webasm fallbacks');
 
@@ -76,5 +76,40 @@ test('toString throws its deferral clearly', () => {
   }, { output: [4] });
   kernel();
   assert.throws(() => kernel.toString(), /WebAssembly backend does not yet support/);
+  gpu.destroy();
+});
+
+(GPU.isHeadlessGLSupported ? test : skip)('a texture argument AFTER a plain-array build switches and degrades', () => {
+  // self-typed values pass the base type check (kernel-value machinery
+  // handles them elsewhere); this backend has none, so an already-built
+  // kernel must flag the switch itself instead of crashing in flattenTo
+  const glGpu = new GPU({ mode: 'headlessgl' });
+  const texture = glGpu.createKernel(function () {
+    return this.thread.x * 10;
+  }, { output: [4], pipeline: true })();
+  const gpu = new GPU({ mode: 'webasm' });
+  const kernel = gpu.createKernel(function (v) {
+    return v[this.thread.x] + 1;
+  }, { output: [4] });
+  assert.deepEqual(Array.from(kernel([5, 6, 7, 8])), [6, 7, 8, 9], 'builds on webasm first');
+  assert.equal(kernel.kernel.constructor.name, 'WebAssemblyKernel');
+  assert.deepEqual(Array.from(kernel(texture)), [1, 11, 21, 31], 'the texture call still computes');
+  assert.deepEqual(Array.from(kernel([5, 6, 7, 8])), [6, 7, 8, 9], 'plain arrays still work after');
+  gpu.destroy();
+  glGpu.destroy();
+});
+
+test('the fallback cpu kernel can itself switch on an argument-type change', () => {
+  // the kernel constructed by onRequestFallback lives as long as the
+  // shortcut; without the switch hooks a later type change threw
+  const gpu = new GPU({ mode: 'webasm' });
+  const kernel = gpu.createKernelMap({
+    doubled: function d(x) { return x * 2; },
+  }, function (a) {
+    return d(a[this.thread.x]) + 1;
+  }, { output: [4] });
+  assert.deepEqual(Array.from(kernel([1, 2, 3, 4]).result), [3, 5, 7, 9], 'kernel map degrades and runs');
+  const viaInput = kernel(input(new Float32Array([5, 6, 7, 8]), [4]));
+  assert.deepEqual(Array.from(viaInput.result), [11, 13, 15, 17], 'an Input after an Array switches cleanly');
   gpu.destroy();
 });

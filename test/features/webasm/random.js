@@ -1,5 +1,5 @@
-const { assert, test, module: describe } = require('qunit');
-const { GPU } = require('../../../src');
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU, WebAssemblyKernel } = require('../../../src');
 
 describe('features: webasm random');
 
@@ -70,7 +70,9 @@ test('randomSeed pins the stream bit-exact webasm', assert => {
   gpu.destroy();
 });
 
-test('seeded stream is identical on the SIMD and scalar paths webasm', assert => {
+const SIMD_AVAILABLE = GPU.isWebAssemblySupported && WebAssemblyKernel.isSIMDSupported;
+
+(SIMD_AVAILABLE ? test : skip)('seeded stream is identical on the SIMD and scalar paths webasm', assert => {
   assert.expect(3);
   // width 64 runs entirely through run_simd, width 63 mostly scalar-tails —
   // the first 63 draws must match bit for bit because seeding is per cell,

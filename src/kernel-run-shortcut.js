@@ -33,6 +33,13 @@ function kernelRunShortcut(kernel) {
       shortcut.kernel = kernel = newKernel;
       newKernel.checkArgumentTypes(args);
       result = newKernel.switchingKernels ? undefined : newKernel.run.apply(newKernel, args);
+      if (newKernel.fallbackRequested) {
+        // the switched kernel degraded at build: the fallback already
+        // replaced the shortcut's kernel (the closure variable), but this
+        // loop ran the pre-replacement kernel, whose run() reports null on
+        // fallback -- the replacement holds the real result path
+        result = kernel.run.apply(kernel, args);
+      }
     }
     return result;
   }

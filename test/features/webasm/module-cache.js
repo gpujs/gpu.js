@@ -51,6 +51,8 @@ test('destroy scrubs every cached entry', async assert => {
   }, { output: [8192], asyncMode: true, dynamicOutput: true, dynamicArguments: true });
   const first = new Float32Array(8192).fill(3);
   assert.equal((await kernel(first))[0], 6);
+  const firstEntry = kernel.kernel._active;
+  const firstId = firstEntry.id;
   kernel.kernel.moduleCacheLimit = 1;
   // each size change now evicts the previous shared entry after its tail
   // settles; the pool must drop the worker-side instantiation and the next
@@ -58,6 +60,13 @@ test('destroy scrubs every cached entry', async assert => {
   kernel.setOutput([12288]);
   const second = new Float32Array(12288).fill(5);
   assert.equal((await kernel(second))[0], 10);
+  // the eviction's deferred release has settled by now (it was queued on
+  // the tail ahead of the run just awaited): the entry must be scrubbed and
+  // no worker may still hold its instantiation
+  assert.equal(firstEntry.memory, null, 'evicted shared entry is scrubbed');
+  const pool = kernel.kernel._pool;
+  assert.ok(pool.workers.every(worker => !worker.state.setup.has(firstId)),
+    'no worker retains the evicted instantiation');
   kernel.setOutput([8192]);
   assert.equal((await kernel(first))[0], 6, 'revisiting the evicted size still computes threaded');
   assert.equal(kernel.kernel._moduleCache.size, 1);

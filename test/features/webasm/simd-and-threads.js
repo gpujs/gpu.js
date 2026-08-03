@@ -1,5 +1,5 @@
-const { assert, test, module: describe } = require('qunit');
-const { GPU } = require('../../../src');
+const { assert, skip, test, module: describe } = require('qunit');
+const { GPU, WebAssemblyKernel } = require('../../../src');
 
 describe('features: webasm simd and threads');
 
@@ -28,8 +28,11 @@ function divergentSource(a) {
 // cross-origin isolation (the dev server sends the headers; BrowserStack
 // targets may not) -- Node always has it, so the thread tests always run there
 const THREADS_AVAILABLE = typeof SharedArrayBuffer !== 'undefined';
+// wasm SIMD itself is optional (Safari before 16.4): the backend falls back
+// to the scalar export, so path assertions only hold where SIMD exists
+const SIMD_AVAILABLE = GPU.isWebAssemblySupported && WebAssemblyKernel.isSIMDSupported;
 
-test('every module exports run_simd webasm', assert => {
+(SIMD_AVAILABLE ? test : skip)('every module exports run_simd webasm', assert => {
   assert.expect(3);
   const gpu = new GPU({ mode: 'webasm' });
   const kernel = gpu.createKernel(divergentSource, { output: [8] });
@@ -41,7 +44,7 @@ test('every module exports run_simd webasm', assert => {
   gpu.destroy();
 });
 
-test('run and run_simd are bit-identical webasm', assert => {
+(SIMD_AVAILABLE ? test : skip)('run and run_simd are bit-identical webasm', assert => {
   const gpu = new GPU({ mode: 'webasm' });
   const kernel = gpu.createKernel(divergentSource, { output: [16] });
   const args = [1, 6, 3, 8, 2, 7, 4, 5, 0, 9, 12, 3, 6, 1, 8, 2];
@@ -66,7 +69,7 @@ test('run and run_simd are bit-identical webasm', assert => {
   gpu.destroy();
 });
 
-test('non-multiple-of-4 rows take the scalar tail and still match cpu webasm', assert => {
+(SIMD_AVAILABLE ? test : skip)('non-multiple-of-4 rows take the scalar tail and still match cpu webasm', assert => {
   assert.expect(2);
   const gpu = new GPU({ mode: 'webasm' });
   const cpu = new GPU({ mode: 'cpu' });

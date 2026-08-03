@@ -149,3 +149,17 @@ test('one kernel\'s arguments do not clobber another\'s webasm', assert => {
   assert.deepEqual(Array.from(firstResult), [2, 4, 6, 8]);
   gpu.destroy();
 });
+
+test('argument updated in expression position vectorizes webasm', assert => {
+  // `let y = a++` reaches the variance analysis through the expression walk,
+  // which must record the argument's shadow membership exactly like the
+  // statement walk does -- it used to reject the kernel outright on any
+  // SIMD-capable host
+  const gpu = new GPU({ mode: 'webasm' });
+  const kernel = gpu.createKernel(function (a) {
+    let y = a++;
+    return y + a;
+  }, { output: [4] });
+  assert.deepEqual(Array.from(kernel(5)), [11, 11, 11, 11]);
+  gpu.destroy();
+});

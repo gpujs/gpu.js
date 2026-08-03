@@ -15,12 +15,14 @@ class CPUFunctionNode extends FunctionNode {
   /**
    * @desc The generated cell loop binds arguments once for the whole run, so
    * an assignment would leak into every later cell (#865); assigned arguments
-   * get a per-cell shadow local instead. `$` cannot appear in sanitized user
-   * names, so the shadow name cannot collide.
+   * get a per-cell shadow local instead. The cpu backend never sanitizes
+   * names, so the shadow lives OUTSIDE the `user_` namespace (like the GL
+   * backends' `cellShadow_`): a `$cell` suffix could collide with a user
+   * identifier literally named that.
    */
   markupUserName(name) {
     if (this.isRootKernel && this.getAssignedArguments().has(name)) {
-      return `user_${ name }$cell`;
+      return `cellShadow_user_${ name }`;
     }
     return `user_${ name }`;
   }
@@ -51,7 +53,7 @@ class CPUFunctionNode extends FunctionNode {
 
     if (this.isRootKernel) {
       for (const name of this.getAssignedArguments()) {
-        retArr.push(`let user_${ name }$cell = user_${ name };\n`);
+        retArr.push(`let cellShadow_user_${ name } = user_${ name };\n`);
       }
       // an early return breaks out of this block -- a plain `continue` only
       // reaches the cell loop from the body's top level, so a return inside

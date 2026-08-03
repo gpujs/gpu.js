@@ -192,6 +192,8 @@ export class Kernel {
   hasPrependString(value: string): boolean;
   constructor(kernel: KernelFunction|IKernelJSON|string, settings?: IDirectKernelSettings);
   onRequestSwitchKernel?: Kernel;
+  /** why this kernel's work was degraded to the cpu backend, when it was (#868) */
+  fallbackReason: string | null;
   onActivate(previousKernel: Kernel): void;
   build(...args: KernelVariable[]): void;
   run(...args: KernelVariable[]): KernelVariable;
@@ -259,6 +261,12 @@ export type Precision = 'single' | 'unsigned';
 
 export class CPUKernel extends Kernel {
 
+}
+export class WebAssemblyKernel extends Kernel {
+  /** LRU bound on cached per-size-signature wasm instantiations (#870) */
+  moduleCacheLimit: number;
+  /** worker-pool size cap for threaded runs; null lets the pool decide */
+  poolSize: number | null;
 }
 export class GLKernel extends Kernel {
 
@@ -576,6 +584,7 @@ export interface IFunctionNodeSettings extends IFunctionSettings {
 export class WebGLFunctionNode extends FunctionNode {}
 export class WebGL2FunctionNode extends WebGLFunctionNode {}
 export class CPUFunctionNode extends FunctionNode {}
+export class WebAssemblyFunctionNode extends FunctionNode {}
 
 export interface IGPUTextureSettings {
   texture: WebGLTexture;

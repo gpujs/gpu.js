@@ -30,7 +30,10 @@ class WebGL2FunctionNode extends WebGLFunctionNode {
       retArr.push('intBitsToFloat(2139095039)');
     } else if (type === 'Boolean') {
       if (this.argumentNames.indexOf(name) > -1) {
-        retArr.push(`bool(${this.markupUserName(idtNode.name)})`);
+        const marked = this.markupUserName(idtNode.name);
+        // a shadow local is declared bool already; wrapping it would also
+        // break assignment targets (`bool(x) = ...` is not an lvalue)
+        retArr.push(marked.startsWith('cellShadow_') ? marked : `bool(${marked})`);
       } else {
         retArr.push(`user_${name}`);
       }

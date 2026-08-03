@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.21.0
- * @date Mon Aug 03 2026 08:25:48 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 09:01:53 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -4667,6 +4667,7 @@
         return result;
       },
       getAstString(source, ast) {
+        if (!ast.loc) return "[synthetic node]";
         const lines = Array.isArray(source) ? source : source.split(/\r?\n/g);
         const start = ast.loc.start;
         const end = ast.loc.end;
@@ -6463,6 +6464,7 @@
       getAssignedArguments() {
         if (this._assignedArguments) return this._assignedArguments;
         const assigned = new Set;
+        const redeclared = new Set;
         const names = this.argumentNames || [];
         const walk = node => {
           if (!node || typeof node !== "object") return;
@@ -6472,6 +6474,7 @@
           }
           if (node.type === "AssignmentExpression" && node.left.type === "Identifier" && names.indexOf(node.left.name) !== -1) assigned.add(node.left.name);
           if (node.type === "UpdateExpression" && node.argument.type === "Identifier" && names.indexOf(node.argument.name) !== -1) assigned.add(node.argument.name);
+          if (node.type === "VariableDeclarator" && node.id.type === "Identifier" && names.indexOf(node.id.name) !== -1) redeclared.add(node.id.name);
           for (const key in node) {
             if (key === "loc" || key === "range" || key === "parent") continue;
             const child = node[key];
@@ -6479,6 +6482,7 @@
           }
         };
         walk(this.getJsAST());
+        for (const name of redeclared) assigned.delete(name);
         return this._assignedArguments = assigned;
       }
       traceFunctionAST(ast) {
@@ -7650,7 +7654,7 @@
     const {FunctionNode: FunctionNode} = require_function_node$5();
     var CPUFunctionNode = class extends FunctionNode {
       markupUserName(name) {
-        if (this.isRootKernel && this.getAssignedArguments().has(name)) return `user_${name}$cell`;
+        if (this.isRootKernel && this.getAssignedArguments().has(name)) return `cellShadow_user_${name}`;
         return `user_${name}`;
       }
       astFunction(ast, retArr) {
@@ -7668,7 +7672,7 @@
           retArr.push(") {\n");
         }
         if (this.isRootKernel) {
-          for (const name of this.getAssignedArguments()) retArr.push(`let user_${name}$cell = user_${name};\n`);
+          for (const name of this.getAssignedArguments()) retArr.push(`let cellShadow_user_${name} = user_${name};\n`);
           retArr.push("kernelBody: {\n");
         }
         for (let i = 0; i < ast.body.body.length; ++i) {
@@ -10272,7 +10276,10 @@
         if (idtNode.type !== "Identifier") throw this.astErrorOutput("IdentifierExpression - not an Identifier", idtNode);
         const type = this.getType(idtNode);
         const name = utils.sanitizeName(idtNode.name);
-        if (idtNode.name === "Infinity") retArr.push("3.402823466e+38"); else if (type === "Boolean") if (this.argumentNames.indexOf(name) > -1) retArr.push(`bool(${this.markupUserName(idtNode.name)})`); else retArr.push(`user_${name}`); else retArr.push(this.markupUserName(idtNode.name));
+        if (idtNode.name === "Infinity") retArr.push("3.402823466e+38"); else if (type === "Boolean") if (this.argumentNames.indexOf(name) > -1) {
+          const marked = this.markupUserName(idtNode.name);
+          retArr.push(marked.startsWith("cellShadow_") ? marked : `bool(${marked})`);
+        } else retArr.push(`user_${name}`); else retArr.push(this.markupUserName(idtNode.name));
         return retArr;
       }
       markupUserName(name) {
@@ -10340,80 +10347,12 @@
         if (doWhileNode.type !== "DoWhileStatement") throw this.astErrorOutput("Invalid while statement", doWhileNode);
         const iVariableName = this.getInternalVariableName("safeI");
         retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
-        this.astGeneric(doWhileNode.body, retArr);
-        retArr.push("if (!");
+        retArr.push(`if (${iVariableName}>0){if (!`);
         this.astGeneric(doWhileNode.test, retArr);
-        retArr.push(") break;\n");
+        retArr.push(") break;}\n");
+        this.astGeneric(doWhileNode.body, retArr);
         retArr.push("}\n");
         return retArr;
-      }
-      rewriteDoWhileContinues(doWhileNode) {
-        const test = doWhileNode.test;
-        if (!test) return doWhileNode.body;
-        let found = false;
-        const breakCheck = () => ({
-          type: "IfStatement",
-          test: {
-            type: "UnaryExpression",
-            operator: "!",
-            prefix: true,
-            argument: JSON.parse(JSON.stringify(test))
-          },
-          consequent: {
-            type: "BlockStatement",
-            body: [ {
-              type: "BreakStatement",
-              label: null
-            } ]
-          },
-          alternate: null
-        });
-        const visit = node => {
-          if (!node || typeof node !== "object") return node;
-          if (Array.isArray(node)) return node.map(visit);
-          switch (node.type) {
-           case "ContinueStatement":
-            found = true;
-            return {
-              type: "BlockStatement",
-              body: [ breakCheck(), node ]
-            };
-
-           case "ForStatement":
-           case "WhileStatement":
-           case "DoWhileStatement":
-            return node;
-
-           case "IfStatement":
-            return {
-              ...node,
-              consequent: visit(node.consequent),
-              alternate: visit(node.alternate)
-            };
-
-           case "BlockStatement":
-            return {
-              ...node,
-              body: node.body.map(visit)
-            };
-
-           case "SwitchStatement":
-            return {
-              ...node,
-              cases: node.cases.map(c => ({
-                ...c,
-                consequent: c.consequent.map(visit)
-              }))
-            };
-
-           default:
-            return node;
-          }
-        };
-        const body = visit(doWhileNode.body);
-        if (!found) return doWhileNode.body;
-        this.stampSyntheticNodes(body);
-        return body;
       }
       astAssignmentExpression(assNode, retArr) {
         const isStatement = this.isState("assignment-as-statement");
@@ -10443,7 +10382,7 @@
             retArr.push("float(");
             this.astGeneric(assNode.right, retArr);
             retArr.push(")");
-          } else this.astGeneric(assNode.right, retArr);
+          } else if (leftType === "Integer" && rightType === "LiteralInteger") this.castLiteralToInteger(assNode.right, retArr); else this.astGeneric(assNode.right, retArr);
         }
         if (!isStatement) retArr.push(")");
         return retArr;
@@ -10525,7 +10464,6 @@
                 i--;
                 break;
               }
-              if (statement.type === "DoWhileStatement") statement.body = this.rewriteDoWhileContinues(statement);
               this.normalizeBranch(statement, "body");
               break;
             }
@@ -14566,7 +14504,10 @@
         if (idtNode.type !== "Identifier") throw this.astErrorOutput("IdentifierExpression - not an Identifier", idtNode);
         const type = this.getType(idtNode);
         const name = utils.sanitizeName(idtNode.name);
-        if (idtNode.name === "Infinity") retArr.push("intBitsToFloat(2139095039)"); else if (type === "Boolean") if (this.argumentNames.indexOf(name) > -1) retArr.push(`bool(${this.markupUserName(idtNode.name)})`); else retArr.push(`user_${name}`); else retArr.push(this.markupUserName(idtNode.name));
+        if (idtNode.name === "Infinity") retArr.push("intBitsToFloat(2139095039)"); else if (type === "Boolean") if (this.argumentNames.indexOf(name) > -1) {
+          const marked = this.markupUserName(idtNode.name);
+          retArr.push(marked.startsWith("cellShadow_") ? marked : `bool(${marked})`);
+        } else retArr.push(`user_${name}`); else retArr.push(this.markupUserName(idtNode.name));
         return retArr;
       }
     };
@@ -20267,11 +20208,29 @@
           if (Array.isArray(node)) return node.forEach(sub => scanExprTaints(sub, cv));
           switch (node.type) {
            case "UpdateExpression":
-            if (cv && node.argument.type === "Identifier") taint(node.argument.name);
+            if (node.argument.type === "Identifier") {
+              if (self.argumentNames.indexOf(node.argument.name) !== -1) {
+                if (!assignedArgs.has(node.argument.name)) {
+                  assignedArgs.add(node.argument.name);
+                  changed = true;
+                }
+                taint(node.argument.name);
+              }
+              if (cv) taint(node.argument.name);
+            }
             return scanExprTaints(node.argument, cv);
 
            case "AssignmentExpression":
-            if (cv && node.left.type === "Identifier") taint(node.left.name);
+            if (node.left.type === "Identifier") {
+              if (self.argumentNames.indexOf(node.left.name) !== -1) {
+                if (!assignedArgs.has(node.left.name)) {
+                  assignedArgs.add(node.left.name);
+                  changed = true;
+                }
+                taint(node.left.name);
+              }
+              if (cv) taint(node.left.name);
+            }
             scanExprTaints(node.left, cv);
             return scanExprTaints(node.right, cv);
 
@@ -22350,6 +22309,9 @@
           if (worker.dead) return;
           worker.dead = true;
           worker.fail(error);
+          if (worker.handle && typeof worker.handle.terminate === "function") try {
+            worker.handle.terminate();
+          } catch (e) {}
         };
         const onMessage = message => {
           if (message.type === "ready") {
@@ -23015,6 +22977,29 @@
           }
           this._active = entry;
         }
+        checkArgumentTypes(args) {
+          super.checkArgumentTypes(args);
+          if (!this.argumentTypes) return;
+          const length = Math.min(args.length, this.argumentTypes.length);
+          for (let i = 0; i < length; i++) {
+            const value = args[i];
+            if (!value || !value.type) continue;
+            switch (this.argumentTypes[i]) {
+             case "Array":
+             case "Input":
+             case "Number":
+             case "Float":
+             case "Integer":
+             case "Boolean":
+              this.switchKernels({
+                type: "argumentTypeMismatch",
+                index: i,
+                needed: utils.getVariableType(value, this.strictIntegers)
+              });
+              break;
+            }
+          }
+        }
         run() {
           if (!this.built) {
             this.build.apply(this, arguments);
@@ -23100,6 +23085,7 @@
           const componentCount = this.componentCount;
           const output = Array.from(this.output);
           const result = this._threadedTail.then(() => {
+            if (!entry.f32) throw new Error("WebAssembly kernel was destroyed");
             for (let i = 0; i < staged.length; i++) entry.f32.set(staged[i].flat, staged[i].record.offset / 4);
             for (let i = 0; i < scalarValues.length; i++) {
               const {record: record, value: value} = scalarValues[i];
@@ -23120,6 +23106,7 @@
             }
             this._lastRunPath = "threaded";
             return pool.dispatch(entry, tasks).then(() => {
+              if (!entry.f32) throw new Error("WebAssembly kernel was destroyed");
               const base = layout.outputOffset / 4;
               const data = entry.f32.slice(base, base + cells * componentCount);
               return this._shapeOutput(data, output, componentCount);
@@ -23209,6 +23196,7 @@
           shortcut.kernel = kernel = newKernel;
           newKernel.checkArgumentTypes(args);
           result = newKernel.switchingKernels ? void 0 : newKernel.run.apply(newKernel, args);
+          if (newKernel.fallbackRequested) result = kernel.run.apply(kernel, args);
         }
         return result;
       }
@@ -23493,6 +23481,8 @@
             randomSeed: kernelRun.randomSeed,
             debug: kernelRun.debug,
             asyncMode: kernelRun.asyncMode,
+            onRequestFallback: onRequestFallback,
+            onRequestSwitchKernel: onRequestSwitchKernel,
             canvas: kernelRun.graphical && !kernelRun.context ? kernelRun.canvas : null
           });
           fallbackKernel.fallbackReason = kernelRun.fallbackReason;

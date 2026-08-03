@@ -645,7 +645,10 @@ class WebGLFunctionNode extends FunctionNode {
       retArr.push('3.402823466e+38');
     } else if (type === 'Boolean') {
       if (this.argumentNames.indexOf(name) > -1) {
-        retArr.push(`bool(${this.markupUserName(idtNode.name)})`);
+        const marked = this.markupUserName(idtNode.name);
+        // a shadow local is declared bool already; wrapping it would also
+        // break assignment targets (`bool(x) = ...` is not an lvalue)
+        retArr.push(marked.startsWith('cellShadow_') ? marked : `bool(${marked})`);
       } else {
         retArr.push(`user_${name}`);
       }
@@ -782,6 +785,18 @@ class WebGLFunctionNode extends FunctionNode {
    * @param {Array} retArr - return array string
    * @returns {Array} the parsed webgl string
    */
+  /**
+   * @desc Parses the abstract syntax tree for *do while* loop. GLSL ES 1.00
+   * has no do-while, so the loop is rotated into a for: the exit test sits
+   * at the TOP, guarded to skip the first iteration. A `continue` in the
+   * body then lands on the test naturally — JavaScript's exact do-while
+   * continue semantics (#867) — with no body rewriting, so it holds inside
+   * switch lowerings and unbraced bodies alike, and the test is evaluated
+   * exactly once per iteration boundary.
+   * @param {Object} doWhileNode - An ast Node
+   * @param {Array} retArr - return array string
+   * @returns {Array} the parsed webgl string
+   */
   astDoWhileStatement(doWhileNode, retArr) {
     if (doWhileNode.type !== 'DoWhileStatement') {
       throw this.astErrorOutput('Invalid while statement', doWhileNode);
@@ -789,62 +804,13 @@ class WebGLFunctionNode extends FunctionNode {
 
     const iVariableName = this.getInternalVariableName('safeI');
     retArr.push(`for (int ${iVariableName}=0;${iVariableName}<LOOP_MAX;${iVariableName}++){\n`);
-    this.astGeneric(doWhileNode.body, retArr);
-    retArr.push('if (!');
+    retArr.push(`if (${iVariableName}>0){if (!`);
     this.astGeneric(doWhileNode.test, retArr);
-    retArr.push(') break;\n');
+    retArr.push(') break;}\n');
+    this.astGeneric(doWhileNode.body, retArr);
     retArr.push('}\n');
 
     return retArr;
-  }
-
-  /**
-   * @desc do-while is emulated as a for loop with the exit test at the end
-   * of the body, so a bare `continue` would skip the test and rerun the body
-   * unconditionally (#867). In JavaScript, continue in a do-while jumps to
-   * the test — so each loop-level continue gains a copy of the exit check in
-   * front of it, the same transform normalizeLoopHeader applies to
-   * hoist-affected loops. Continues belonging to nested loops keep theirs.
-   * Runs from normalizeBlock, before tracing, so the cloned test nodes are
-   * traced like the original.
-   * @returns {Object} the loop body, rewritten only if it contains a
-   * loop-level continue
-   */
-  rewriteDoWhileContinues(doWhileNode) {
-    const test = doWhileNode.test;
-    if (!test) return doWhileNode.body;
-    let found = false;
-    const breakCheck = () => ({
-      type: 'IfStatement',
-      test: { type: 'UnaryExpression', operator: '!', prefix: true, argument: JSON.parse(JSON.stringify(test)) },
-      consequent: { type: 'BlockStatement', body: [{ type: 'BreakStatement', label: null }] },
-      alternate: null,
-    });
-    const visit = node => {
-      if (!node || typeof node !== 'object') return node;
-      if (Array.isArray(node)) return node.map(visit);
-      switch (node.type) {
-        case 'ContinueStatement':
-          found = true;
-          return { type: 'BlockStatement', body: [breakCheck(), node] };
-        case 'ForStatement':
-        case 'WhileStatement':
-        case 'DoWhileStatement':
-          return node;
-        case 'IfStatement':
-          return { ...node, consequent: visit(node.consequent), alternate: visit(node.alternate) };
-        case 'BlockStatement':
-          return { ...node, body: node.body.map(visit) };
-        case 'SwitchStatement':
-          return { ...node, cases: node.cases.map(c => ({ ...c, consequent: c.consequent.map(visit) })) };
-        default:
-          return node;
-      }
-    };
-    const body = visit(doWhileNode.body);
-    if (!found) return doWhileNode.body;
-    this.stampSyntheticNodes(body);
-    return body;
   }
 
 
@@ -891,6 +857,11 @@ class WebGLFunctionNode extends FunctionNode {
         retArr.push('float(');
         this.astGeneric(assNode.right, retArr);
         retArr.push(')');
+      } else if (leftType === 'Integer' && rightType === 'LiteralInteger') {
+        // an int lvalue (an Integer argument's shadow local) with a literal
+        // right side: the literal must print as int, GLSL has no implicit
+        // float conversion
+        this.castLiteralToInteger(assNode.right, retArr);
       } else {
         this.astGeneric(assNode.right, retArr);
       }
@@ -1035,9 +1006,6 @@ class WebGLFunctionNode extends FunctionNode {
             this.normalizeBlock(rewritten);
             i--;
             break;
-          }
-          if (statement.type === 'DoWhileStatement') {
-            statement.body = this.rewriteDoWhileContinues(statement);
           }
           this.normalizeBranch(statement, 'body');
           break;

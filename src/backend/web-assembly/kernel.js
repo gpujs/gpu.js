@@ -699,6 +699,40 @@ class WebAssemblyKernel extends Kernel {
     this._active = entry;
   }
 
+  /**
+   * @desc Self-typed values (GL textures, pipeline handles) pass the base
+   * check on the assumption that a kernel-value lookup will re-map them; this
+   * backend has no kernel values, so a texture handed to a kernel built for
+   * plain arrays would reach utils.flattenTo and crash. Flag it as a type
+   * mismatch instead: the switched kernel builds for the texture type and
+   * degrades to cpu through the usual fallback. Guarded on the DECLARED type
+   * being one this backend supports, so the switched kernel (declared for
+   * the texture type) does not flag the same value again and loop.
+   */
+  checkArgumentTypes(args) {
+    super.checkArgumentTypes(args);
+    if (!this.argumentTypes) return;
+    const length = Math.min(args.length, this.argumentTypes.length);
+    for (let i = 0; i < length; i++) {
+      const value = args[i];
+      if (!value || !value.type) continue;
+      switch (this.argumentTypes[i]) {
+        case 'Array':
+        case 'Input':
+        case 'Number':
+        case 'Float':
+        case 'Integer':
+        case 'Boolean':
+          this.switchKernels({
+            type: 'argumentTypeMismatch',
+            index: i,
+            needed: utils.getVariableType(value, this.strictIntegers),
+          });
+          break;
+      }
+    }
+  }
+
   run() {
     if (!this.built) {
       this.build.apply(this, arguments);
@@ -825,6 +859,11 @@ class WebAssemblyKernel extends Kernel {
     const componentCount = this.componentCount;
     const output = Array.from(this.output);
     const result = this._threadedTail.then(() => {
+      // destroy() scrubs entries; a run queued behind the tail must reject
+      // cleanly rather than dereference the scrubbed views
+      if (!entry.f32) {
+        throw new Error('WebAssembly kernel was destroyed');
+      }
       for (let i = 0; i < staged.length; i++) {
         entry.f32.set(staged[i].flat, staged[i].record.offset / 4);
       }
@@ -853,6 +892,9 @@ class WebAssemblyKernel extends Kernel {
       }
       this._lastRunPath = 'threaded';
       return pool.dispatch(entry, tasks).then(() => {
+        if (!entry.f32) {
+          throw new Error('WebAssembly kernel was destroyed');
+        }
         const base = layout.outputOffset / 4;
         // slice copies out of the SharedArrayBuffer, so the caller's result
         // is ordinary non-shared data

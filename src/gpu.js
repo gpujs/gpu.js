@@ -327,6 +327,11 @@ class GPU {
         randomSeed: kernelRun.randomSeed,
         debug: kernelRun.debug,
         asyncMode: kernelRun.asyncMode,
+        // the fallback kernel lives as long as the shortcut: without these
+        // hooks a later argument-type change on it throws instead of
+        // switching (the run shortcut assumes every kernel carries them)
+        onRequestFallback,
+        onRequestSwitchKernel,
         // ONLY a graphical fallback whose canvas is still uncommitted (webasm
         // creates the element but never touches a context) inherits it, so
         // the element the user appended keeps rendering. Any canvas that

@@ -142,11 +142,19 @@ class WebAssemblyWorkerPool {
       state.pending.clear();
     };
     // death retires the worker: its instantiations and setup cache died with
-    // the thread, and a message posted to a corpse never answers
+    // the thread, and a message posted to a corpse never answers. The handle
+    // is terminated explicitly -- an uncaught exception does NOT kill a
+    // browser worker, so without this a "dead" worker would live on as a
+    // zombie thread pinning every wasm memory it ever instantiated
     worker.die = error => {
       if (worker.dead) return;
       worker.dead = true;
       worker.fail(error);
+      if (worker.handle && typeof worker.handle.terminate === 'function') {
+        try {
+          worker.handle.terminate();
+        } catch (e) {}
+      }
     };
     const onMessage = message => {
       if (message.type === 'ready') {

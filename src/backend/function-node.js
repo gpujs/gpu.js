@@ -309,6 +309,7 @@ class FunctionNode {
   getAssignedArguments() {
     if (this._assignedArguments) return this._assignedArguments;
     const assigned = new Set();
+    const redeclared = new Set();
     const names = this.argumentNames || [];
     const walk = node => {
       if (!node || typeof node !== 'object') return;
@@ -322,6 +323,13 @@ class FunctionNode {
       if (node.type === 'UpdateExpression' && node.argument.type === 'Identifier' && names.indexOf(node.argument.name) !== -1) {
         assigned.add(node.argument.name);
       }
+      // `var x` redeclaring a parameter is one binding in JavaScript; the
+      // backends emit the declaration as an ordinary local, which already
+      // shadows the argument — adding a per-cell shadow on top would split
+      // the binding in two
+      if (node.type === 'VariableDeclarator' && node.id.type === 'Identifier' && names.indexOf(node.id.name) !== -1) {
+        redeclared.add(node.id.name);
+      }
       for (const key in node) {
         if (key === 'loc' || key === 'range' || key === 'parent') continue;
         const child = node[key];
@@ -329,6 +337,7 @@ class FunctionNode {
       }
     };
     walk(this.getJsAST());
+    for (const name of redeclared) assigned.delete(name);
     return this._assignedArguments = assigned;
   }
 

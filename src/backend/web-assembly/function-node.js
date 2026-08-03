@@ -2123,10 +2123,31 @@ class WebAssemblyFunctionNode extends FunctionNode {
       if (Array.isArray(node)) return node.forEach(sub => scanExprTaints(sub, cv));
       switch (node.type) {
         case 'UpdateExpression':
-          if (cv && node.argument.type === 'Identifier') taint(node.argument.name);
+          if (node.argument.type === 'Identifier') {
+            // an argument updated in EXPRESSION position (`let y = a++`)
+            // needs the same shadow-local membership the statement walk
+            // records, or the vector emitter rejects the update outright
+            if (self.argumentNames.indexOf(node.argument.name) !== -1) {
+              if (!assignedArgs.has(node.argument.name)) {
+                assignedArgs.add(node.argument.name);
+                changed = true;
+              }
+              taint(node.argument.name);
+            }
+            if (cv) taint(node.argument.name);
+          }
           return scanExprTaints(node.argument, cv);
         case 'AssignmentExpression':
-          if (cv && node.left.type === 'Identifier') taint(node.left.name);
+          if (node.left.type === 'Identifier') {
+            if (self.argumentNames.indexOf(node.left.name) !== -1) {
+              if (!assignedArgs.has(node.left.name)) {
+                assignedArgs.add(node.left.name);
+                changed = true;
+              }
+              taint(node.left.name);
+            }
+            if (cv) taint(node.left.name);
+          }
           scanExprTaints(node.left, cv);
           return scanExprTaints(node.right, cv);
         case 'ConditionalExpression': {
