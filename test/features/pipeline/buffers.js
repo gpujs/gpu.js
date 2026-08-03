@@ -75,13 +75,34 @@ function livenessKeepsEarlyOutputAlive(mode) {
     const plan = solve.plan;
     assert.equal(plan.buffers.length, 3, 'step 1 output kept alive in its own slot');
     assert.notEqual(plan.steps[1].outputBuffer, plan.steps[0].outputBuffer, 'the middle step did not overwrite it');
-    gpu.destroy();
+    await gpu.destroy();
   };
 }
 
 test('liveness keeps a non-adjacent output alive cpu', livenessKeepsEarlyOutputAlive('cpu'));
 test('liveness keeps a non-adjacent output alive webasm', livenessKeepsEarlyOutputAlive('webasm'));
 (GPU.isHeadlessGLSupported ? test : skip)('liveness keeps a non-adjacent output alive headlessgl', livenessKeepsEarlyOutputAlive('headlessgl'));
+
+// navigator.gpu can be present with no adapter (headless Chromium, blocklisted
+// GPUs); QUnit cannot skip at runtime, so an adapterless environment records a
+// pass with an explicit message and bumps a counter the headed canary rejects.
+let adapterPromise = null;
+async function webgpuAdapter(assert) {
+  if (!adapterPromise) adapterPromise = navigator.gpu.requestAdapter();
+  const adapter = await adapterPromise;
+  if (!adapter) {
+    if (typeof window !== 'undefined') {
+      window.__webgpuRuntimeSkips = (window.__webgpuRuntimeSkips || 0) + 1;
+    }
+    assert.ok(true, 'navigator.gpu present but no adapter (headless/blocklisted) — runtime skip');
+  }
+  return adapter;
+}
+
+(GPU.isWebGPUSupported ? test : skip)('liveness keeps a non-adjacent output alive webgpu', async assert => {
+  if (!(await webgpuAdapter(assert))) return;
+  return livenessKeepsEarlyOutputAlive('webgpu')(assert);
+});
 
 test('slots are only shared between steps of identical output shape', async assert => {
   const gpu = new GPU({ mode: 'cpu' });

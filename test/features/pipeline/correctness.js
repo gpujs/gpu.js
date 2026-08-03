@@ -4,10 +4,12 @@ const { GPU } = require('../../../src');
 describe('features: pipeline correctness');
 
 // Every scenario runs against a plain-JS reference on every backend
-// available here (cpu, webasm, and headlessgl where supported). executorKind
-// is asserted per mode: webasm compiles these plans to the fused executor,
-// and a forced-generic webasm variant keeps the correctness-reference
-// executor covered on that backend too.
+// available here (cpu, webasm, headlessgl where supported, and webgpu in a
+// browser with an adapter). executorKind is asserted per mode: webasm
+// compiles these plans to the fused executor, and a forced-generic webasm
+// variant keeps the correctness-reference executor covered on that backend
+// too. webgpu has no fused lowering in v1, so its rows pin the generic
+// executor over buffer-handle intermediates.
 
 function assertClose(assert, actual, expected, label) {
   const values = Array.from(actual);
@@ -19,11 +21,31 @@ function assertClose(assert, actual, expected, label) {
   }
 }
 
+// navigator.gpu can be present with no adapter (headless Chromium, blocklisted
+// GPUs); QUnit cannot skip at runtime, so an adapterless environment records a
+// pass with an explicit message and bumps a counter the headed canary rejects.
+let adapterPromise = null;
+async function webgpuAdapter(assert) {
+  if (!adapterPromise) adapterPromise = navigator.gpu.requestAdapter();
+  const adapter = await adapterPromise;
+  if (!adapter) {
+    if (typeof window !== 'undefined') {
+      window.__webgpuRuntimeSkips = (window.__webgpuRuntimeSkips || 0) + 1;
+    }
+    assert.ok(true, 'navigator.gpu present but no adapter (headless/blocklisted) — runtime skip');
+  }
+  return adapter;
+}
+
 function eachMode(name, body) {
   test(`${ name } cpu`, assert => body(assert, 'cpu', 'generic'));
   test(`${ name } webasm`, assert => body(assert, 'webasm', 'fused-sync'));
   test(`${ name } webasm (generic forced)`, assert => body(assert, 'webasm', 'generic'));
   (GPU.isHeadlessGLSupported ? test : skip)(`${ name } headlessgl`, assert => body(assert, 'headlessgl', 'generic'));
+  (GPU.isWebGPUSupported ? test : skip)(`${ name } webgpu`, async assert => {
+    if (!(await webgpuAdapter(assert))) return;
+    return body(assert, 'webgpu', 'generic');
+  });
 }
 
 // the test/benchmark hook: fusion is skipped entirely, the plan runs generic
@@ -60,7 +82,7 @@ eachMode('jacobi-like ping-pong through one kernel', async (assert, mode, kind) 
   }
   assert.equal(solve.executorKind, kind, `runs the ${ kind } executor`);
   assertClose(assert, result, expected, 'jacobi');
-  gpu.destroy();
+  await gpu.destroy();
 });
 
 eachMode('multi-kernel chain', async (assert, mode, kind) => {
@@ -86,7 +108,7 @@ eachMode('multi-kernel chain', async (assert, mode, kind) => {
   const expected = x.map(v => (v * 2 + 1) * (v * 2));
   assert.equal(chain.executorKind, kind);
   assertClose(assert, result, expected, 'chain');
-  gpu.destroy();
+  await gpu.destroy();
 });
 
 eachMode('multi-output object return', async (assert, mode, kind) => {
@@ -111,7 +133,7 @@ eachMode('multi-output object return', async (assert, mode, kind) => {
   assert.deepEqual(Object.keys(result).sort(), ['doubled', 'negated'], 'resolves to the same object shape');
   assertClose(assert, result.doubled, [2, 4, 6, 8], 'doubled');
   assertClose(assert, result.negated, [-1, -2, -3, -4], 'negated');
-  gpu.destroy();
+  await gpu.destroy();
 });
 
 eachMode('array return resolves to an array of plain results', async (assert, mode, kind) => {
@@ -129,7 +151,7 @@ eachMode('array return resolves to an array of plain results', async (assert, mo
   assert.equal(result.length, 2);
   assertClose(assert, result[0], [2, 4, 6, 8], 'first');
   assertClose(assert, result[1], [4, 8, 12, 16], 'second');
-  gpu.destroy();
+  await gpu.destroy();
 });
 
 eachMode('literal and closure-captured kernel arguments', async (assert, mode, kind) => {
@@ -149,7 +171,7 @@ eachMode('literal and closure-captured kernel arguments', async (assert, mode, k
   const result = await solve([1, 2, 3, 4]);
   assert.equal(solve.executorKind, kind);
   assertClose(assert, result, [13, 26, 39, 52], 'literal scalar and captured array');
-  gpu.destroy();
+  await gpu.destroy();
 });
 
 eachMode('pipeline arg reused by several steps', async (assert, mode, kind) => {
@@ -167,7 +189,7 @@ eachMode('pipeline arg reused by several steps', async (assert, mode, kind) => {
   const result = await solve([1, 2, 3, 4], [10, 10, 10, 10]);
   assert.equal(solve.executorKind, kind);
   assertClose(assert, result, [31, 32, 33, 34], 'q consumed by three steps');
-  gpu.destroy();
+  await gpu.destroy();
 });
 
 eachMode('2d output kernels', async (assert, mode, kind) => {
@@ -188,5 +210,23 @@ eachMode('2d output kernels', async (assert, mode, kind) => {
   assert.equal(result.length, 2, '2d shape survives readback');
   assertClose(assert, result[0], [3, 4, 5], 'row 0');
   assertClose(assert, result[1], [13, 14, 15], 'row 1');
-  gpu.destroy();
+  await gpu.destroy();
+});
+
+// the rows above force the generic executor; this one leaves fusion enabled
+// so the webasm-only fused compile must decline webgpu by itself
+(GPU.isWebGPUSupported ? test : skip)('webgpu degrades naturally to the generic executor', async assert => {
+  if (!(await webgpuAdapter(assert))) return;
+  const gpu = new GPU({ mode: 'webgpu' });
+  const double = gpu.createKernel(function (a) {
+    return a[this.thread.x] * 2;
+  }, { output: [4] });
+  const solve = gpu.createPipeline(function (x) {
+    return double(double(x));
+  });
+  const result = await solve([1, 2, 3, 4]);
+  assert.equal(solve.executorKind, 'generic', 'no fused lowering for webgpu in v1');
+  assert.ok(/webgpu/.test(solve.fallbackReason), `fallbackReason names the backend: ${ solve.fallbackReason }`);
+  assertClose(assert, result, [4, 8, 12, 16], 'degraded run is still correct');
+  await gpu.destroy();
 });
