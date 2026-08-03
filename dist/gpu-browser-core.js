@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.22.0
- * @date Mon Aug 03 2026 13:28:18 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 14:20:55 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -1077,6 +1077,7 @@
         this.onRequestSwitchKernel = null;
         this.argumentNames = typeof source === "string" ? utils.getArgumentNamesFromString(source) : null;
         this.argumentTypes = null;
+        this.declaredArgumentTypes = null;
         this.argumentSizes = null;
         this.argumentBitRatios = null;
         this.kernelArguments = null;
@@ -1122,6 +1123,11 @@
         for (let p in settings) {
           if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
           switch (p) {
+           case "argumentTypes":
+            this.argumentTypes = settings[p];
+            if (settings[p]) this.declaredArgumentTypes = Array.isArray(settings[p]) ? settings[p].slice() : settings[p];
+            continue;
+
            case "output":
             if (!Array.isArray(settings.output)) {
               this.setOutput(settings.output);
@@ -1354,6 +1360,7 @@
         return this;
       }
       setArgumentTypes(argumentTypes) {
+        this.declaredArgumentTypes = Array.isArray(argumentTypes) ? argumentTypes.slice() : argumentTypes;
         if (Array.isArray(argumentTypes)) this.argumentTypes = argumentTypes; else {
           this.argumentTypes = [];
           for (const p in argumentTypes) {
@@ -9725,7 +9732,7 @@
           return;
         }
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-        if (this.immutable) this._replaceOutputTexture();
+        this._replaceOutputTexture();
         if (this.subKernels !== null) {
           if (this.immutable) this._replaceSubOutputTextures();
           this.drawBuffers();
@@ -19162,7 +19169,7 @@
           this.f32 = null;
           this.i32 = null;
           this.pool = null;
-          this.sanityTimeoutMs = 1e4;
+          this.sanityTimeoutMs = 6e4;
           this._entry = null;
           this._abortError = null;
           this._stepRuns = null;
@@ -19191,7 +19198,7 @@
                 cloneClaimed[step.kernel] = true;
                 kernel = kernelEntry.clone.kernel;
               } else {
-                const extra = this.pipeline._cloneKernel(kernelEntry.shortcut);
+                const extra = this.pipeline._cloneKernel(kernelEntry.clone);
                 this._extraShortcuts.push(extra);
                 kernel = extra.kernel;
               }
@@ -19519,7 +19526,7 @@
           return reps;
         }
         _prepareKernel(kernel, reps) {
-          kernel.argumentTypes = null;
+          kernel.argumentTypes = kernel.declaredArgumentTypes ? kernel.declaredArgumentTypes.slice() : null;
           kernel.setupConstants();
           kernel.setupArguments(reps);
           for (let i = 0; i < kernel.argumentTypes.length; i++) if (SUPPORTED_VALUE_TYPES.indexOf(kernel.argumentTypes[i]) === -1) throw new FusionFallback(`argument "${kernel.argumentNames[i]}" of type ${kernel.argumentTypes[i]} is not supported on the webasm backend`);
@@ -19566,12 +19573,17 @@
         _executeThreaded(args) {
           const entry = this._entry;
           const i32 = this.i32;
-          Atomics.store(i32, entry.genIndex, 0);
-          Atomics.store(i32, entry.countIndex, 0);
           const seeds = this._stepRuns.map(stepRun => this._drawSeed(stepRun));
-          const finalGen = this._stepRuns.length;
+          if (this._lastRunAborted) {
+            Atomics.store(i32, entry.countIndex, 0);
+            Atomics.store(i32, entry.abortIndex, 0);
+            this._lastRunAborted = false;
+            this._abortError = null;
+          }
+          const baseGen = Atomics.load(i32, entry.genIndex);
+          const finalGen = baseGen + this._stepRuns.length;
           this.pool.dispatchPipeline(entry, {
-            baseGen: 0,
+            baseGen: baseGen,
             seeds: seeds
           }).then(null, error => this._abort(error));
           return this._waitForGeneration(finalGen).then(() => this._readResults(args));
@@ -19586,7 +19598,9 @@
               if (keepAlive !== null) clearInterval(keepAlive);
               fn(value);
             };
+            const countIndex = this._entry.countIndex;
             let lastSeen = Atomics.load(i32, genIndex);
+            let lastCount = Atomics.load(i32, countIndex);
             let lastProgress = Date.now();
             const check = () => {
               if (this._abortError) {
@@ -19598,8 +19612,10 @@
                 settle(resolve);
                 return;
               }
-              if (gen !== lastSeen) {
+              const count = Atomics.load(i32, countIndex);
+              if (gen !== lastSeen || count !== lastCount) {
                 lastSeen = gen;
+                lastCount = count;
                 lastProgress = Date.now();
               } else if (Date.now() - lastProgress >= this.sanityTimeoutMs) {
                 const error = new Error(`pipeline threaded barrier stalled at generation ${gen} of ${target} for ${this.sanityTimeoutMs}ms`);
@@ -19619,9 +19635,13 @@
         _abort(error) {
           if (this._abortError) return;
           this._abortError = error || new Error("pipeline threaded run aborted");
+          this._lastRunAborted = true;
           if (this.i32 && this._entry) {
             Atomics.store(this.i32, this._entry.abortIndex, 1);
             Atomics.notify(this.i32, this._entry.genIndex);
+          }
+          if (this.pool && this.pool.workers) {
+            for (const worker of this.pool.workers) if (!worker.dead && worker.state.pending.size > 0) worker.die(this._abortError);
           }
         }
         abortRuns(error) {
@@ -19682,6 +19702,8 @@
     const MSG_RETURN_SHAPE = "a pipeline must return a handle, or an Array or plain object of handles";
     const MSG_FIXED_OUTPUT = "kernels called inside a pipeline must have a fixed output size";
     const MSG_DESTROYED = "pipeline has been destroyed";
+    const MSG_ASYNC_ORCHESTRATION = "the orchestration function must be synchronous; async functions and generators cannot be traced";
+    const MSG_STALE_HANDLE = "this handle belongs to a different trace; handles do not survive re-trace or cross pipelines";
     var PipelineHandle = class {};
     let activeTrace = null;
     function getActiveTrace() {
@@ -19694,6 +19716,7 @@
         this.kernels = [];
         this.kernelIndexes = new Map;
         this.handleMeta = new WeakMap;
+        this.held = [];
       }
       createHandle(meta) {
         const trace = this;
@@ -19706,6 +19729,15 @@
             throw new Error(MSG_HANDLE_READ);
           },
           set() {
+            throw new Error(MSG_HANDLE_READ);
+          },
+          ownKeys() {
+            throw new Error(MSG_HANDLE_READ);
+          },
+          has() {
+            throw new Error(MSG_HANDLE_READ);
+          },
+          getOwnPropertyDescriptor() {
             throw new Error(MSG_HANDLE_READ);
           }
         });
@@ -19741,19 +19773,33 @@
       bindValue(value) {
         const meta = this.handleMeta.get(value);
         if (meta) return meta;
+        if (value instanceof PipelineHandle) throw new Error(MSG_STALE_HANDLE);
         return {
           source: "literal",
-          value: snapshotValue(value)
+          value: snapshotValue(value, this.held)
         };
       }
     };
-    function snapshotValue(value) {
+    function snapshotValue(value, held) {
       if (!value || typeof value !== "object") return value;
-      if (typeof value.delete === "function" || typeof value.toArray === "function") return value;
+      if (typeof value.delete === "function" || typeof value.toArray === "function") {
+        if (typeof value.clone === "function" && held) {
+          const cloned = value.clone();
+          held.push(cloned);
+          return cloned;
+        }
+        return value;
+      }
       if (ArrayBuffer.isView(value)) return value.slice(0);
-      if (Array.isArray(value)) return value.map(snapshotValue);
-      if (value instanceof Input) return new Input(snapshotValue(value.value), value.size);
+      if (Array.isArray(value)) return value.map(v => snapshotValue(v, held));
+      if (value instanceof Input) return new Input(snapshotValue(value.value, held), value.size);
       return value;
+    }
+    function releaseSnapshots(held) {
+      for (let i = 0; i < held.length; i++) try {
+        held[i].delete();
+      } catch (e) {}
+      held.length = 0;
     }
     function assignBuffers(steps, resultBindings) {
       const lastRead = new Array(steps.length).fill(-1);
@@ -19809,7 +19855,11 @@
           binding: trace.bindValue(value)
         }))
       };
+      if (returned instanceof PipelineHandle) throw new Error(MSG_STALE_HANDLE);
       if (typeof returned === "object" && !ArrayBuffer.isView(returned)) {
+        if (typeof returned.then === "function") throw new Error(MSG_ASYNC_ORCHESTRATION);
+        const proto = Object.getPrototypeOf(returned);
+        if (proto !== Object.prototype && proto !== null) throw new Error(MSG_RETURN_SHAPE);
         const entries = [];
         for (const key in returned) {
           if (!returned.hasOwnProperty(key)) continue;
@@ -19818,6 +19868,7 @@
             binding: trace.bindValue(returned[key])
           });
         }
+        if (entries.length === 0) throw new Error(MSG_RETURN_SHAPE);
         return {
           kind: "object",
           entries: entries
@@ -19844,7 +19895,8 @@
       call(args) {
         if (this.destroyed) return Promise.reject(new Error(MSG_DESTROYED));
         const sampled = new Array(args.length);
-        for (let i = 0; i < args.length; i++) sampled[i] = snapshotValue(args[i]);
+        const held = [];
+        for (let i = 0; i < args.length; i++) sampled[i] = snapshotValue(args[i], held);
         const promise = this._tail.then(() => {
           if (this.destroyed) throw new Error(MSG_DESTROYED);
           if (!this.plan) {
@@ -19870,6 +19922,7 @@
           }
           return this._executeGeneric(this.plan, sampled);
         });
+        if (held.length > 0) promise.then(() => releaseSnapshots(held), () => releaseSnapshots(held));
         this._tail = promise.then(noop, noop);
         return promise;
       }
@@ -19916,6 +19969,8 @@
         activeTrace = trace;
         let returned;
         try {
+          const ctorName = this.fn.constructor && this.fn.constructor.name;
+          if (ctorName === "AsyncFunction" || ctorName === "GeneratorFunction" || ctorName === "AsyncGeneratorFunction") throw new Error(MSG_ASYNC_ORCHESTRATION);
           returned = this.fn.apply({
             constants: Object.assign({}, this.constants)
           }, argHandles);
@@ -19933,7 +19988,8 @@
           steps: trace.steps,
           buffers: buffers,
           results: results,
-          kernels: kernels
+          kernels: kernels,
+          held: trace.held
         };
       }
       _prepareExecutor(args) {
@@ -19967,7 +20023,8 @@
           immutable: true,
           dynamicArguments: true
         };
-        const optional = [ "constants", "constantTypes", "precision", "loopMaxIterations", "strictIntegers", "fixIntegerDivisionAccuracy", "optimizeFloatMemory", "tactic", "functions", "nativeFunctions", "injectedNative", "debug" ];
+        const optional = [ "constants", "constantTypes", "precision", "loopMaxIterations", "strictIntegers", "fixIntegerDivisionAccuracy", "optimizeFloatMemory", "tactic", "functions", "nativeFunctions", "injectedNative", "debug", "randomSeed", "returnType" ];
+        if (kernel.declaredArgumentTypes) settings.argumentTypes = kernel.declaredArgumentTypes.slice();
         for (let i = 0; i < optional.length; i++) {
           const name = optional[i];
           if (kernel[name] !== null && kernel[name] !== void 0) settings[name] = kernel[name];
@@ -20023,6 +20080,7 @@
           const clone = kernels[i].clone;
           if (!gpuKernels || gpuKernels.indexOf(clone.kernel) !== -1) clone.destroy();
         }
+        if (this.plan.held) releaseSnapshots(this.plan.held);
         this.plan = null;
       }
     };
@@ -20616,21 +20674,30 @@
           if (!this.kernels) resolve();
           setTimeout(() => {
             try {
+              let pipelinesDone = Promise.resolve();
               if (this.pipelines) {
                 const pipelines = this.pipelines.slice();
-                for (let i = 0; i < pipelines.length; i++) pipelines[i].destroy();
+                pipelinesDone = Promise.all(pipelines.map(pipeline => Promise.resolve(pipeline.destroy()).catch(() => void 0)));
               }
-              const kernels = this.kernels.slice();
-              for (let i = 0; i < kernels.length; i++) kernels[i].destroy(true);
-              let firstKernel = kernels[0];
-              if (firstKernel) {
-                if (firstKernel.kernel) firstKernel = firstKernel.kernel;
-                if (firstKernel.constructor.destroyContext) firstKernel.constructor.destroyContext(this.context);
-              }
+              const destroyKernels = () => {
+                try {
+                  const kernels = this.kernels.slice();
+                  for (let i = 0; i < kernels.length; i++) kernels[i].destroy(true);
+                  let firstKernel = kernels[0];
+                  if (firstKernel) {
+                    if (firstKernel.kernel) firstKernel = firstKernel.kernel;
+                    if (firstKernel.constructor.destroyContext) firstKernel.constructor.destroyContext(this.context);
+                  }
+                } catch (e) {
+                  reject(e);
+                  return;
+                }
+                resolve();
+              };
+              pipelinesDone.then(destroyKernels).catch(reject);
             } catch (e) {
               reject(e);
             }
-            resolve();
           }, 0);
         });
       }

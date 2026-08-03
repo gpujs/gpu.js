@@ -334,6 +334,9 @@ test('Math.random draws a fresh seed per call across the pool', async assert => 
 });
 
 test('a dead worker rejects the run cleanly and the next call recovers', async assert => {
+  // browser budget: a silent-death stall (3s backstop), a full recovery
+  // walk, and a cpu-backend reference do not fit qunit's default 10s
+  assert.timeout(30000);
   const gpu = new GPU({ mode: 'webasm' });
   const cpu = new GPU({ mode: 'cpu' });
   const solve = makeJacobi(gpu, 400);
@@ -342,11 +345,15 @@ test('a dead worker rejects the run cleanly and the next call recovers', async a
   await solve.apply(null, args);
   assert.equal(solve.executorKind, 'fused-threaded');
   const pool = solve.pipeline._executor.pool;
+  // browser workers die SILENTLY on terminate (no error event), so there
+  // the death is only detectable as a stalled barrier -- shorten the
+  // backstop so both platforms reject inside the test budget
+  solve.pipeline._executor.sanityTimeoutMs = 3000;
   const doomed = solve.apply(null, args);
   // killed before the 400-step walk can finish: the barrier the survivors
   // are sitting on can never fill, and the run must reject, not hang
   pool.workers[0].handle.terminate();
-  await assert.rejects(doomed, /worker/i, 'the in-flight run rejected with the worker death');
+  await assert.rejects(doomed, /worker|stalled/i, 'the in-flight run rejected with the worker death');
   const out = await solve.apply(null, args);
   const expected = await reference.apply(null, args);
   assertClose(assert, out, Array.from(expected), 'recovered results');

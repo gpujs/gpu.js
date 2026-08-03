@@ -1,6 +1,6 @@
 const { assert, test, module: describe } = require('qunit');
 const { GPU } = require('../../../src');
-const { utils } = require('../../../src/utils');
+const { utils } = require('../../../src');
 
 describe('features: pipeline fused webasm executor');
 

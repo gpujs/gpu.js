@@ -75,6 +75,9 @@ class Kernel {
      */
     this.argumentNames = typeof source === 'string' ? utils.getArgumentNamesFromString(source) : null;
     this.argumentTypes = null;
+    // types the user pinned at creation (vs types a build inferred): what a
+    // pipeline clone must inherit to compute exactly like the original
+    this.declaredArgumentTypes = null;
     this.argumentSizes = null;
     this.argumentBitRatios = null;
     this.kernelArguments = null;
@@ -264,6 +267,12 @@ class Kernel {
     for (let p in settings) {
       if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
       switch (p) {
+        case 'argumentTypes':
+          this.argumentTypes = settings[p];
+          if (settings[p]) {
+            this.declaredArgumentTypes = Array.isArray(settings[p]) ? settings[p].slice() : settings[p];
+          }
+          continue;
         case 'output':
           if (!Array.isArray(settings.output)) {
             this.setOutput(settings.output); // Flatten output object
@@ -760,6 +769,7 @@ class Kernel {
    * @return {this}
    */
   setArgumentTypes(argumentTypes) {
+    this.declaredArgumentTypes = Array.isArray(argumentTypes) ? argumentTypes.slice() : argumentTypes;
     if (Array.isArray(argumentTypes)) {
       this.argumentTypes = argumentTypes;
     } else {

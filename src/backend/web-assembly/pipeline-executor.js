@@ -106,7 +106,7 @@ class WebAssemblyPipelineExecutor {
     // a stalled barrier is a hang without this: reject when the generation
     // counter makes no progress for this long (per step, not per run, so
     // arbitrarily long plans stay legal as long as steps keep landing)
-    this.sanityTimeoutMs = 10000;
+    this.sanityTimeoutMs = 60000;
     this._entry = null;
     this._abortError = null;
     this._stepRuns = null;
@@ -147,7 +147,10 @@ class WebAssemblyPipelineExecutor {
           cloneClaimed[step.kernel] = true;
           kernel = kernelEntry.clone.kernel;
         } else {
-          const extra = this.pipeline._cloneKernel(kernelEntry.shortcut);
+          // from the plan's frozen clone, NOT the live user kernel: a
+          // setOutput between trace and recompile must not bake the user's
+          // current shape over the plan's trace-time one
+          const extra = this.pipeline._cloneKernel(kernelEntry.clone);
           this._extraShortcuts.push(extra);
           kernel = extra.kernel;
         }
@@ -463,7 +466,9 @@ class WebAssemblyPipelineExecutor {
    * new signature, not keep the old one.
    */
   _prepareKernel(kernel, reps) {
-    kernel.argumentTypes = null;
+    // re-infer for this signature -- except types the user pinned, which
+    // must type identically to a direct kernel call
+    kernel.argumentTypes = kernel.declaredArgumentTypes ? kernel.declaredArgumentTypes.slice() : null;
     kernel.setupConstants();
     kernel.setupArguments(reps);
     for (let i = 0; i < kernel.argumentTypes.length; i++) {
@@ -576,16 +581,32 @@ class WebAssemblyPipelineExecutor {
   _executeThreaded(args) {
     const entry = this._entry;
     const i32 = this.i32;
-    Atomics.store(i32, entry.genIndex, 0);
-    Atomics.store(i32, entry.countIndex, 0);
     const seeds = this._stepRuns.map(stepRun => this._drawSeed(stepRun));
-    const finalGen = this._stepRuns.length;
-    const dispatched = this.pool.dispatchPipeline(entry, { baseGen: 0, seeds });
+    // generations are MONOTONIC across the executor's life: each run's
+    // targets start from wherever the counter already is, so a laggard from
+    // the previous run that is still waking at its final barrier sees the
+    // counter at or past its own target and exits -- nothing is ever reset
+    // under it, and no ack-wait is needed before dispatching (a silently
+    // terminated browser worker never acks, so waiting on acks can hang
+    // forever). An i32 outlasts 5M runs of a 400-step plan before wrapping.
+    if (this._lastRunAborted) {
+      // an aborted run retired every worker still owing work, so no live
+      // laggard can touch the control words: clear the partial barrier
+      // fill and the abort flag for the respawned pool
+      Atomics.store(i32, entry.countIndex, 0);
+      Atomics.store(i32, entry.abortIndex, 0);
+      this._lastRunAborted = false;
+      this._abortError = null;
+    }
+    const baseGen = Atomics.load(i32, entry.genIndex);
+    const finalGen = baseGen + this._stepRuns.length;
+    const dispatched = this.pool.dispatchPipeline(entry, { baseGen, seeds });
     // a dead worker rejects its task here; without the abort the surviving
     // workers would sit on a barrier that can never fill
     dispatched.then(null, error => this._abort(error));
     return this._waitForGeneration(finalGen).then(() => this._readResults(args));
   }
+
 
   /**
    * Resolves when the generation counter reaches `target`, rejects on abort
@@ -607,7 +628,9 @@ class WebAssemblyPipelineExecutor {
         if (keepAlive !== null) clearInterval(keepAlive);
         fn(value);
       };
+      const countIndex = this._entry.countIndex;
       let lastSeen = Atomics.load(i32, genIndex);
+      let lastCount = Atomics.load(i32, countIndex);
       let lastProgress = Date.now();
       const check = () => {
         if (this._abortError) {
@@ -619,8 +642,13 @@ class WebAssemblyPipelineExecutor {
           settle(resolve);
           return;
         }
-        if (gen !== lastSeen) {
+        // arrivals at the barrier are progress too -- a step whose slowest
+        // worker outlasts the backstop is slow, not wedged, as long as its
+        // peers keep arriving; a true deadlock moves neither counter
+        const count = Atomics.load(i32, countIndex);
+        if (gen !== lastSeen || count !== lastCount) {
           lastSeen = gen;
+          lastCount = count;
           lastProgress = Date.now();
         } else if (Date.now() - lastProgress >= this.sanityTimeoutMs) {
           const error = new Error(
@@ -656,9 +684,21 @@ class WebAssemblyPipelineExecutor {
   _abort(error) {
     if (this._abortError) return;
     this._abortError = error || new Error('pipeline threaded run aborted');
+    this._lastRunAborted = true;
     if (this.i32 && this._entry) {
       Atomics.store(this.i32, this._entry.abortIndex, 1);
       Atomics.notify(this.i32, this._entry.genIndex);
+    }
+    // whichever workers still owe acks are why the barrier stalled; retire
+    // them so the next run respawns fresh slots. A browser worker killed by
+    // terminate() dies SILENTLY (no error event) -- this is the only place
+    // that death is ever detected.
+    if (this.pool && this.pool.workers) {
+      for (const worker of this.pool.workers) {
+        if (!worker.dead && worker.state.pending.size > 0) {
+          worker.die(this._abortError);
+        }
+      }
     }
   }
 

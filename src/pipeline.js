@@ -19,6 +19,8 @@ const MSG_KERNEL_MAP = 'kernel maps are not supported inside pipelines';
 const MSG_RETURN_SHAPE = 'a pipeline must return a handle, or an Array or plain object of handles';
 const MSG_FIXED_OUTPUT = 'kernels called inside a pipeline must have a fixed output size';
 const MSG_DESTROYED = 'pipeline has been destroyed';
+const MSG_ASYNC_ORCHESTRATION = 'the orchestration function must be synchronous; async functions and generators cannot be traced';
+const MSG_STALE_HANDLE = 'this handle belongs to a different trace; handles do not survive re-trace or cross pipelines';
 
 /**
  * The class exists for instanceof and for its name in errors; all state
@@ -53,6 +55,8 @@ class PipelineTrace {
     this.kernels = [];
     this.kernelIndexes = new Map();
     this.handleMeta = new WeakMap();
+    // texture snapshots cloned during this trace; released with the plan
+    this.held = [];
   }
 
   /**
@@ -74,6 +78,17 @@ class PipelineTrace {
         throw new Error(MSG_HANDLE_READ);
       },
       set() {
+        throw new Error(MSG_HANDLE_READ);
+      },
+      // object spread and key enumeration consult these traps and never the
+      // get trap; without them `{ ...handle }` silently reads as empty
+      ownKeys() {
+        throw new Error(MSG_HANDLE_READ);
+      },
+      has() {
+        throw new Error(MSG_HANDLE_READ);
+      },
+      getOwnPropertyDescriptor() {
         throw new Error(MSG_HANDLE_READ);
       },
     });
@@ -130,7 +145,13 @@ class PipelineTrace {
   bindValue(value) {
     const meta = this.handleMeta.get(value);
     if (meta) return meta;
-    return { source: 'literal', value: snapshotValue(value) };
+    // instanceof resolves through the untrapped getPrototypeOf, so a handle
+    // from a previous trace (or another pipeline) is detected without
+    // tripping its own traps
+    if (value instanceof PipelineHandle) {
+      throw new Error(MSG_STALE_HANDLE);
+    }
+    return { source: 'literal', value: snapshotValue(value, this.held) };
   }
 }
 
@@ -140,14 +161,33 @@ class PipelineTrace {
  * held at the call. Handles never reach this function -- bindValue checks
  * the WeakMap first -- so property access here cannot trip a handle trap.
  */
-function snapshotValue(value) {
+function snapshotValue(value, held) {
   if (!value || typeof value !== 'object') return value;
-  // GPU-resident values cannot be mutated from JS between now and the run
-  if (typeof value.delete === 'function' || typeof value.toArray === 'function') return value;
+  if (typeof value.delete === 'function' || typeof value.toArray === 'function') {
+    // a mutable (immutable: false) texture is re-rendered IN PLACE by its
+    // kernel's next call, so passing it through uncopied would sample the
+    // contents at execution, not at the call; clone now and release the
+    // clone once the holder is done with it
+    if (typeof value.clone === 'function' && held) {
+      const cloned = value.clone();
+      held.push(cloned);
+      return cloned;
+    }
+    return value;
+  }
   if (ArrayBuffer.isView(value)) return value.slice(0);
-  if (Array.isArray(value)) return value.map(snapshotValue);
-  if (value instanceof Input) return new Input(snapshotValue(value.value), value.size);
+  if (Array.isArray(value)) return value.map(v => snapshotValue(v, held));
+  if (value instanceof Input) return new Input(snapshotValue(value.value, held), value.size);
   return value;
+}
+
+function releaseSnapshots(held) {
+  for (let i = 0; i < held.length; i++) {
+    try {
+      held[i].delete();
+    } catch (e) {}
+  }
+  held.length = 0;
 }
 
 /**
@@ -227,11 +267,29 @@ function bindResults(trace, returned) {
       entries: returned.map((value, i) => ({ key: i, binding: trace.bindValue(value) })),
     };
   }
+  if (returned instanceof PipelineHandle) {
+    // a handle the current trace does not know: cached from a previous
+    // trace or leaked from another pipeline
+    throw new Error(MSG_STALE_HANDLE);
+  }
   if (typeof returned === 'object' && !ArrayBuffer.isView(returned)) {
+    if (typeof returned.then === 'function') {
+      throw new Error(MSG_ASYNC_ORCHESTRATION);
+    }
+    const proto = Object.getPrototypeOf(returned);
+    if (proto !== Object.prototype && proto !== null) {
+      // generator objects, class instances: not a plain bag of handles
+      throw new Error(MSG_RETURN_SHAPE);
+    }
     const entries = [];
     for (const key in returned) {
       if (!returned.hasOwnProperty(key)) continue;
       entries.push({ key, binding: trace.bindValue(returned[key]) });
+    }
+    if (entries.length === 0) {
+      // `{ ...handle }` and friends arrive here as an empty object; an
+      // empty result set is never what the caller meant
+      throw new Error(MSG_RETURN_SHAPE);
     }
     return { kind: 'object', entries };
   }
@@ -292,8 +350,9 @@ class Pipeline {
   call(args) {
     if (this.destroyed) return Promise.reject(new Error(MSG_DESTROYED));
     const sampled = new Array(args.length);
+    const held = [];
     for (let i = 0; i < args.length; i++) {
-      sampled[i] = snapshotValue(args[i]);
+      sampled[i] = snapshotValue(args[i], held);
     }
     const promise = this._tail.then(() => {
       if (this.destroyed) throw new Error(MSG_DESTROYED);
@@ -330,6 +389,10 @@ class Pipeline {
       }
       return this._executeGeneric(this.plan, sampled);
     });
+    if (held.length > 0) {
+      // cloned texture snapshots live exactly as long as the call
+      promise.then(() => releaseSnapshots(held), () => releaseSnapshots(held));
+    }
     this._tail = promise.then(noop, noop);
     return promise;
   }
@@ -416,6 +479,10 @@ class Pipeline {
     activeTrace = trace;
     let returned;
     try {
+      const ctorName = this.fn.constructor && this.fn.constructor.name;
+      if (ctorName === 'AsyncFunction' || ctorName === 'GeneratorFunction' || ctorName === 'AsyncGeneratorFunction') {
+        throw new Error(MSG_ASYNC_ORCHESTRATION);
+      }
       returned = this.fn.apply({ constants: Object.assign({}, this.constants) }, argHandles);
     } finally {
       activeTrace = null;
@@ -432,6 +499,7 @@ class Pipeline {
       buffers,
       results,
       kernels,
+      held: trace.held,
     };
   }
 
@@ -490,7 +558,13 @@ class Pipeline {
       // (texture in the ping-pong seat, plain array from a pipeline arg)
       dynamicArguments: true,
     };
-    const optional = ['constants', 'constantTypes', 'precision', 'loopMaxIterations', 'strictIntegers', 'fixIntegerDivisionAccuracy', 'optimizeFloatMemory', 'tactic', 'functions', 'nativeFunctions', 'injectedNative', 'debug'];
+    const optional = ['constants', 'constantTypes', 'precision', 'loopMaxIterations', 'strictIntegers', 'fixIntegerDivisionAccuracy', 'optimizeFloatMemory', 'tactic', 'functions', 'nativeFunctions', 'injectedNative', 'debug', 'randomSeed', 'returnType'];
+    // types the USER declared pin the clone exactly as they pin the kernel;
+    // types inferred by a build must not -- the clone re-infers per plan
+    // seat (texture in the ping-pong seat, plain array from a pipeline arg)
+    if (kernel.declaredArgumentTypes) {
+      settings.argumentTypes = kernel.declaredArgumentTypes.slice();
+    }
     for (let i = 0; i < optional.length; i++) {
       const name = optional[i];
       if (kernel[name] !== null && kernel[name] !== undefined) {
@@ -588,6 +662,9 @@ class Pipeline {
       if (!gpuKernels || gpuKernels.indexOf(clone.kernel) !== -1) {
         clone.destroy();
       }
+    }
+    if (this.plan.held) {
+      releaseSnapshots(this.plan.held);
     }
     this.plan = null;
   }

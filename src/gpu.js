@@ -826,36 +826,49 @@ class GPU {
         try {
           // pipelines release their cloned kernel instances, which splice
           // themselves out of this.kernels -- so pipelines go first, then
-          // the surviving kernels
+          // the surviving kernels. Their releases queue behind in-flight
+          // call tails, so the whole teardown AWAITS them: gpu.destroy()
+          // resolving while a threaded executor's workers are still alive
+          // is a lie the caller acts on
+          let pipelinesDone = Promise.resolve();
           if (this.pipelines) {
             const pipelines = this.pipelines.slice();
-            for (let i = 0; i < pipelines.length; i++) {
-              pipelines[i].destroy();
-            }
+            pipelinesDone = Promise.all(pipelines.map(pipeline => Promise.resolve(pipeline.destroy()).catch(() => undefined)));
           }
-          // kernel.destroy() splices itself out of this.kernels, so walk a copy:
-          // mutating the list being indexed skipped every other kernel, and left
-          // this.kernels[0] undefined below, which meant a single-kernel GPU
-          // never released its WebGL context at all
-          const kernels = this.kernels.slice();
-          for (let i = 0; i < kernels.length; i++) {
-            kernels[i].destroy(true); // remove canvas if exists
-          }
-          // all kernels are associated with one context, go ahead and take care of it here
-          let firstKernel = kernels[0];
-          if (firstKernel) {
-            // if it is shortcut
-            if (firstKernel.kernel) {
-              firstKernel = firstKernel.kernel;
+          // a closure, not a method: destroy() is exercised against bare
+          // mock objects via GPU.prototype.destroy.call in the test suite,
+          // so `this` cannot be assumed to carry anything beyond data
+          const destroyKernels = () => {
+            try {
+              // kernel.destroy() splices itself out of this.kernels, so walk a copy:
+              // mutating the list being indexed skipped every other kernel, and left
+              // this.kernels[0] undefined below, which meant a single-kernel GPU
+              // never released its WebGL context at all
+              const kernels = this.kernels.slice();
+              for (let i = 0; i < kernels.length; i++) {
+                kernels[i].destroy(true); // remove canvas if exists
+              }
+              // all kernels are associated with one context, go ahead and take care of it here
+              let firstKernel = kernels[0];
+              if (firstKernel) {
+                // if it is shortcut
+                if (firstKernel.kernel) {
+                  firstKernel = firstKernel.kernel;
+                }
+                if (firstKernel.constructor.destroyContext) {
+                  firstKernel.constructor.destroyContext(this.context);
+                }
+              }
+            } catch (e) {
+              reject(e);
+              return;
             }
-            if (firstKernel.constructor.destroyContext) {
-              firstKernel.constructor.destroyContext(this.context);
-            }
-          }
+            resolve();
+          };
+          pipelinesDone.then(destroyKernels).catch(reject);
         } catch (e) {
           reject(e);
         }
-        resolve();
       }, 0);
     });
   }
