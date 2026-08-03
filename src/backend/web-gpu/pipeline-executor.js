@@ -24,6 +24,27 @@ const USAGE_COPY_DST = 0x0008;
 const USAGE_MAP_READ = 0x0001;
 const MAP_MODE_READ = 0x0001;
 
+// the generic executor reads back any result value exposing toArray() (an
+// Input resolves to its erected rows, not the Input instance); the fused
+// executors must resolve identical shapes. Resident handles never reach
+// this -- the compile and per-call guards degrade them first.
+function unwrapResultValue(value) {
+  if (value && typeof value.toArray === 'function') {
+    return value.toArray();
+  }
+  return value;
+}
+
+function checkStorageSize(device, byteLength, what) {
+  const limits = device.limits;
+  const max = Math.min(limits.maxStorageBufferBindingSize, limits.maxBufferSize);
+  if (byteLength > max) {
+    // degrade rather than throw the kernel's error: the generic executor
+    // routes through the kernel's own path, which reports it loudly
+    throw new FusionFallback(`${ what } needs ${ byteLength } bytes but this device allows ${ max } per storage buffer`);
+  }
+}
+
 function valueDimensions(value) {
   const dims = value instanceof Input ?
     Array.from(value.size) :
@@ -123,6 +144,18 @@ class WebGPUPipelineExecutor {
         }
       }
     }
+    // an argument bound ONLY in the results never gets an arg region, so the
+    // per-call checks below would miss it -- remember its seats and screen
+    // them exactly like step-bound ones
+    this._resultArgIndexes = [];
+    for (let i = 0; i < plan.results.entries.length; i++) {
+      const binding = plan.results.entries[i].binding;
+      if (binding.source !== 'pipelineArg') continue;
+      if (isResidentHandle(args[binding.index])) {
+        throw new FusionFallback(`pipeline argument ${ binding.index } is a GPU-resident handle; the fused encoder takes plain arrays`);
+      }
+      this._resultArgIndexes.push(binding.index);
+    }
     // a program is a plan kernel built for one argument-type signature: the
     // kernel's own build() ran (WGSL, compute pipeline, constant buffers),
     // but its run() never will — the executor encodes the passes itself
@@ -219,6 +252,10 @@ class WebGPUPipelineExecutor {
           if (!region) {
             const dims = valueDimensions(args[binding.index]);
             const flatLength = dims[0] * dims[1] * dims[2];
+            // over the storage-binding limit, createBuffer succeeds but the
+            // bind group fails ASYNC validation and every read maps zeros --
+            // the direct kernel throws here, so the fused path must too
+            checkStorageSize(device, flatLength * 4, `pipeline argument ${ binding.index }`);
             region = {
               dims,
               flatLength,
@@ -237,6 +274,7 @@ class WebGPUPipelineExecutor {
           if (!literal) {
             const dims = valueDimensions(binding.value);
             const flatLength = dims[0] * dims[1] * dims[2];
+            checkStorageSize(device, flatLength * 4, 'a literal array argument');
             const buffer = device.createBuffer({
               size: Math.max(flatLength * 4, 4),
               usage: USAGE_STORAGE,
@@ -461,6 +499,12 @@ class WebGPUPipelineExecutor {
         throw new FusionFallback(`pipeline argument ${ slot.index } is no longer of type ${ slot.type }`, true);
       }
     }
+    for (let i = 0; i < this._resultArgIndexes.length; i++) {
+      const index = this._resultArgIndexes[i];
+      if (isResidentHandle(args[index])) {
+        throw new FusionFallback(`pipeline argument ${ index } is now a GPU-resident handle`, true);
+      }
+    }
   }
 
   _writeScalar(u32, i32, f32, record, value) {
@@ -548,9 +592,9 @@ class WebGPUPipelineExecutor {
         const data = new Float32Array(mapped.slice(read.offset, read.offset + read.byteLength));
         values[i] = read.kernel._shapeOutput(data, read.output, read.componentCount);
       } else if (read.kind === 'arg') {
-        values[i] = args[read.index];
+        values[i] = unwrapResultValue(args[read.index]);
       } else {
-        values[i] = read.value;
+        values[i] = unwrapResultValue(read.value);
       }
     }
     if (results.kind === 'single') return values[0];

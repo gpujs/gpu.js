@@ -1,5 +1,5 @@
 const { assert, skip, test, module: describe } = require('qunit');
-const { GPU } = require('../../../src');
+const { GPU, input } = require('../../../src');
 
 describe('features: pipeline fused webgpu encoder');
 
@@ -407,5 +407,38 @@ webgpuTest('user kernels stay independently usable while their pipeline is fused
   assert.equal(solve.executorKind, 'fused-encoder');
   assertClose(assert, await dbl([5, 6, 7]), [10, 12, 14], 'direct call unaffected');
   assertClose(assert, await solve([2, 2, 2]), [8, 8, 8], 'pipeline again after direct use');
+  await gpu.destroy();
+});
+
+webgpuTest('a handle bound only in the results degrades with a named reason', async assert => {
+  if (!(await webgpuAdapter(assert))) return;
+  const gpu = new GPU({ mode: 'webgpu' });
+  const k = gpu.createKernel(function (a) { return a[this.thread.x] * 2; }, { output: [4] });
+  const p = gpu.createPipeline(function (x, y) { return { out: k(x), copy: y }; });
+  const first = await p([1, 2, 3, 4], [9, 8, 7, 6]);
+  assert.equal(p.executorKind, 'fused-encoder');
+  assert.deepEqual(Array.from(first.copy), [9, 8, 7, 6]);
+  const producer = gpu.createKernel(function () { return this.thread.x + 10; }, { output: [4], pipeline: true });
+  const handle = await producer();
+  // the result-only seat never gets an arg region, so without its own
+  // screen the fused path resolved a deleted buffer handle here
+  const second = await p([1, 2, 3, 4], handle);
+  assert.equal(p.executorKind, 'generic');
+  assert.ok(/GPU-resident handle/.test(p.fallbackReason), p.fallbackReason);
+  const copy = typeof second.copy.toArray === 'function' ? await second.copy.toArray() : second.copy;
+  assert.deepEqual(Array.from(copy), [10, 11, 12, 13]);
+  await gpu.destroy();
+});
+
+webgpuTest('an Input returned as a result resolves to plain rows, generic-parity', async assert => {
+  if (!(await webgpuAdapter(assert))) return;
+  const gpu = new GPU({ mode: 'webgpu' });
+  const g = gpu.createKernel(function (m) { return m[this.thread.y][this.thread.x] + 1; }, { output: [3, 2] });
+  const p = gpu.createPipeline(function (m) { return { orig: m, out: g(m) }; });
+  const res = await p(input(new Float32Array([0, 1, 2, 10, 11, 12]), [3, 2]));
+  assert.equal(p.executorKind, 'fused-encoder');
+  assert.deepEqual(Array.from(res.orig[0]), [0, 1, 2], 'the Input erected to rows, not the instance');
+  assert.deepEqual(Array.from(res.orig[1]), [10, 11, 12]);
+  assert.deepEqual(Array.from(res.out[1]), [11, 12, 13]);
   await gpu.destroy();
 });

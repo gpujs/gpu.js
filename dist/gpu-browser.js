@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.22.0
- * @date Mon Aug 03 2026 14:59:52 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 15:31:56 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -23326,6 +23326,10 @@
         this.recompilable = Boolean(recompilable);
       }
     };
+    function unwrapResultValue(value) {
+      if (value && typeof value.toArray === "function") return value.toArray();
+      return value;
+    }
     function valueDimensions(value) {
       const dims = value instanceof Input ? Array.from(value.size) : Array.from(utils.getDimensions(value));
       while (dims.length < 3) dims.push(1);
@@ -23853,7 +23857,7 @@
             if (read.kind === "step") {
               const data = f32.slice(read.base, read.base + read.count);
               values[i] = read.kernel._shapeOutput(data, read.output, read.componentCount);
-            } else if (read.kind === "arg") values[i] = args[read.index]; else values[i] = read.value;
+            } else if (read.kind === "arg") values[i] = unwrapResultValue(args[read.index]); else values[i] = unwrapResultValue(read.value);
           }
           if (results.kind === "single") return values[0];
           if (results.kind === "array") return values;
@@ -23894,6 +23898,15 @@
     const {FusionFallback: FusionFallback} = require_pipeline_executor$1();
     const USAGE_STORAGE = 128;
     const MAP_MODE_READ = 1;
+    function unwrapResultValue(value) {
+      if (value && typeof value.toArray === "function") return value.toArray();
+      return value;
+    }
+    function checkStorageSize(device, byteLength, what) {
+      const limits = device.limits;
+      const max = Math.min(limits.maxStorageBufferBindingSize, limits.maxBufferSize);
+      if (byteLength > max) throw new FusionFallback(`${what} needs ${byteLength} bytes but this device allows ${max} per storage buffer`);
+    }
     function valueDimensions(value) {
       const dims = value instanceof Input ? Array.from(value.size) : Array.from(utils.getDimensions(value));
       while (dims.length < 3) dims.push(1);
@@ -23961,6 +23974,13 @@
               const binding = bindings[j];
               if (binding.source === "pipelineArg" && isResidentHandle(args[binding.index])) throw new FusionFallback(`pipeline argument ${binding.index} is a GPU-resident handle; the fused encoder takes plain arrays`);
             }
+          }
+          this._resultArgIndexes = [];
+          for (let i = 0; i < plan.results.entries.length; i++) {
+            const binding = plan.results.entries[i].binding;
+            if (binding.source !== "pipelineArg") continue;
+            if (isResidentHandle(args[binding.index])) throw new FusionFallback(`pipeline argument ${binding.index} is a GPU-resident handle; the fused encoder takes plain arrays`);
+            this._resultArgIndexes.push(binding.index);
           }
           const programs = new Map;
           const cloneClaimed = new Array(plan.kernels.length).fill(false);
@@ -24045,6 +24065,7 @@
                 if (!region) {
                   const dims = valueDimensions(args[binding.index]);
                   const flatLength = dims[0] * dims[1] * dims[2];
+                  checkStorageSize(device, flatLength * 4, `pipeline argument ${binding.index}`);
                   region = {
                     dims: dims,
                     flatLength: flatLength,
@@ -24063,6 +24084,7 @@
                 if (!literal) {
                   const dims = valueDimensions(binding.value);
                   const flatLength = dims[0] * dims[1] * dims[2];
+                  checkStorageSize(device, flatLength * 4, "a literal array argument");
                   const buffer = device.createBuffer({
                     size: Math.max(flatLength * 4, 4),
                     usage: USAGE_STORAGE,
@@ -24255,6 +24277,10 @@
             if (dims[0] !== region.dims[0] || dims[1] !== region.dims[1] || dims[2] !== region.dims[2]) throw new FusionFallback(`pipeline argument ${index} changed size from [${region.dims.join(", ")}] to [${dims.join(", ")}]`, true);
           }
           for (const slot of this._argScalarSlots.values()) if (!scalarMatches(slot.type, args[slot.index])) throw new FusionFallback(`pipeline argument ${slot.index} is no longer of type ${slot.type}`, true);
+          for (let i = 0; i < this._resultArgIndexes.length; i++) {
+            const index = this._resultArgIndexes[i];
+            if (isResidentHandle(args[index])) throw new FusionFallback(`pipeline argument ${index} is now a GPU-resident handle`, true);
+          }
         }
         _writeScalar(u32, i32, f32, record, value) {
           const slot = record.offset / 4;
@@ -24311,7 +24337,7 @@
             if (read.kind === "step") {
               const data = new Float32Array(mapped.slice(read.offset, read.offset + read.byteLength));
               values[i] = read.kernel._shapeOutput(data, read.output, read.componentCount);
-            } else if (read.kind === "arg") values[i] = args[read.index]; else values[i] = read.value;
+            } else if (read.kind === "arg") values[i] = unwrapResultValue(args[read.index]); else values[i] = unwrapResultValue(read.value);
           }
           if (results.kind === "single") return values[0];
           if (results.kind === "array") return values;

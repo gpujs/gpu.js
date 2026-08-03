@@ -47,6 +47,15 @@ class FusionFallback extends Error {
   }
 }
 
+// generic-executor parity: any result value exposing toArray() reads back
+// (an Input resolves to its erected rows, not the Input instance)
+function unwrapResultValue(value) {
+  if (value && typeof value.toArray === 'function') {
+    return value.toArray();
+  }
+  return value;
+}
+
 function valueDimensions(value) {
   const dims = value instanceof Input ?
     Array.from(value.size) :
@@ -728,9 +737,9 @@ class WebAssemblyPipelineExecutor {
         const data = f32.slice(read.base, read.base + read.count);
         values[i] = read.kernel._shapeOutput(data, read.output, read.componentCount);
       } else if (read.kind === 'arg') {
-        values[i] = args[read.index];
+        values[i] = unwrapResultValue(args[read.index]);
       } else {
-        values[i] = read.value;
+        values[i] = unwrapResultValue(read.value);
       }
     }
     if (results.kind === 'single') return values[0];
