@@ -399,9 +399,12 @@ export interface IKernelMapRunShortcut<SubKernelType> extends IKernelRunShortcut
  * Opaque stand-in for an intermediate result during pipeline orchestration.
  * Reading elements or properties, or using it in arithmetic or conditions,
  * throws at build time; its only legal uses are as a kernel argument and in
- * the orchestration function's return value.
+ * the orchestration function's return value.  Typed `any` because the same
+ * kernel shortcut that normally returns values returns handles while a trace
+ * is open — a distinction the type system cannot express; the trace enforces
+ * it at build time with named errors.
  */
-export interface IPipelineHandle {}
+export type IPipelineHandle = any;
 
 export type PipelineFunction = (this: { constants: IConstantsThis }, ...args: IPipelineHandle[]) =>
   IPipelineHandle | IPipelineHandle[] | { [key: string]: IPipelineHandle };
@@ -413,8 +416,21 @@ export interface IPipelineSettings {
 
 export type PipelineResult = KernelOutput | KernelOutput[] | { [key: string]: KernelOutput };
 
+/** the underlying Pipeline instance behind an IPipelineRunShortcut */
+export interface IPipeline {
+  constants: IConstants;
+  destroyed: boolean;
+  executorKind: string;
+  fallbackReason: string | null;
+  plan: object | null;
+  call(args: KernelVariable[] | IArguments): Promise<PipelineResult>;
+  setConstants(constants: IConstants): this;
+  destroy(): Promise<void>;
+}
+
 export interface IPipelineRunShortcut {
   (...args: KernelVariable[]): Promise<PipelineResult>;
+  pipeline: IPipeline;
   setConstants(constants: IConstants): this;
   destroy(): Promise<void>;
   /**

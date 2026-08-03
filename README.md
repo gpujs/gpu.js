@@ -166,6 +166,7 @@ Notice documentation is off?  We do try our hardest, but if you find something,
 * [Dealing With Transpilation](#dealing-with-transpilation)
 * [WebGPU](#webgpu)
 * [WebAssembly](#webassembly)
+* [Pipeline Compilation](#pipeline-compilation)
 * [Asynchronous Kernels](#asynchronous-kernels)
 * [Full API reference](#full-api-reference)
 * [How possible in node](#how-possible-in-node)
@@ -1352,6 +1353,53 @@ const c = kernel(a, b);        // synchronous, SIMD
 A kernel is priced by the work it describes.  A scatter algorithm rewritten gather-style so every thread computes its own cell — compaction as a binary search per output slot, a histogram as a per-bin scan — does log-factor or bin-count times the reads of the plain loop it replaces; a GL backend hides that multiplier under thousands of parallel threads, while cpu and webasm execute it serially and pay it in full.  Measured against hand-written JavaScript of the *same* transposed algorithm, the cpu backend is within 2% and webasm within ±1.5× (its SIMD gather is often faster) — the cost is the transposition, not the transpilation.  When cpu or webasm is a likely destination, prefer the direct algorithm over the GPU-shaped rewrite.
 
 `GPU.isWebAssemblySupported` reports the platform answer.  `pipeline: true` is accepted the way the cpu backend accepts it: there is no device memory to pipeline into, so the result is a plain typed array (a fresh copy per call) that passes straight into downstream kernels.  Not yet supported: graphical mode, kernel maps, and texture/image arguments all **degrade to the cpu backend** — in auto modes and under explicit `mode: 'webasm'` alike — the console warning names the reason and `kernel.kernel.fallbackReason` carries it queryably; a graphical fallback renders into the kernel's own canvas; `toString()` throws.  Threaded runs accept a `poolSize` setting to cap the worker pool (defaults to `hardwareConcurrency`, or 4 when it cannot be read).  `precision: 'unsigned'` is accepted and computed as single precision — wasm has no packed storage to be lossy in.
+
+## Pipeline Compilation
+
+**New!**
+
+`gpu.createPipeline` compiles a whole multi-kernel computation — loops included — into one callable plan:
+
+```js
+const sweep = gpu.createKernel(function(u, q) {
+  const x = this.thread.x, y = this.thread.y;
+  if (x === 0 || y === 0 || x === this.constants.hi || y === this.constants.hi) return u[y][x];
+  return 0.25 * (u[y][x - 1] + u[y][x + 1] + u[y - 1][x] + u[y + 1][x] + q[y][x]);
+}, { constants: { hi: 1023 }, output: [1024, 1024] });
+
+const solve = gpu.createPipeline(function(u, q) {
+  for (let s = 0; s < this.constants.sweeps; s++) {
+    u = sweep(u, q);
+  }
+  return u;
+}, { constants: { sweeps: 512 } });
+
+const result = await solve(u0, q);   // one launch, fences inside, one readback
+```
+
+The orchestration function runs **once**, at build time (the first call), with opaque handles standing in for its arguments.  The kernel calls it makes are recorded — nothing executes — and plain JS control flow simply unrolls: the loop above records 512 steps over ONE kernel and two alternating buffers (a step that would overwrite data a later step still reads gets double-buffering automatically; liveness is static because the unrolled plan is a DAG).  Every later call executes the compiled plan without re-entering your code, intermediates never leave device memory, and you pay one readback at the end.  Return a handle, an Array of handles, or a plain object of handles — the call resolves to the same shape holding plain results.  Not to be confused with [Pipelining](#pipelining): `pipeline: true` keeps one kernel's *output* resident and leaves the orchestration to you per call; `createPipeline` compiles the orchestration itself.  Inner kernels do **not** need `pipeline: true` — intermediate residency is the pipeline's business, and kernels stay shared between pipelines and direct use.
+
+Because orchestration is tracing, not running, these are the rules — each violation throws at build, naming itself:
+
+* **A handle cannot be read.**  Elements, properties, `.toArray()` — anything that would need the value throws `pipeline intermediate results cannot be read during orchestration`.  A handle's only legal destinations are a kernel argument and the return value.
+* **A handle cannot be used in arithmetic or a condition.**  `if (u > 0)`, `u + 1`, `` `${u}` `` — anything that coerces throws.  Loop bounds and branches must come from `this.constants`, pipeline settings, or plain captured values.
+* **`Math.random()` throws during orchestration.**  A trace-time draw would freeze one number into every later call; orchestration must be deterministic.  `Math.random()` *inside kernels* is untouched — seeds are drawn per call, per step, at execution time.
+* **Only kernel calls are recorded, and only kernels created by the same `GPU` instance.**  Anything else a handle escapes into throws where detection is possible — handles are frozen, own-property-free class instances, so nearly any use trips a trap — but a function that merely stores a handle without touching it is beyond detection; what it stored is useless anyway.
+* **Non-handle values freeze into the plan at trace time.**  `this.constants` are trace-time facts (`sweeps: 512` above *is* the unroll count) — change them with `pipeline.setConstants({...})`, which invalidates the plan and re-traces on the next call, exactly the settings contract kernels already follow.  Closure-captured values behave the same way: snapshotted when the trace reads them, like constants.  Arguments passed to the *pipeline* are sampled at call time and uploaded once per call.
+
+Calling a pipeline **always returns a Promise** — the [async contract](#asynchronous-kernels) — and concurrent calls to one pipeline serialize in call order, like threaded kernels.  `pipeline.destroy()` releases the plan's buffers and instances, and `gpu.destroy()` reaches pipelines the way it reaches kernels.
+
+Every backend runs pipelines.  The reference path (`executorKind: 'generic'`) walks the plan through the normal kernel machinery — private per-pipeline kernel instances with `pipeline: true` forced on, your kernel's settings never observably touched — so on GL it is textures end-to-end.  On **webasm** the plan *fuses*: every step compiles over one shared `WebAssembly.Memory` laid out `[pipeline args | plan buffers]`, passes run back-to-back with intermediates never copied out between steps (`'fused-sync'`), and where wasm threads are available the worker pool executes the *whole plan* per worker with Atomics-based barriers between steps — one dispatch per pipeline call, no main-thread round trip per pass (`'fused-threaded'`).  Anything the webasm backend cannot take degrades to the generic executor under its usual contract: the reason is queryable at `pipeline.fallbackReason`, and `pipeline.executorKind` tells you which executor actually ran.
+
+What the fusion buys, measured on the gauntlet's jacobi and heat benches rewritten via `createPipeline` (checksums identical to the per-pass versions): PLACEHOLDER-1× on heat threaded, PLACEHOLDER-2× on jacobi, against the same kernels called per pass on webasm.  The per-pass costs it deletes are exactly the ones that dominate short passes — a task round-trip through the worker pool per call, argument re-upload, and a readback per step — leaving the arithmetic, which was already SIMD.
+
+Not in v1, stated plainly:
+
+* **No mid-plan readback.**  The plan runs start to finish; you cannot inspect an intermediate and stop early.  The name `this.check` on the orchestration context is **reserved** for this: the future design records `this.check(handle, predicate)` as a checkpoint step where the executor reads back a small reduction every N passes and ends the plan early when the predicate answers converged — residual thresholds in iterative solvers, without surrendering the fused loop.  Nothing you write today should put a `check` on the orchestration `this`.
+* **No graphical kernels inside pipelines** — throws at build.
+* **No kernel maps inside pipelines** — throws at build.
+* **No webgpu command-encoder lowering** — webgpu runs pipelines through the generic executor (correct, one readback, but one submit per step); single-encoder lowering is future work.
+* **`toString()` is deferred** — a pipeline cannot be exported as source yet.
 
 ## Asynchronous Kernels
 
