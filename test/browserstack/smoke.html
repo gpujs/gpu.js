@@ -57,7 +57,7 @@
   async function test(name, fn) {
     let gpu = null;
     try {
-      const made = fn(function track(instance) { gpu = instance; return instance; });
+      const made = await fn(function track(instance) { gpu = instance; return instance; });
       if (made === 'skip') {
         record(name, 'skip', 'not supported here');
       } else {
@@ -93,13 +93,17 @@
       isKernelMapSupported: GPU.isKernelMapSupported,
       isOffscreenCanvasSupported: GPU.isOffscreenCanvasSupported,
       isSinglePrecisionSupported: GPU.isSinglePrecisionSupported,
-      isGPUHTMLImageArraySupported: GPU.isGPUHTMLImageArraySupported
+      isGPUHTMLImageArraySupported: GPU.isGPUHTMLImageArraySupported,
+      isWebAssemblySupported: GPU.isWebAssemblySupported,
+      sharedArrayBuffer: typeof SharedArrayBuffer !== 'undefined',
+      crossOriginIsolated: !!self.crossOriginIsolated
     };
     document.getElementById('env').textContent = JSON.stringify(results.env, null, 2);
 
     const modes = ['cpu'];
     if (GPU.isWebGLSupported) modes.push('webgl');
     if (GPU.isWebGL2Supported) modes.push('webgl2');
+    if (GPU.isWebAssemblySupported) modes.push('webasm');
     results.env.modes = modes;
 
     // ---- library-level checks -------------------------------------------
@@ -117,6 +121,9 @@
     // ---- per-mode checks -------------------------------------------------
     for (const mode of modes) {
       const isGPUMode = mode !== 'cpu';
+      // webasm accepts pipeline but returns plain typed arrays (the cpu
+      // contract); only the GL modes hand back Texture objects
+      const isTextureMode = mode === 'webgl' || mode === 'webgl2';
       const label = function (name) { return '[' + mode + '] ' + name; };
 
       await test(label('1D kernel adds two arrays'), function (track) {
@@ -337,7 +344,7 @@
       });
 
       await test(label('texture pipeline round-trip'), function (track) {
-        if (!isGPUMode) return 'skip';
+        if (!isTextureMode) return 'skip';
         const gpu = track(new GPU({ mode: mode }));
         const kernel = gpu.createKernel(function (a) {
           return a[this.thread.x] * 2;
@@ -405,6 +412,61 @@
         const out = kernel([2, 4, 6, 8]);
         [1, 2, 3, 4].forEach(function (expected, i) {
           assertClose(out[i], expected, 'index ' + i, 0.05);
+        });
+      });
+
+      await test(label('webasm kernels actually run on WebAssembly'), function (track) {
+        if (mode !== 'webasm') return 'skip';
+        const gpu = track(new GPU({ mode: mode }));
+        const kernel = gpu.createKernel(function (a) {
+          let acc = 0;
+          for (let i = 0; i < 8; i++) {
+            if (a[this.thread.x] > i) acc += 1;
+          }
+          return acc;
+        }, { output: [8] });
+        const out = kernel([0, 1, 2, 3, 4, 5, 6, 7]);
+        [0, 1, 2, 3, 4, 5, 6, 7].forEach(function (expected, i) {
+          assertClose(out[i], expected, 'index ' + i);
+        });
+        assert(kernel.kernel.constructor.name === 'WebAssemblyKernel',
+          'silently degraded to ' + kernel.kernel.constructor.name +
+          (kernel.kernel.fallbackReason ? ' (' + kernel.kernel.fallbackReason + ')' : ''));
+        // which execution path this device actually took (simd vs scalar)
+        results.env.webasmRunPath = kernel.kernel._lastRunPath;
+      });
+
+      await test(label('webasm pipeline returns a plain array that chains'), function (track) {
+        if (mode !== 'webasm') return 'skip';
+        const gpu = track(new GPU({ mode: mode }));
+        const first = gpu.createKernel(function (a) {
+          return a[this.thread.x] * 2;
+        }, { output: [4], pipeline: true });
+        const handle = first([1, 2, 3, 4]);
+        assert(handle && typeof handle.length === 'number', 'pipeline result is not array-like');
+        assert(first.kernel.constructor.name === 'WebAssemblyKernel', 'pipeline degraded off webasm');
+        const second = gpu.createKernel(function (a) {
+          return a[this.thread.x] + 1;
+        }, { output: [4] });
+        const out = second(handle);
+        [3, 5, 7, 9].forEach(function (expected, i) {
+          assertClose(out[i], expected, 'index ' + i);
+        });
+      });
+
+      await test(label('asyncMode resolves without SharedArrayBuffer'), async function (track) {
+        if (mode !== 'webasm') return 'skip';
+        // BrowserStack pages are not cross-origin isolated, so this is the
+        // no-threads path: the async contract must still hold
+        const gpu = track(new GPU({ mode: mode }));
+        const kernel = gpu.createKernel(function (a) {
+          return a[this.thread.x] * 3;
+        }, { output: [4], asyncMode: true });
+        const pending = kernel([1, 2, 3, 4]);
+        assert(typeof pending.then === 'function', 'asyncMode did not return a Promise');
+        const out = await pending;
+        [3, 6, 9, 12].forEach(function (expected, i) {
+          assertClose(out[i], expected, 'index ' + i);
         });
       });
 
