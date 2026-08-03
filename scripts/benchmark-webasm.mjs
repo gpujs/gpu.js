@@ -13,8 +13,10 @@
 // - median of >= 9 runs, warmup excluded; cpu capped to 3 runs when a
 //   single run exceeds 2 s
 // - webasm rows: scalar (run_simd disabled through the same dispatch the
-//   kernel uses), SIMD (the sync default), and threaded (asyncMode, the
-//   worker pool; result copied out of shared memory like any real caller)
+//   kernel uses), SIMD (the sync default), and threaded+SIMD (asyncMode,
+//   the worker pool -- each worker runs the same run_simd export, so this
+//   row is both axes compounded; result copied out of shared memory like
+//   any real caller)
 // - the divergent workload exists to price mask predication honestly:
 //   both branch sides execute for every lane
 
@@ -162,7 +164,7 @@ async function main() {
         return kernel;
       }, (k, i) => k.apply(null, i)],
       ['webasm SIMD', () => make('webasm'), (k, i) => k.apply(null, i)],
-      ['webasm threaded', () => make('webasm', { asyncMode: true }), (k, i) => k.apply(null, i)],
+      ['webasm threaded+SIMD', () => make('webasm', { asyncMode: true }), (k, i) => k.apply(null, i)],
     ];
     for (const [label, makeKernel, runKernel] of configs) {
       try {
@@ -179,7 +181,7 @@ async function main() {
     rows.push(row);
   }
 
-  const labels = ['cpu', 'headlessgl', 'webasm scalar', 'webasm SIMD', 'webasm threaded'];
+  const labels = ['cpu', 'headlessgl', 'webasm scalar', 'webasm SIMD', 'webasm threaded+SIMD'];
   console.log(`\n| Workload | ${ labels.join(' | ') } |`);
   console.log(`|---|${ labels.map(() => '---').join('|') }|`);
   for (const row of rows) {
