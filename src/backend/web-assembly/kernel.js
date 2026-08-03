@@ -147,6 +147,12 @@ class WebAssemblyKernel extends Kernel {
     // a second call must not overwrite the args region mid-run. It tracks
     // settlement, never failure, so one rejected run cannot wedge the kernel
     this._threadedTail = Promise.resolve();
+    // how many threaded runs are queued or in flight on that chain; zero
+    // means the shared args region is quiescent and a call may write it
+    // directly instead of staging copies. The epoch fences destroy(): a
+    // settle from before the reset must not decrement the fresh counter
+    this._threadedBusy = 0;
+    this._threadedEpoch = 0;
   }
 
   initCanvas() {
@@ -832,18 +838,46 @@ class WebAssemblyKernel extends Kernel {
   _runThreaded(args) {
     const entry = this._active;
     const { layout, cells } = entry;
-    const staged = [];
-    for (const name in layout.arrays) {
-      const record = layout.arrays[name];
-      const value = args[record.index];
-      const flat = new Float32Array(record.flatLength);
-      utils.flattenTo(value instanceof Input ? value.value : value, flat);
-      staged.push({ record, flat });
-    }
-    const scalarValues = [];
-    for (const name in layout.scalars) {
-      const record = layout.scalars[name];
-      scalarValues.push({ record, value: args[record.index] });
+    // arguments must be sampled at call time either way; when no run is
+    // queued or in flight the shared args region is quiescent, so they can
+    // flatten straight into wasm memory and skip the staging copy entirely
+    const direct = this._threadedBusy === 0;
+    let staged = null;
+    let scalarValues = null;
+    if (direct) {
+      for (const name in layout.arrays) {
+        const record = layout.arrays[name];
+        const value = args[record.index];
+        utils.flattenTo(
+          value instanceof Input ? value.value : value,
+          entry.f32.subarray(record.offset / 4, record.offset / 4 + record.flatLength)
+        );
+      }
+      for (const name in layout.scalars) {
+        const record = layout.scalars[name];
+        const value = args[record.index];
+        if (record.type === 'Integer') {
+          entry.i32[record.offset / 4] = value | 0;
+        } else if (record.type === 'Boolean') {
+          entry.i32[record.offset / 4] = value ? 1 : 0;
+        } else {
+          entry.f32[record.offset / 4] = value;
+        }
+      }
+    } else {
+      staged = [];
+      for (const name in layout.arrays) {
+        const record = layout.arrays[name];
+        const value = args[record.index];
+        const flat = new Float32Array(record.flatLength);
+        utils.flattenTo(value instanceof Input ? value.value : value, flat);
+        staged.push({ record, flat });
+      }
+      scalarValues = [];
+      for (const name in layout.scalars) {
+        const record = layout.scalars[name];
+        scalarValues.push({ record, value: args[record.index] });
+      }
     }
     let seed = 0;
     if (this.usesRandom) {
@@ -858,23 +892,26 @@ class WebAssemblyKernel extends Kernel {
     const pool = this._pool;
     const componentCount = this.componentCount;
     const output = Array.from(this.output);
+    this._threadedBusy++;
     const result = this._threadedTail.then(() => {
       // destroy() scrubs entries; a run queued behind the tail must reject
       // cleanly rather than dereference the scrubbed views
       if (!entry.f32) {
         throw new Error('WebAssembly kernel was destroyed');
       }
-      for (let i = 0; i < staged.length; i++) {
-        entry.f32.set(staged[i].flat, staged[i].record.offset / 4);
-      }
-      for (let i = 0; i < scalarValues.length; i++) {
-        const { record, value } = scalarValues[i];
-        if (record.type === 'Integer') {
-          entry.i32[record.offset / 4] = value | 0;
-        } else if (record.type === 'Boolean') {
-          entry.i32[record.offset / 4] = value ? 1 : 0;
-        } else {
-          entry.f32[record.offset / 4] = value;
+      if (staged) {
+        for (let i = 0; i < staged.length; i++) {
+          entry.f32.set(staged[i].flat, staged[i].record.offset / 4);
+        }
+        for (let i = 0; i < scalarValues.length; i++) {
+          const { record, value } = scalarValues[i];
+          if (record.type === 'Integer') {
+            entry.i32[record.offset / 4] = value | 0;
+          } else if (record.type === 'Boolean') {
+            entry.i32[record.offset / 4] = value ? 1 : 0;
+          } else {
+            entry.f32[record.offset / 4] = value;
+          }
         }
       }
       const workerCount = Math.min(pool.size, Math.ceil(cells / 4096));
@@ -902,7 +939,11 @@ class WebAssemblyKernel extends Kernel {
         return this._shapeOutput(data, output, componentCount);
       });
     });
-    this._threadedTail = result.then(() => undefined, () => undefined);
+    const epoch = this._threadedEpoch;
+    const settle = () => {
+      if (this._threadedEpoch === epoch) this._threadedBusy--;
+    };
+    this._threadedTail = result.then(settle, settle);
     return result;
   }
 
@@ -961,6 +1002,8 @@ class WebAssemblyKernel extends Kernel {
       this._pool = null;
     }
     this._threadedTail = Promise.resolve();
+    this._threadedBusy = 0;
+    this._threadedEpoch++;
     // scrub entries rather than only dropping the map: anything still
     // holding the kernel (the run shortcut closure, user code) would
     // otherwise keep every cached wasm memory alive with it (#870). The

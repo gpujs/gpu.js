@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.22.0
- * @date Mon Aug 03 2026 09:32:55 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 12:06:42 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -18416,6 +18416,8 @@
           this._lastRunPath = null;
           this._pool = null;
           this._threadedTail = Promise.resolve();
+          this._threadedBusy = 0;
+          this._threadedEpoch = 0;
         }
         initCanvas() {
           if (this.graphical && typeof document !== "undefined") return document.createElement("canvas");
@@ -18917,24 +18919,40 @@
         _runThreaded(args) {
           const entry = this._active;
           const {layout: layout, cells: cells} = entry;
-          const staged = [];
-          for (const name in layout.arrays) {
-            const record = layout.arrays[name];
-            const value = args[record.index];
-            const flat = new Float32Array(record.flatLength);
-            utils.flattenTo(value instanceof Input ? value.value : value, flat);
-            staged.push({
-              record: record,
-              flat: flat
-            });
-          }
-          const scalarValues = [];
-          for (const name in layout.scalars) {
-            const record = layout.scalars[name];
-            scalarValues.push({
-              record: record,
-              value: args[record.index]
-            });
+          const direct = this._threadedBusy === 0;
+          let staged = null;
+          let scalarValues = null;
+          if (direct) {
+            for (const name in layout.arrays) {
+              const record = layout.arrays[name];
+              const value = args[record.index];
+              utils.flattenTo(value instanceof Input ? value.value : value, entry.f32.subarray(record.offset / 4, record.offset / 4 + record.flatLength));
+            }
+            for (const name in layout.scalars) {
+              const record = layout.scalars[name];
+              const value = args[record.index];
+              if (record.type === "Integer") entry.i32[record.offset / 4] = value | 0; else if (record.type === "Boolean") entry.i32[record.offset / 4] = value ? 1 : 0; else entry.f32[record.offset / 4] = value;
+            }
+          } else {
+            staged = [];
+            for (const name in layout.arrays) {
+              const record = layout.arrays[name];
+              const value = args[record.index];
+              const flat = new Float32Array(record.flatLength);
+              utils.flattenTo(value instanceof Input ? value.value : value, flat);
+              staged.push({
+                record: record,
+                flat: flat
+              });
+            }
+            scalarValues = [];
+            for (const name in layout.scalars) {
+              const record = layout.scalars[name];
+              scalarValues.push({
+                record: record,
+                value: args[record.index]
+              });
+            }
           }
           let seed = 0;
           if (this.usesRandom) seed = this.randomSeed !== null ? this.randomSeed >>> 0 : Math.random() * 4294967296 >>> 0;
@@ -18943,12 +18961,15 @@
           const pool = this._pool;
           const componentCount = this.componentCount;
           const output = Array.from(this.output);
+          this._threadedBusy++;
           const result = this._threadedTail.then(() => {
             if (!entry.f32) throw new Error("WebAssembly kernel was destroyed");
-            for (let i = 0; i < staged.length; i++) entry.f32.set(staged[i].flat, staged[i].record.offset / 4);
-            for (let i = 0; i < scalarValues.length; i++) {
-              const {record: record, value: value} = scalarValues[i];
-              if (record.type === "Integer") entry.i32[record.offset / 4] = value | 0; else if (record.type === "Boolean") entry.i32[record.offset / 4] = value ? 1 : 0; else entry.f32[record.offset / 4] = value;
+            if (staged) {
+              for (let i = 0; i < staged.length; i++) entry.f32.set(staged[i].flat, staged[i].record.offset / 4);
+              for (let i = 0; i < scalarValues.length; i++) {
+                const {record: record, value: value} = scalarValues[i];
+                if (record.type === "Integer") entry.i32[record.offset / 4] = value | 0; else if (record.type === "Boolean") entry.i32[record.offset / 4] = value ? 1 : 0; else entry.f32[record.offset / 4] = value;
+              }
             }
             const workerCount = Math.min(pool.size, Math.ceil(cells / 4096));
             let chunk = Math.ceil(cells / workerCount) & -4;
@@ -18971,7 +18992,11 @@
               return this._shapeOutput(data, output, componentCount);
             });
           });
-          this._threadedTail = result.then(() => void 0, () => void 0);
+          const epoch = this._threadedEpoch;
+          const settle = () => {
+            if (this._threadedEpoch === epoch) this._threadedBusy--;
+          };
+          this._threadedTail = result.then(settle, settle);
           return result;
         }
         _shapeOutput(data, output, componentCount) {
@@ -19021,6 +19046,8 @@
             this._pool = null;
           }
           this._threadedTail = Promise.resolve();
+          this._threadedBusy = 0;
+          this._threadedEpoch++;
           for (const entry of this._moduleCache.values()) {
             entry.shared = false;
             this._releaseEntry(entry);
