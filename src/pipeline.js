@@ -163,6 +163,8 @@ class PipelineTrace {
  */
 function snapshotValue(value, held) {
   if (!value || typeof value !== 'object') return value;
+  // before the texture duck-type check: Input also has a toArray()
+  if (value instanceof Input) return new Input(snapshotValue(value.value, held), value.size);
   if (typeof value.delete === 'function' || typeof value.toArray === 'function') {
     // a mutable (immutable: false) texture is re-rendered IN PLACE by its
     // kernel's next call, so passing it through uncopied would sample the
@@ -177,7 +179,6 @@ function snapshotValue(value, held) {
   }
   if (ArrayBuffer.isView(value)) return value.slice(0);
   if (Array.isArray(value)) return value.map(v => snapshotValue(v, held));
-  if (value instanceof Input) return new Input(snapshotValue(value.value, held), value.size);
   return value;
 }
 
@@ -314,7 +315,9 @@ class Pipeline {
      * step-by-step through the normal kernel machinery on every backend;
      * 'fused-sync' is the webasm executor running every step over one shared
      * wasm memory; 'fused-threaded' is that executor with pool workers
-     * walking the whole plan on an Atomics barrier
+     * walking the whole plan on an Atomics barrier; 'fused-encoder' is the
+     * webgpu executor recording every step into one command encoder over
+     * persistent storage buffers
      * @type {String}
      */
     this.executorKind = 'generic';
@@ -354,28 +357,30 @@ class Pipeline {
     for (let i = 0; i < args.length; i++) {
       sampled[i] = snapshotValue(args[i], held);
     }
-    const promise = this._tail.then(() => {
+    const promise = this._tail.then(async () => {
       if (this.destroyed) throw new Error(MSG_DESTROYED);
       if (!this.plan) {
         this.plan = this._buildPlan();
         this._executor = undefined;
       }
       if (this._executor === undefined) {
-        this._prepareExecutor(sampled);
+        // synchronous for webasm; a promise for the webgpu encoder, whose
+        // compile awaits the device
+        await this._prepareExecutor(sampled);
       }
       if (this._executor) {
         try {
-          return this._guardAsync(this._executor.execute(sampled));
+          return await this._guardAsync(this._executor.execute(sampled));
         } catch (e) {
           if (!e || !e.isFusionFallback) throw e;
           this._dropExecutor();
           if (e.recompilable) {
             // argument sizes/types drifted: recompile fused for the new
             // signature, like the kernel's own per-size-signature rebuild
-            this._prepareExecutor(sampled);
+            await this._prepareExecutor(sampled);
             if (this._executor) {
               try {
-                return this._guardAsync(this._executor.execute(sampled));
+                return await this._guardAsync(this._executor.execute(sampled));
               } catch (e2) {
                 if (!e2 || !e2.isFusionFallback) throw e2;
                 this._dropExecutor();
@@ -504,17 +509,30 @@ class Pipeline {
   }
 
   /**
-   * Attempts the webasm fused executor for the current plan against this
-   * call's sampled arguments. Anything the webasm backend cannot take —
-   * including a non-webasm backend — degrades to the generic executor with
-   * the reason recorded, its usual degradation contract.
+   * Attempts the backend's fused executor for the current plan against this
+   * call's sampled arguments: the single-encoder lowering on webgpu (async —
+   * kernel builds await the device), the wasm-memory lowering everywhere
+   * else. Anything the fused compile cannot take degrades to the generic
+   * executor with the reason recorded, its usual degradation contract.
    * @param {Array} args - sampled pipeline arguments; sizes/types bake into
    * the fused layout
+   * @returns {Promise|undefined}
    */
   _prepareExecutor(args) {
     if (this._fusionDisabled) {
       this._executor = false;
       return;
+    }
+    const kernels = this.plan.kernels;
+    if (kernels.length > 0 && kernels[0].clone.kernel.constructor.mode === 'webgpu') {
+      const { WebGPUPipelineExecutor } = require('./backend/web-gpu/pipeline-executor');
+      return WebGPUPipelineExecutor.compile(this, this.plan, args).then(executor => {
+        this._executor = executor;
+        this.executorKind = executor.kind;
+        this.fallbackReason = null;
+      }, e => {
+        this._degrade((e && e.message) || 'fused executor unavailable');
+      });
     }
     try {
       const { WebAssemblyPipelineExecutor } = require('./backend/web-assembly/pipeline-executor');

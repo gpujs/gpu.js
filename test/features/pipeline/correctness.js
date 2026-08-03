@@ -8,8 +8,9 @@ describe('features: pipeline correctness');
 // browser with an adapter). executorKind is asserted per mode: webasm
 // compiles these plans to the fused executor, and a forced-generic webasm
 // variant keeps the correctness-reference executor covered on that backend
-// too. webgpu has no fused lowering in v1, so its rows pin the generic
-// executor over buffer-handle intermediates.
+// too. webgpu rows force the generic executor so the correctness reference
+// stays covered over buffer-handle intermediates; the fused-encoder lowering
+// has its own suite in fused-webgpu.js.
 
 function assertClose(assert, actual, expected, label) {
   const values = Array.from(actual);
@@ -214,8 +215,8 @@ eachMode('2d output kernels', async (assert, mode, kind) => {
 });
 
 // the rows above force the generic executor; this one leaves fusion enabled
-// so the webasm-only fused compile must decline webgpu by itself
-(GPU.isWebGPUSupported ? test : skip)('webgpu degrades naturally to the generic executor', async assert => {
+// so executor selection must land webgpu on its own fused encoder
+(GPU.isWebGPUSupported ? test : skip)('webgpu compiles the fused encoder when fusion is left enabled', async assert => {
   if (!(await webgpuAdapter(assert))) return;
   const gpu = new GPU({ mode: 'webgpu' });
   const double = gpu.createKernel(function (a) {
@@ -225,8 +226,8 @@ eachMode('2d output kernels', async (assert, mode, kind) => {
     return double(double(x));
   });
   const result = await solve([1, 2, 3, 4]);
-  assert.equal(solve.executorKind, 'generic', 'no fused lowering for webgpu in v1');
-  assert.ok(/webgpu/.test(solve.fallbackReason), `fallbackReason names the backend: ${ solve.fallbackReason }`);
-  assertClose(assert, result, [4, 8, 12, 16], 'degraded run is still correct');
+  assert.equal(solve.executorKind, 'fused-encoder', 'webgpu plans compile to the single-encoder executor');
+  assert.equal(solve.fallbackReason, null, 'no fallback reason while fused');
+  assertClose(assert, result, [4, 8, 12, 16], 'fused run is correct');
   await gpu.destroy();
 });

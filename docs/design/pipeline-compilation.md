@@ -79,10 +79,21 @@ const result = await solve(u0, q);   // one launch, fences inside, one readback
 - `pipeline.destroy()` releases plan buffers/instances; gpu.destroy() reaches
   pipelines like kernels.
 
+- webgpu fused executor ('fused-encoder', added after v1's generic-only
+  lowering): every plan step compiles against persistent STORAGE buffers on
+  the kernel's device — ping-pong as static alternating bind groups, per-step
+  params uniforms created at compile. Per call: pipeline arguments and
+  per-call seeds/scalars via queue.writeBuffer, EVERY step recorded as a
+  compute pass into ONE command encoder, result buffers copied to MAP_READ
+  staging in the same encoder, one queue.submit, one mapAsync readback.
+  Math.random keeps the direct-call seeding contract (seed uniform per call).
+  Anything unfusable (GPU-resident handle arguments, vec intermediates,
+  argument drift the layout cannot absorb) degrades to the generic executor
+  with a named fallbackReason.
+
 ## v1 exclusions (documented, not silently missing)
 
 - No `this.check` / mid-plan readback (reserved; design in README as future).
-- No webgpu single-command-encoder lowering (generic executor only; noted).
 - No graphical kernels inside pipelines (throw with message).
 - No kernel maps inside pipelines in v1 (throw with message).
 - `toString()` deferred.
@@ -93,6 +104,7 @@ const result = await solve(u0, q);   // one launch, fences inside, one readback
 - `src/gpu.js` — `createPipeline` wiring; pipeline registry for destroy.
 - `src/backend/web-assembly/pipeline-executor.js` — fused sync + threaded
   barrier lowering (worker-pool changes as needed).
+- `src/backend/web-gpu/pipeline-executor.js` — the fused-encoder lowering.
 - `test/features/pipeline/*.js` — see testing section.
 - README section + `src/index.d.ts` declarations.
 

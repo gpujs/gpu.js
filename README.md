@@ -1398,8 +1398,9 @@ Not in v1, stated plainly:
 * **No mid-plan readback.**  The plan runs start to finish; you cannot inspect an intermediate and stop early.  The name `this.check` on the orchestration context is **reserved** for this: the future design records `this.check(handle, predicate)` as a checkpoint step where the executor reads back a small reduction every N passes and ends the plan early when the predicate answers converged — residual thresholds in iterative solvers, without surrendering the fused loop.  Nothing you write today should put a `check` on the orchestration `this`.
 * **No graphical kernels inside pipelines** — throws at build.
 * **No kernel maps inside pipelines** — throws at build.
-* **No webgpu command-encoder lowering** — webgpu runs pipelines through the generic executor (correct, one readback, but one submit per step); single-encoder lowering is future work.
 * **`toString()` is deferred** — a pipeline cannot be exported as source yet.
+
+On webgpu, pipelines compile to the `fused-encoder` executor: every step is recorded as a compute pass into ONE command encoder over persistent storage buffers (ping-pong steps alternate between two static bind groups), one `queue.submit` runs the whole plan, and the results come back through a single `mapAsync` readback.  Anything the encoder cannot take statically — GPU-resident handles as pipeline arguments, vector-returning intermediates — degrades to the generic executor with the reason in `fallbackReason`.
 
 ## Asynchronous Kernels
 
