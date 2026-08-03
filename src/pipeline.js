@@ -255,7 +255,8 @@ class Pipeline {
      * executor identity probe for tests and later phases: 'generic' executes
      * step-by-step through the normal kernel machinery on every backend;
      * 'fused-sync' is the webasm executor running every step over one shared
-     * wasm memory
+     * wasm memory; 'fused-threaded' is that executor with pool workers
+     * walking the whole plan on an Atomics barrier
      * @type {String}
      */
     this.executorKind = 'generic';
@@ -272,6 +273,8 @@ class Pipeline {
     this._executor = undefined;
     /** test/benchmark hook: forces the generic executor when true */
     this._fusionDisabled = false;
+    /** test/benchmark hook: keeps a fused executor off the worker pool */
+    this._threadsDisabled = false;
     this.destroyed = false;
     /**
      * concurrent calls to one pipeline serialize on this tail, the same
@@ -303,7 +306,7 @@ class Pipeline {
       }
       if (this._executor) {
         try {
-          return this._executor.execute(sampled);
+          return this._guardAsync(this._executor.execute(sampled));
         } catch (e) {
           if (!e || !e.isFusionFallback) throw e;
           this._dropExecutor();
@@ -313,7 +316,7 @@ class Pipeline {
             this._prepareExecutor(sampled);
             if (this._executor) {
               try {
-                return this._executor.execute(sampled);
+                return this._guardAsync(this._executor.execute(sampled));
               } catch (e2) {
                 if (!e2 || !e2.isFusionFallback) throw e2;
                 this._dropExecutor();
@@ -329,6 +332,25 @@ class Pipeline {
     });
     this._tail = promise.then(noop, noop);
     return promise;
+  }
+
+  /**
+   * The threaded executor rejects asynchronously (worker death, stalled
+   * barrier, destroy mid-run); any such failure leaves its barrier state
+   * unusable, so the executor is dropped and the next call compiles a
+   * fresh one. Fallback decisions stay synchronous — the signature check
+   * throws before dispatch — so a FusionFallback can never surface here.
+   * @param {*} result - executor.execute's return: a value (sync) or a
+   * Promise (threaded)
+   */
+  _guardAsync(result) {
+    if (result && typeof result.then === 'function') {
+      return result.then(null, error => {
+        this._dropExecutor();
+        throw error;
+      });
+    }
+    return result;
   }
 
   /**
@@ -359,6 +381,13 @@ class Pipeline {
       if (index !== -1) {
         this.gpu.pipelines.splice(index, 1);
       }
+    }
+    // a threaded run in flight must reject now, not finish first: its
+    // workers hold the shared memory, and a barrier mid-plan could outlive
+    // any deadline the caller has. The rejection settles the tail, which is
+    // what lets the queued release below run at all.
+    if (this._executor && typeof this._executor.abortRuns === 'function') {
+      this._executor.abortRuns(new Error(MSG_DESTROYED));
     }
     const release = () => {
       this._releasePlan();

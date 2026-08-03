@@ -1,18 +1,38 @@
 const { utils } = require('../../utils');
 const { Input } = require('../../input');
 const { WebAssemblyKernel } = require('./kernel');
+const { WebAssemblyWorkerPool } = require('./worker-pool');
 
 /**
  * Fused pipeline execution (docs/design/pipeline-compilation.md): every plan
  * step compiles to a wasm module over ONE shared memory laid out
- * `[ pipeline args | literals | constants | plan buffers ]`, with each
- * module's input/output offsets baked against that layout. Steps then run
- * back-to-back synchronously; intermediates never leave wasm memory between
- * passes — per call there is one flattenTo per pipeline argument and one
- * readback per result, however many steps the plan unrolls to.
+ * `[ barrier control | pipeline args | literals | constants | plan buffers ]`
+ * (the control words exist only on the threaded path), with each module's
+ * input/output offsets baked against that layout. Per call there is one
+ * flattenTo per pipeline argument and one readback per result, however many
+ * steps the plan unrolls to.
+ *
+ * Sync path ('fused-sync'): steps run back-to-back on the calling thread.
+ *
+ * Threaded path ('fused-threaded'): when wasm threads exist and the plan is
+ * big enough, pool workers execute the WHOLE plan — each worker owns a
+ * contiguous cell-range slice of every step and advances step-to-step on an
+ * Atomics barrier (generation counter in the shared memory). The main thread
+ * dispatches once per call and then waits only for the final generation, so
+ * step boundaries cost no main-thread round trip. Threads unavailable or the
+ * plan too small falls back to the sync path; anything the backend cannot
+ * take at all degrades to the generic executor as usual.
  */
 
 const SUPPORTED_VALUE_TYPES = ['Array', 'Input', 'Number', 'Float', 'Integer', 'Boolean'];
+
+// the kernel's own threading floor (kernel.js _threadable): below this many
+// cells in the largest step, splitting cannot beat the dispatch overhead
+const THREAD_MIN_CELLS = 4096;
+
+// worker-side instance caches key on the entry id; the prefix keeps pipeline
+// ids out of the kernel entry id space (see worker-pool _ensureSetup)
+let nextPipelineEntryId = 1;
 
 /**
  * The degradation signal, per the backend's usual contract: the pipeline
@@ -77,10 +97,18 @@ class WebAssemblyPipelineExecutor {
     this.gpu = pipeline.gpu;
     this.plan = plan;
     this.kind = 'fused-sync';
+    this.threaded = false;
     this.destroyed = false;
     this.memory = null;
     this.f32 = null;
     this.i32 = null;
+    this.pool = null;
+    // a stalled barrier is a hang without this: reject when the generation
+    // counter makes no progress for this long (per step, not per run, so
+    // arbitrarily long plans stay legal as long as steps keep landing)
+    this.sanityTimeoutMs = 10000;
+    this._entry = null;
+    this._abortError = null;
     this._stepRuns = null;
     this._argArrayRegions = null;
     this._argScalarSlots = null;
@@ -149,6 +177,31 @@ class WebAssemblyPipelineExecutor {
       offset = align16(offset + bytes);
       return at;
     };
+    // the threaded decision precedes every allocation: the barrier control
+    // words must open the layout, and sharedness is a compile-time property
+    // of the memory import every step module declares
+    let threadWorkerCount = 0;
+    let controlOffset = -1;
+    if (!this.pipeline._threadsDisabled && WebAssemblyKernel.isThreadsSupported) {
+      let maxCells = 0;
+      for (let i = 0; i < plan.steps.length; i++) {
+        const output = plan.steps[i].output;
+        let cells = 1;
+        for (let d = 0; d < output.length; d++) cells *= output[d];
+        if (cells > maxCells) maxCells = cells;
+      }
+      const pool = new WebAssemblyWorkerPool();
+      threadWorkerCount = Math.min(pool.size, Math.ceil(maxCells / THREAD_MIN_CELLS));
+      if (threadWorkerCount > 1) {
+        this.threaded = true;
+        this.kind = 'fused-threaded';
+        this.pool = pool;
+        controlOffset = alloc(12);
+      } else {
+        // constructed but never spawned a worker; destroy only sets a flag
+        pool.destroy();
+      }
+    }
     const argArrayRegions = new Map();
     const argScalarSlots = new Map();
     const literalArrayRegions = new Map();
@@ -241,6 +294,8 @@ class WebAssemblyPipelineExecutor {
     // loop lands on two instances however many steps it unrolled to
     const moduleCache = new Map();
     const stepRuns = new Array(plan.steps.length);
+    const threadModules = [];
+    const threadModuleImports = [];
     for (let i = 0; i < plan.steps.length; i++) {
       const program = stepPrograms[i];
       const kernel = program.kernel;
@@ -262,9 +317,11 @@ class WebAssemblyPipelineExecutor {
           totalBytes,
         };
         const cells = bufferRegions[plan.steps[i].outputBuffer].cells;
-        const assembled = kernel._assembleModule(layout, cells, false);
+        const assembled = kernel._assembleModule(layout, cells, this.threaded);
         if (this.memory === null) {
-          this.memory = new WebAssembly.Memory({ initial: assembled.initial, maximum: assembled.maximum });
+          this.memory = this.threaded ?
+            new WebAssembly.Memory({ initial: assembled.initial, maximum: assembled.maximum, shared: true }) :
+            new WebAssembly.Memory({ initial: assembled.initial, maximum: assembled.maximum });
           this.f32 = new Float32Array(this.memory.buffer);
           this.i32 = new Int32Array(this.memory.buffer);
         }
@@ -272,20 +329,67 @@ class WebAssemblyPipelineExecutor {
         for (const name of kernel.usedMathImports) {
           imports.env['math_' + name] = Math[name];
         }
-        const instance = new WebAssembly.Instance(new WebAssembly.Module(assembled.bytes), imports);
+        const module = new WebAssembly.Module(assembled.bytes);
+        const instance = new WebAssembly.Instance(module, imports);
         compiled = {
           run: instance.exports.run,
           runSimd: instance.exports.run_simd || null,
+          // what a worker needs to re-instantiate this module over the
+          // shared memory: the Module structured-clones, the import names
+          // rebuild the env
+          moduleIndex: threadModules.length,
         };
+        threadModules.push(module);
+        threadModuleImports.push(Array.from(kernel.usedMathImports).sort());
         moduleCache.set(moduleKey, compiled);
       }
       stepRuns[i] = {
         run: compiled.run,
         runSimd: compiled.runSimd,
+        moduleIndex: compiled.moduleIndex,
         cells: bufferRegions[plan.steps[i].outputBuffer].cells,
         sizeX: kernel.threadDim[0],
         usesRandom: kernel.usesRandom,
         randomSeed: kernel.randomSeed,
+      };
+    }
+    if (this.threaded) {
+      // per-(worker, step) cell ranges are static — shapes are baked — so
+      // they compute once and ride every run message. The split matches the
+      // kernel's threaded contract: contiguous chunks, starts aligned down
+      // to a multiple of 4 so every worker can enter run_simd, last worker
+      // absorbs the tail; a worker idle for a small step still owns an
+      // (empty) range because the barrier fills only at workerCount arrivals
+      const workerRanges = [];
+      for (let w = 0; w < threadWorkerCount; w++) {
+        const ranges = new Array(plan.steps.length * 2);
+        for (let i = 0; i < plan.steps.length; i++) {
+          const cells = stepRuns[i].cells;
+          let chunk = Math.ceil(cells / threadWorkerCount) & ~3;
+          if (chunk < 4) chunk = 4;
+          const start = w * chunk;
+          if (start >= cells) {
+            ranges[i * 2] = 0;
+            ranges[i * 2 + 1] = 0;
+          } else {
+            ranges[i * 2] = start;
+            ranges[i * 2 + 1] = w === threadWorkerCount - 1 ? cells : Math.min(start + chunk, cells);
+          }
+        }
+        workerRanges.push(ranges);
+      }
+      this._entry = {
+        id: 'pipeline:' + nextPipelineEntryId++,
+        pipeline: true,
+        memory: this.memory,
+        modules: threadModules,
+        moduleMathImports: threadModuleImports,
+        steps: stepRuns.map(stepRun => ({ module: stepRun.moduleIndex, sizeX: stepRun.sizeX })),
+        countIndex: controlOffset / 4,
+        genIndex: controlOffset / 4 + 1,
+        abortIndex: controlOffset / 4 + 2,
+        workerCount: threadWorkerCount,
+        workerRanges,
       };
     }
     for (let i = 0; i < uploadArrays.length; i++) {
@@ -418,12 +522,18 @@ class WebAssemblyPipelineExecutor {
 
   /**
    * @param {Array} args - sampled pipeline arguments
-   * @returns {*} results shaped per the plan; synchronous — the pipeline's
-   * tail promise provides the async contract
+   * @returns {*} results shaped per the plan; synchronous on the sync path
+   * (the pipeline's tail promise provides the async contract), a Promise on
+   * the threaded path
    */
   execute(args) {
     if (this.destroyed) {
       throw new Error('pipeline fused executor has been destroyed');
+    }
+    if (this._abortError) {
+      // an aborted run leaves the barrier state unusable; the pipeline drops
+      // this executor on that rejection, so reuse is a caller bug
+      throw this._abortError;
     }
     this._checkArguments(args);
     const f32 = this.f32;
@@ -437,18 +547,139 @@ class WebAssemblyPipelineExecutor {
     for (const slot of this._argScalarSlots.values()) {
       this._writeScalar(slot, args[slot.index]);
     }
+    if (this.threaded) {
+      return this._executeThreaded(args);
+    }
     const stepRuns = this._stepRuns;
     for (let i = 0; i < stepRuns.length; i++) {
       const stepRun = stepRuns[i];
-      let seed = 0;
-      if (stepRun.usesRandom) {
-        seed = stepRun.randomSeed !== null ?
-          (stepRun.randomSeed >>> 0) :
-          ((Math.random() * 0x100000000) >>> 0);
-      }
-      WebAssemblyKernel.dispatchSpans(stepRun.run, stepRun.runSimd, stepRun.cells, stepRun.sizeX, seed | 0);
+      WebAssemblyKernel.dispatchSpans(stepRun.run, stepRun.runSimd, stepRun.cells, stepRun.sizeX, this._drawSeed(stepRun));
     }
-    // the one readback: slice copies results out of wasm memory only here
+    return this._readResults(args);
+  }
+
+  _drawSeed(stepRun) {
+    if (!stepRun.usesRandom) return 0;
+    return (stepRun.randomSeed !== null ?
+      (stepRun.randomSeed >>> 0) :
+      ((Math.random() * 0x100000000) >>> 0)) | 0;
+  }
+
+  /**
+   * One pool dispatch for the whole plan; the workers walk every step over
+   * the already-written args and meet at the memory-resident barrier, so the
+   * only thing left to await here is the final generation. The pipeline tail
+   * serializes calls, which is what makes resetting the generation counter
+   * safe: no worker touches the control words between a run's final barrier
+   * and its next run message.
+   */
+  _executeThreaded(args) {
+    const entry = this._entry;
+    const i32 = this.i32;
+    Atomics.store(i32, entry.genIndex, 0);
+    Atomics.store(i32, entry.countIndex, 0);
+    const seeds = this._stepRuns.map(stepRun => this._drawSeed(stepRun));
+    const finalGen = this._stepRuns.length;
+    const dispatched = this.pool.dispatchPipeline(entry, { baseGen: 0, seeds });
+    // a dead worker rejects its task here; without the abort the surviving
+    // workers would sit on a barrier that can never fill
+    dispatched.then(null, error => this._abort(error));
+    return this._waitForGeneration(finalGen).then(() => this._readResults(args));
+  }
+
+  /**
+   * Resolves when the generation counter reaches `target`, rejects on abort
+   * or when the counter stalls past sanityTimeoutMs. Atomics.waitAsync
+   * where the host has it (woken by the workers' notify and by _abort),
+   * short-slice polling otherwise — either way the main thread never blocks.
+   */
+  _waitForGeneration(target) {
+    const i32 = this.i32;
+    const genIndex = this._entry.genIndex;
+    const waitAsync = typeof Atomics.waitAsync === 'function' ? Atomics.waitAsync : null;
+    return new Promise((resolve, reject) => {
+      // Atomics.waitAsync does not hold Node's event loop; if the workers'
+      // acks all land while the counter is short (a barrier gone wrong),
+      // nothing else would keep the process alive long enough for the
+      // sanity timeout to report it — so the wait pins the loop itself
+      const keepAlive = typeof setInterval === 'function' ? setInterval(() => {}, 200) : null;
+      const settle = (fn, value) => {
+        if (keepAlive !== null) clearInterval(keepAlive);
+        fn(value);
+      };
+      let lastSeen = Atomics.load(i32, genIndex);
+      let lastProgress = Date.now();
+      const check = () => {
+        if (this._abortError) {
+          settle(reject, this._abortError);
+          return;
+        }
+        const gen = Atomics.load(i32, genIndex);
+        if (gen >= target) {
+          settle(resolve);
+          return;
+        }
+        if (gen !== lastSeen) {
+          lastSeen = gen;
+          lastProgress = Date.now();
+        } else if (Date.now() - lastProgress >= this.sanityTimeoutMs) {
+          const error = new Error(
+            `pipeline threaded barrier stalled at generation ${ gen } of ${ target } for ${ this.sanityTimeoutMs }ms`);
+          this._abort(error);
+          settle(reject, error);
+          return;
+        }
+        if (waitAsync) {
+          const slice = Math.max(1, Math.min(200, this.sanityTimeoutMs));
+          const wait = waitAsync(i32, genIndex, gen, slice);
+          if (wait.async) {
+            wait.value.then(check);
+          } else {
+            // value already moved; a microtask hop keeps the recheck loop
+            // off the stack however many generations land back-to-back
+            Promise.resolve().then(check);
+          }
+        } else {
+          setTimeout(check, 1);
+        }
+      };
+      check();
+    });
+  }
+
+  /**
+   * Releases every wait on the run: workers poll the abort word at each
+   * barrier (and inside their sliced Atomics.wait), the main thread checks
+   * it on every generation wake. First cause wins; the executor is dead
+   * afterwards — the barrier count is indeterminate.
+   */
+  _abort(error) {
+    if (this._abortError) return;
+    this._abortError = error || new Error('pipeline threaded run aborted');
+    if (this.i32 && this._entry) {
+      Atomics.store(this.i32, this._entry.abortIndex, 1);
+      Atomics.notify(this.i32, this._entry.genIndex);
+    }
+  }
+
+  /**
+   * Entry point for Pipeline.destroy() while a run may be in flight: the
+   * sync path cannot be mid-run (it never yields), so only the threaded
+   * path has anything to interrupt.
+   */
+  abortRuns(error) {
+    if (this.threaded) {
+      this._abort(error);
+    }
+  }
+
+  /**
+   * The one readback: slice copies results out of wasm memory only here.
+   * On the threaded path the barrier's final generation happened-before
+   * this read, so the workers' stores are visible.
+   */
+  _readResults(args) {
+    const f32 = this.f32;
     const results = this.plan.results;
     const values = new Array(this._resultReads.length);
     for (let i = 0; i < this._resultReads.length; i++) {
@@ -474,6 +705,14 @@ class WebAssemblyPipelineExecutor {
   destroy() {
     if (this.destroyed) return;
     this.destroyed = true;
+    if (this.pool) {
+      // wake anything still waiting before the views go: workers exit their
+      // barriers and ack, the pool rejects whatever is left, and terminate
+      // drops the workers' hold on the shared memory
+      this._abort(new Error('pipeline fused executor has been destroyed'));
+      this.pool.destroy();
+      this.pool = null;
+    }
     const gpuKernels = this.gpu && this.gpu.kernels;
     for (let i = 0; i < this._extraShortcuts.length; i++) {
       const shortcut = this._extraShortcuts[i];
@@ -484,6 +723,7 @@ class WebAssemblyPipelineExecutor {
       }
     }
     this._extraShortcuts = [];
+    this._entry = null;
     this._stepRuns = null;
     this._resultReads = null;
     this._argArrayRegions = null;

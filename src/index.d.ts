@@ -420,7 +420,8 @@ export interface IPipelineRunShortcut {
   /**
    * 'generic' runs step-by-step through the normal kernel machinery on every
    * backend; 'fused-sync' runs every step over one shared wasm memory on the
-   * webasm backend
+   * webasm backend; 'fused-threaded' has pool workers walk the whole plan
+   * over that memory on an Atomics barrier
    */
   readonly executorKind: string;
   /** why the fused executor declined this plan; null while fused */

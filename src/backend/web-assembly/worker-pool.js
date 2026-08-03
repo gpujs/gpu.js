@@ -34,9 +34,19 @@ function defaultConcurrency() {
  * x-row, so run_simd is used only when the row width is a multiple of 4 (a
  * 4-aligned range start then lands every quad inside one row); other shapes
  * take the scalar export, which is bit-identical by the SIMD contract.
+ *
+ * Pipeline entries ('pipelineSetup'/'pipelineRun') execute a WHOLE fused
+ * plan per task: every step module is instantiated over the plan's shared
+ * memory once at setup, then one run message walks all steps with an
+ * Atomics barrier between them — a generation counter in the shared memory,
+ * so step boundaries cost no postMessage round trip. Waits are sliced to
+ * 100ms so a barrier that can never fill (a peer died) is escapable: the
+ * main thread sets the abort word and notifies the generation word, and
+ * every check of either releases the worker to ack and go idle.
  */
 const WORKER_SOURCE = `
 var entries = {};
+var pipelines = {};
 function handleMessage(message, post) {
   if (message.type === 'setup') {
     var imports = { env: { memory: message.memory } };
@@ -50,8 +60,36 @@ function handleMessage(message, post) {
       sizeX: message.sizeX
     };
     post({ type: 'ready', id: message.id });
+  } else if (message.type === 'pipelineSetup') {
+    var instances = [];
+    for (var i = 0; i < message.modules.length; i++) {
+      var imports = { env: { memory: message.memory } };
+      var math = message.moduleMathImports[i];
+      for (var j = 0; j < math.length; j++) {
+        imports.env['math_' + math[j]] = Math[math[j]];
+      }
+      instances.push(new WebAssembly.Instance(message.modules[i], imports));
+    }
+    var steps = [];
+    for (var i = 0; i < message.steps.length; i++) {
+      var exported = instances[message.steps[i].module].exports;
+      steps.push({
+        run: exported.run,
+        runSimd: exported.run_simd || null,
+        sizeX: message.steps[i].sizeX
+      });
+    }
+    pipelines[message.id] = {
+      steps: steps,
+      i32: new Int32Array(message.memory.buffer),
+      countIndex: message.countIndex,
+      genIndex: message.genIndex,
+      abortIndex: message.abortIndex
+    };
+    post({ type: 'ready', id: message.id });
   } else if (message.type === 'release') {
     delete entries[message.id];
+    delete pipelines[message.id];
   } else if (message.type === 'run') {
     var entry = entries[message.id];
     var start = message.start;
@@ -65,6 +103,46 @@ function handleMessage(message, post) {
       entry.run(start, end, seed);
     }
     post({ type: 'done', taskId: message.taskId });
+  } else if (message.type === 'pipelineRun') {
+    var pipeline = pipelines[message.id];
+    var i32 = pipeline.i32;
+    var gen = message.baseGen;
+    var aborted = false;
+    for (var s = 0; s < pipeline.steps.length && !aborted; s++) {
+      if (Atomics.load(i32, pipeline.abortIndex)) {
+        aborted = true;
+        break;
+      }
+      var step = pipeline.steps[s];
+      var start = message.ranges[s * 2];
+      var end = message.ranges[s * 2 + 1];
+      var seed = message.seeds[s];
+      if (end > start) {
+        if (step.runSimd && (step.sizeX & 3) === 0 && (start & 3) === 0) {
+          var quadEnd = end - ((end - start) & 3);
+          if (quadEnd > start) step.runSimd(start, quadEnd, seed);
+          if (quadEnd < end) step.run(quadEnd, end, seed);
+        } else {
+          step.run(start, end, seed);
+        }
+      }
+      gen++;
+      if (Atomics.add(i32, pipeline.countIndex, 1) + 1 === message.workerCount) {
+        Atomics.store(i32, pipeline.countIndex, 0);
+        Atomics.store(i32, pipeline.genIndex, gen);
+        Atomics.notify(i32, pipeline.genIndex);
+      } else {
+        for (;;) {
+          if (Atomics.load(i32, pipeline.genIndex) >= gen) break;
+          if (Atomics.load(i32, pipeline.abortIndex)) {
+            aborted = true;
+            break;
+          }
+          Atomics.wait(i32, pipeline.genIndex, gen - 1, 100);
+        }
+      }
+    }
+    post({ type: 'done', taskId: message.taskId, aborted: aborted });
   }
 }
 if (typeof self !== 'undefined' && typeof postMessage === 'function') {
@@ -225,7 +303,11 @@ class WebAssemblyWorkerPool {
 
   /**
    * One setup message per (worker, entry) — concurrent tasks for the same
-   * entry share the in-flight ready wait rather than re-sending the module
+   * entry share the in-flight ready wait rather than re-sending the module.
+   * Kernel entries and pipeline entries share this bookkeeping (a pool is
+   * owned by exactly one kernel or one pipeline executor, and pipeline ids
+   * are string-prefixed, so the id spaces cannot collide); only the setup
+   * message shape differs.
    */
   _ensureSetup(worker, entry) {
     if (worker.state.setup.has(entry.id)) return Promise.resolve();
@@ -238,7 +320,17 @@ class WebAssemblyWorkerPool {
       });
       worker.state.settingUp.set(entry.id, wait);
       this._updateRef(worker);
-      worker.handle.postMessage({
+      worker.handle.postMessage(entry.pipeline ? {
+        type: 'pipelineSetup',
+        id: entry.id,
+        memory: entry.memory,
+        modules: entry.modules,
+        moduleMathImports: entry.moduleMathImports,
+        steps: entry.steps,
+        countIndex: entry.countIndex,
+        genIndex: entry.genIndex,
+        abortIndex: entry.abortIndex,
+      } : {
         type: 'setup',
         id: entry.id,
         module: entry.module,
@@ -283,6 +375,52 @@ class WebAssemblyWorkerPool {
         });
       }));
     });
+    return Promise.all(runs).then(() => undefined);
+  }
+
+  /**
+   * One task per worker for a WHOLE fused plan: the barrier between steps
+   * lives in the entry's shared memory, so this is the only postMessage
+   * round trip a pipeline call makes. Every worker in [0, workerCount) must
+   * receive its task — the barrier fills only at workerCount arrivals — and
+   * a worker that dies rejects its task through the pool's usual machinery,
+   * which is the caller's signal to set the entry's abort word.
+   * @param {Object} entry pipeline entry: {id, pipeline, memory, modules,
+   * moduleMathImports, steps, countIndex, genIndex, abortIndex, workerCount,
+   * workerRanges}
+   * @param {Object} run per-call inputs: {baseGen, seeds}
+   * @returns {Promise<void>} resolves when every worker has acked its walk
+   * of the plan
+   */
+  dispatchPipeline(entry, run) {
+    if (this.destroyed) return Promise.reject(new Error('WebAssembly worker pool has been destroyed'));
+    this.dispatchCount++;
+    this.lastDispatch = {
+      workerCount: entry.workerCount,
+      ranges: entry.workerRanges.map(ranges => ranges.slice()),
+    };
+    const runs = [];
+    for (let index = 0; index < entry.workerCount; index++) {
+      const worker = this._worker(index);
+      runs.push(this._ensureSetup(worker, entry).then(() => new Promise((resolve, reject) => {
+        if (worker.dead) {
+          reject(new Error('WebAssembly worker died before the task could run'));
+          return;
+        }
+        const taskId = ++this._taskId;
+        worker.state.pending.set(taskId, { resolve, reject });
+        this._updateRef(worker);
+        worker.handle.postMessage({
+          type: 'pipelineRun',
+          id: entry.id,
+          taskId,
+          ranges: entry.workerRanges[index],
+          seeds: run.seeds,
+          baseGen: run.baseGen,
+          workerCount: entry.workerCount,
+        });
+      })));
+    }
     return Promise.all(runs).then(() => undefined);
   }
 

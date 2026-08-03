@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.22.0
- * @date Mon Aug 03 2026 13:04:04 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 13:28:18 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -13135,10 +13135,10 @@
         const context = await WebGPUContext.acquire();
         this.context = context;
         const device = this._device = context.device;
-        const module$5 = device.createShaderModule({
+        const module$6 = device.createShaderModule({
           code: this.compiledSource
         });
-        const errors = (await module$5.getCompilationInfo()).messages.filter(message => message.type === "error");
+        const errors = (await module$6.getCompilationInfo()).messages.filter(message => message.type === "error");
         if (errors.length > 0) throw new Error("Error compiling WGSL compute shader:\n" + errors.map(message => `  ${message.lineNum}:${message.linePos} ${message.message}`).join("\n") + `\n--- generated WGSL ---\n${this.compiledSource}`);
         const {arrayArgs: arrayArgs, bufferConstants: bufferConstants, byteLength: byteLength} = this.paramsLayout;
         const layoutEntries = [ {
@@ -13179,7 +13179,7 @@
             bindGroupLayouts: [ this.bindGroupLayout ]
           }),
           compute: {
-            module: module$5,
+            module: module$6,
             entryPoint: "main"
           }
         });
@@ -14127,12 +14127,12 @@
         };
         return this;
       }
-      addFuncImport(name, params, results, module$3 = "env") {
+      addFuncImport(name, params, results, module$4 = "env") {
         if (name in this.funcImportIndexByName || name in this.functionIndexByName) throw new Error(`WasmModuleBuilder: duplicate function name "${name}"`);
         const index = this.funcImports.length;
         this.funcImports.push({
           name: name,
-          module: module$3,
+          module: module$4,
           typeIndex: this._typeIndex(params, results)
         });
         this.funcImportIndexByName[name] = index;
@@ -14205,8 +14205,8 @@
             uleb(initial, payload);
             if (hasMax) uleb(maximum, payload);
           }
-          for (const {name: name, module: module$4, typeIndex: typeIndex} of this.funcImports) {
-            utf8(module$4, payload);
+          for (const {name: name, module: module$5, typeIndex: typeIndex} of this.funcImports) {
+            utf8(module$5, payload);
             utf8(name, payload);
             payload.push(0);
             uleb(typeIndex, payload);
@@ -14476,9 +14476,9 @@
       }
       emitFunction(assembler) {
         this.assembler = assembler;
-        const {module: module$2} = assembler;
+        const {module: module$3} = assembler;
         let em;
-        if (this.isRootKernel) em = module$2.addFunction("kernel", {
+        if (this.isRootKernel) em = module$3.addFunction("kernel", {
           params: [],
           results: []
         }); else {
@@ -14499,7 +14499,7 @@
            default:
             throw new Error(`WebAssembly backend does not yet support helper functions returning ${this.returnType}`);
           }
-          em = module$2.addFunction(this.mangleFunctionName(this.name), {
+          em = module$3.addFunction(this.mangleFunctionName(this.name), {
             params: params,
             results: results
           });
@@ -18130,7 +18130,7 @@
       }
       return 4;
     }
-    const WORKER_SOURCE = `\nvar entries = {};\nfunction handleMessage(message, post) {\n  if (message.type === 'setup') {\n    var imports = { env: { memory: message.memory } };\n    for (var i = 0; i < message.mathImports.length; i++) {\n      imports.env['math_' + message.mathImports[i]] = Math[message.mathImports[i]];\n    }\n    var instance = new WebAssembly.Instance(message.module, imports);\n    entries[message.id] = {\n      run: instance.exports.run,\n      runSimd: instance.exports.run_simd || null,\n      sizeX: message.sizeX\n    };\n    post({ type: 'ready', id: message.id });\n  } else if (message.type === 'release') {\n    delete entries[message.id];\n  } else if (message.type === 'run') {\n    var entry = entries[message.id];\n    var start = message.start;\n    var end = message.end;\n    var seed = message.seed;\n    if (entry.runSimd && (entry.sizeX & 3) === 0 && (start & 3) === 0) {\n      var quadEnd = end - ((end - start) & 3);\n      if (quadEnd > start) entry.runSimd(start, quadEnd, seed);\n      if (quadEnd < end) entry.run(quadEnd, end, seed);\n    } else {\n      entry.run(start, end, seed);\n    }\n    post({ type: 'done', taskId: message.taskId });\n  }\n}\nif (typeof self !== 'undefined' && typeof postMessage === 'function') {\n  self.onmessage = function(event) {\n    handleMessage(event.data, function(message) { postMessage(message); });\n  };\n} else {\n  var parentPort = require('worker_threads').parentPort;\n  parentPort.on('message', function(message) {\n    handleMessage(message, function(reply) { parentPort.postMessage(reply); });\n  });\n}\n`;
+    const WORKER_SOURCE = `\nvar entries = {};\nvar pipelines = {};\nfunction handleMessage(message, post) {\n  if (message.type === 'setup') {\n    var imports = { env: { memory: message.memory } };\n    for (var i = 0; i < message.mathImports.length; i++) {\n      imports.env['math_' + message.mathImports[i]] = Math[message.mathImports[i]];\n    }\n    var instance = new WebAssembly.Instance(message.module, imports);\n    entries[message.id] = {\n      run: instance.exports.run,\n      runSimd: instance.exports.run_simd || null,\n      sizeX: message.sizeX\n    };\n    post({ type: 'ready', id: message.id });\n  } else if (message.type === 'pipelineSetup') {\n    var instances = [];\n    for (var i = 0; i < message.modules.length; i++) {\n      var imports = { env: { memory: message.memory } };\n      var math = message.moduleMathImports[i];\n      for (var j = 0; j < math.length; j++) {\n        imports.env['math_' + math[j]] = Math[math[j]];\n      }\n      instances.push(new WebAssembly.Instance(message.modules[i], imports));\n    }\n    var steps = [];\n    for (var i = 0; i < message.steps.length; i++) {\n      var exported = instances[message.steps[i].module].exports;\n      steps.push({\n        run: exported.run,\n        runSimd: exported.run_simd || null,\n        sizeX: message.steps[i].sizeX\n      });\n    }\n    pipelines[message.id] = {\n      steps: steps,\n      i32: new Int32Array(message.memory.buffer),\n      countIndex: message.countIndex,\n      genIndex: message.genIndex,\n      abortIndex: message.abortIndex\n    };\n    post({ type: 'ready', id: message.id });\n  } else if (message.type === 'release') {\n    delete entries[message.id];\n    delete pipelines[message.id];\n  } else if (message.type === 'run') {\n    var entry = entries[message.id];\n    var start = message.start;\n    var end = message.end;\n    var seed = message.seed;\n    if (entry.runSimd && (entry.sizeX & 3) === 0 && (start & 3) === 0) {\n      var quadEnd = end - ((end - start) & 3);\n      if (quadEnd > start) entry.runSimd(start, quadEnd, seed);\n      if (quadEnd < end) entry.run(quadEnd, end, seed);\n    } else {\n      entry.run(start, end, seed);\n    }\n    post({ type: 'done', taskId: message.taskId });\n  } else if (message.type === 'pipelineRun') {\n    var pipeline = pipelines[message.id];\n    var i32 = pipeline.i32;\n    var gen = message.baseGen;\n    var aborted = false;\n    for (var s = 0; s < pipeline.steps.length && !aborted; s++) {\n      if (Atomics.load(i32, pipeline.abortIndex)) {\n        aborted = true;\n        break;\n      }\n      var step = pipeline.steps[s];\n      var start = message.ranges[s * 2];\n      var end = message.ranges[s * 2 + 1];\n      var seed = message.seeds[s];\n      if (end > start) {\n        if (step.runSimd && (step.sizeX & 3) === 0 && (start & 3) === 0) {\n          var quadEnd = end - ((end - start) & 3);\n          if (quadEnd > start) step.runSimd(start, quadEnd, seed);\n          if (quadEnd < end) step.run(quadEnd, end, seed);\n        } else {\n          step.run(start, end, seed);\n        }\n      }\n      gen++;\n      if (Atomics.add(i32, pipeline.countIndex, 1) + 1 === message.workerCount) {\n        Atomics.store(i32, pipeline.countIndex, 0);\n        Atomics.store(i32, pipeline.genIndex, gen);\n        Atomics.notify(i32, pipeline.genIndex);\n      } else {\n        for (;;) {\n          if (Atomics.load(i32, pipeline.genIndex) >= gen) break;\n          if (Atomics.load(i32, pipeline.abortIndex)) {\n            aborted = true;\n            break;\n          }\n          Atomics.wait(i32, pipeline.genIndex, gen - 1, 100);\n        }\n      }\n    }\n    post({ type: 'done', taskId: message.taskId, aborted: aborted });\n  }\n}\nif (typeof self !== 'undefined' && typeof postMessage === 'function') {\n  self.onmessage = function(event) {\n    handleMessage(event.data, function(message) { postMessage(message); });\n  };\n} else {\n  var parentPort = require('worker_threads').parentPort;\n  parentPort.on('message', function(message) {\n    handleMessage(message, function(reply) { parentPort.postMessage(reply); });\n  });\n}\n`;
     var WebAssemblyWorkerPool = class {
       constructor(size) {
         this.size = size || defaultConcurrency();
@@ -18234,7 +18234,17 @@
           });
           worker.state.settingUp.set(entry.id, wait);
           this._updateRef(worker);
-          worker.handle.postMessage({
+          worker.handle.postMessage(entry.pipeline ? {
+            type: "pipelineSetup",
+            id: entry.id,
+            memory: entry.memory,
+            modules: entry.modules,
+            moduleMathImports: entry.moduleMathImports,
+            steps: entry.steps,
+            countIndex: entry.countIndex,
+            genIndex: entry.genIndex,
+            abortIndex: entry.abortIndex
+          } : {
             type: "setup",
             id: entry.id,
             module: entry.module,
@@ -18275,6 +18285,40 @@
             });
           }));
         });
+        return Promise.all(runs).then(() => void 0);
+      }
+      dispatchPipeline(entry, run) {
+        if (this.destroyed) return Promise.reject(new Error("WebAssembly worker pool has been destroyed"));
+        this.dispatchCount++;
+        this.lastDispatch = {
+          workerCount: entry.workerCount,
+          ranges: entry.workerRanges.map(ranges => ranges.slice())
+        };
+        const runs = [];
+        for (let index = 0; index < entry.workerCount; index++) {
+          const worker = this._worker(index);
+          runs.push(this._ensureSetup(worker, entry).then(() => new Promise((resolve, reject) => {
+            if (worker.dead) {
+              reject(new Error("WebAssembly worker died before the task could run"));
+              return;
+            }
+            const taskId = ++this._taskId;
+            worker.state.pending.set(taskId, {
+              resolve: resolve,
+              reject: reject
+            });
+            this._updateRef(worker);
+            worker.handle.postMessage({
+              type: "pipelineRun",
+              id: entry.id,
+              taskId: taskId,
+              ranges: entry.workerRanges[index],
+              seeds: run.seeds,
+              baseGen: run.baseGen,
+              workerCount: entry.workerCount
+            });
+          })));
+        }
         return Promise.all(runs).then(() => void 0);
       }
       release(entryId) {
@@ -18822,8 +18866,8 @@
               }
             };
             for (const name of this.usedMathImports) imports.env["math_" + name] = Math[name];
-            const module$1 = new WebAssembly.Module(bytes);
-            const instance = new WebAssembly.Instance(module$1, imports);
+            const module$2 = new WebAssembly.Module(bytes);
+            const instance = new WebAssembly.Instance(module$2, imports);
             entry = {
               id: nextEntryId++,
               sizeSignature: entryKey,
@@ -18831,7 +18875,7 @@
               layout: layout,
               cells: cells,
               bytes: bytes,
-              module: module$1,
+              module: module$2,
               memory: memory,
               mathImports: Array.from(this.usedMathImports).sort(),
               sizeX: tx,
@@ -19067,7 +19111,10 @@
     const {utils: utils} = require_utils();
     const {Input: Input} = require_input();
     const {WebAssemblyKernel: WebAssemblyKernel} = require_kernel();
+    const {WebAssemblyWorkerPool: WebAssemblyWorkerPool} = require_worker_pool();
     const SUPPORTED_VALUE_TYPES = [ "Array", "Input", "Number", "Float", "Integer", "Boolean" ];
+    const THREAD_MIN_CELLS = 4096;
+    let nextPipelineEntryId = 1;
     var FusionFallback = class extends Error {
       constructor(reason, recompilable) {
         super(reason);
@@ -19109,10 +19156,15 @@
           this.gpu = pipeline.gpu;
           this.plan = plan;
           this.kind = "fused-sync";
+          this.threaded = false;
           this.destroyed = false;
           this.memory = null;
           this.f32 = null;
           this.i32 = null;
+          this.pool = null;
+          this.sanityTimeoutMs = 1e4;
+          this._entry = null;
+          this._abortError = null;
           this._stepRuns = null;
           this._argArrayRegions = null;
           this._argScalarSlots = null;
@@ -19168,6 +19220,25 @@
             offset = align16(offset + bytes);
             return at;
           };
+          let threadWorkerCount = 0;
+          let controlOffset = -1;
+          if (!this.pipeline._threadsDisabled && WebAssemblyKernel.isThreadsSupported) {
+            let maxCells = 0;
+            for (let i = 0; i < plan.steps.length; i++) {
+              const output = plan.steps[i].output;
+              let cells = 1;
+              for (let d = 0; d < output.length; d++) cells *= output[d];
+              if (cells > maxCells) maxCells = cells;
+            }
+            const pool = new WebAssemblyWorkerPool;
+            threadWorkerCount = Math.min(pool.size, Math.ceil(maxCells / THREAD_MIN_CELLS));
+            if (threadWorkerCount > 1) {
+              this.threaded = true;
+              this.kind = "fused-threaded";
+              this.pool = pool;
+              controlOffset = alloc(12);
+            } else pool.destroy();
+          }
           const argArrayRegions = new Map;
           const argScalarSlots = new Map;
           const literalArrayRegions = new Map;
@@ -19296,6 +19367,8 @@
           const totalBytes = offset;
           const moduleCache = new Map;
           const stepRuns = new Array(plan.steps.length);
+          const threadModules = [];
+          const threadModuleImports = [];
           for (let i = 0; i < plan.steps.length; i++) {
             const program = stepPrograms[i];
             const kernel = program.kernel;
@@ -19317,9 +19390,13 @@
                 totalBytes: totalBytes
               };
               const cells = bufferRegions[plan.steps[i].outputBuffer].cells;
-              const assembled = kernel._assembleModule(layout, cells, false);
+              const assembled = kernel._assembleModule(layout, cells, this.threaded);
               if (this.memory === null) {
-                this.memory = new WebAssembly.Memory({
+                this.memory = this.threaded ? new WebAssembly.Memory({
+                  initial: assembled.initial,
+                  maximum: assembled.maximum,
+                  shared: true
+                }) : new WebAssembly.Memory({
                   initial: assembled.initial,
                   maximum: assembled.maximum
                 });
@@ -19332,20 +19409,61 @@
                 }
               };
               for (const name of kernel.usedMathImports) imports.env["math_" + name] = Math[name];
-              const instance = new WebAssembly.Instance(new WebAssembly.Module(assembled.bytes), imports);
+              const module$1 = new WebAssembly.Module(assembled.bytes);
+              const instance = new WebAssembly.Instance(module$1, imports);
               compiled = {
                 run: instance.exports.run,
-                runSimd: instance.exports.run_simd || null
+                runSimd: instance.exports.run_simd || null,
+                moduleIndex: threadModules.length
               };
+              threadModules.push(module$1);
+              threadModuleImports.push(Array.from(kernel.usedMathImports).sort());
               moduleCache.set(moduleKey, compiled);
             }
             stepRuns[i] = {
               run: compiled.run,
               runSimd: compiled.runSimd,
+              moduleIndex: compiled.moduleIndex,
               cells: bufferRegions[plan.steps[i].outputBuffer].cells,
               sizeX: kernel.threadDim[0],
               usesRandom: kernel.usesRandom,
               randomSeed: kernel.randomSeed
+            };
+          }
+          if (this.threaded) {
+            const workerRanges = [];
+            for (let w = 0; w < threadWorkerCount; w++) {
+              const ranges = new Array(plan.steps.length * 2);
+              for (let i = 0; i < plan.steps.length; i++) {
+                const cells = stepRuns[i].cells;
+                let chunk = Math.ceil(cells / threadWorkerCount) & -4;
+                if (chunk < 4) chunk = 4;
+                const start = w * chunk;
+                if (start >= cells) {
+                  ranges[i * 2] = 0;
+                  ranges[i * 2 + 1] = 0;
+                } else {
+                  ranges[i * 2] = start;
+                  ranges[i * 2 + 1] = w === threadWorkerCount - 1 ? cells : Math.min(start + chunk, cells);
+                }
+              }
+              workerRanges.push(ranges);
+            }
+            this._entry = {
+              id: "pipeline:" + nextPipelineEntryId++,
+              pipeline: true,
+              memory: this.memory,
+              modules: threadModules,
+              moduleMathImports: threadModuleImports,
+              steps: stepRuns.map(stepRun => ({
+                module: stepRun.moduleIndex,
+                sizeX: stepRun.sizeX
+              })),
+              countIndex: controlOffset / 4,
+              genIndex: controlOffset / 4 + 1,
+              abortIndex: controlOffset / 4 + 2,
+              workerCount: threadWorkerCount,
+              workerRanges: workerRanges
             };
           }
           for (let i = 0; i < uploadArrays.length; i++) {
@@ -19425,6 +19543,7 @@
         }
         execute(args) {
           if (this.destroyed) throw new Error("pipeline fused executor has been destroyed");
+          if (this._abortError) throw this._abortError;
           this._checkArguments(args);
           const f32 = this.f32;
           for (const [index, region] of this._argArrayRegions) {
@@ -19432,13 +19551,84 @@
             utils.flattenTo(value instanceof Input ? value.value : value, f32.subarray(region.offset / 4, region.offset / 4 + region.flatLength));
           }
           for (const slot of this._argScalarSlots.values()) this._writeScalar(slot, args[slot.index]);
+          if (this.threaded) return this._executeThreaded(args);
           const stepRuns = this._stepRuns;
           for (let i = 0; i < stepRuns.length; i++) {
             const stepRun = stepRuns[i];
-            let seed = 0;
-            if (stepRun.usesRandom) seed = stepRun.randomSeed !== null ? stepRun.randomSeed >>> 0 : Math.random() * 4294967296 >>> 0;
-            WebAssemblyKernel.dispatchSpans(stepRun.run, stepRun.runSimd, stepRun.cells, stepRun.sizeX, seed | 0);
+            WebAssemblyKernel.dispatchSpans(stepRun.run, stepRun.runSimd, stepRun.cells, stepRun.sizeX, this._drawSeed(stepRun));
           }
+          return this._readResults(args);
+        }
+        _drawSeed(stepRun) {
+          if (!stepRun.usesRandom) return 0;
+          return (stepRun.randomSeed !== null ? stepRun.randomSeed >>> 0 : Math.random() * 4294967296 >>> 0) | 0;
+        }
+        _executeThreaded(args) {
+          const entry = this._entry;
+          const i32 = this.i32;
+          Atomics.store(i32, entry.genIndex, 0);
+          Atomics.store(i32, entry.countIndex, 0);
+          const seeds = this._stepRuns.map(stepRun => this._drawSeed(stepRun));
+          const finalGen = this._stepRuns.length;
+          this.pool.dispatchPipeline(entry, {
+            baseGen: 0,
+            seeds: seeds
+          }).then(null, error => this._abort(error));
+          return this._waitForGeneration(finalGen).then(() => this._readResults(args));
+        }
+        _waitForGeneration(target) {
+          const i32 = this.i32;
+          const genIndex = this._entry.genIndex;
+          const waitAsync = typeof Atomics.waitAsync === "function" ? Atomics.waitAsync : null;
+          return new Promise((resolve, reject) => {
+            const keepAlive = typeof setInterval === "function" ? setInterval(() => {}, 200) : null;
+            const settle = (fn, value) => {
+              if (keepAlive !== null) clearInterval(keepAlive);
+              fn(value);
+            };
+            let lastSeen = Atomics.load(i32, genIndex);
+            let lastProgress = Date.now();
+            const check = () => {
+              if (this._abortError) {
+                settle(reject, this._abortError);
+                return;
+              }
+              const gen = Atomics.load(i32, genIndex);
+              if (gen >= target) {
+                settle(resolve);
+                return;
+              }
+              if (gen !== lastSeen) {
+                lastSeen = gen;
+                lastProgress = Date.now();
+              } else if (Date.now() - lastProgress >= this.sanityTimeoutMs) {
+                const error = new Error(`pipeline threaded barrier stalled at generation ${gen} of ${target} for ${this.sanityTimeoutMs}ms`);
+                this._abort(error);
+                settle(reject, error);
+                return;
+              }
+              if (waitAsync) {
+                const slice = Math.max(1, Math.min(200, this.sanityTimeoutMs));
+                const wait = waitAsync(i32, genIndex, gen, slice);
+                if (wait.async) wait.value.then(check); else Promise.resolve().then(check);
+              } else setTimeout(check, 1);
+            };
+            check();
+          });
+        }
+        _abort(error) {
+          if (this._abortError) return;
+          this._abortError = error || new Error("pipeline threaded run aborted");
+          if (this.i32 && this._entry) {
+            Atomics.store(this.i32, this._entry.abortIndex, 1);
+            Atomics.notify(this.i32, this._entry.genIndex);
+          }
+        }
+        abortRuns(error) {
+          if (this.threaded) this._abort(error);
+        }
+        _readResults(args) {
+          const f32 = this.f32;
           const results = this.plan.results;
           const values = new Array(this._resultReads.length);
           for (let i = 0; i < this._resultReads.length; i++) {
@@ -19457,12 +19647,18 @@
         destroy() {
           if (this.destroyed) return;
           this.destroyed = true;
+          if (this.pool) {
+            this._abort(new Error("pipeline fused executor has been destroyed"));
+            this.pool.destroy();
+            this.pool = null;
+          }
           const gpuKernels = this.gpu && this.gpu.kernels;
           for (let i = 0; i < this._extraShortcuts.length; i++) {
             const shortcut = this._extraShortcuts[i];
             if (!gpuKernels || gpuKernels.indexOf(shortcut.kernel) !== -1) shortcut.destroy();
           }
           this._extraShortcuts = [];
+          this._entry = null;
           this._stepRuns = null;
           this._resultReads = null;
           this._argArrayRegions = null;
@@ -19641,6 +19837,7 @@
         this.fallbackReason = null;
         this._executor = void 0;
         this._fusionDisabled = false;
+        this._threadsDisabled = false;
         this.destroyed = false;
         this._tail = Promise.resolve();
       }
@@ -19656,14 +19853,14 @@
           }
           if (this._executor === void 0) this._prepareExecutor(sampled);
           if (this._executor) try {
-            return this._executor.execute(sampled);
+            return this._guardAsync(this._executor.execute(sampled));
           } catch (e) {
             if (!e || !e.isFusionFallback) throw e;
             this._dropExecutor();
             if (e.recompilable) {
               this._prepareExecutor(sampled);
               if (this._executor) try {
-                return this._executor.execute(sampled);
+                return this._guardAsync(this._executor.execute(sampled));
               } catch (e2) {
                 if (!e2 || !e2.isFusionFallback) throw e2;
                 this._dropExecutor();
@@ -19675,6 +19872,13 @@
         });
         this._tail = promise.then(noop, noop);
         return promise;
+      }
+      _guardAsync(result) {
+        if (result && typeof result.then === "function") return result.then(null, error => {
+          this._dropExecutor();
+          throw error;
+        });
+        return result;
       }
       setConstants(constants) {
         this.constants = Object.assign({}, constants || {});
@@ -19690,6 +19894,7 @@
           const index = this.gpu.pipelines.indexOf(this);
           if (index !== -1) this.gpu.pipelines.splice(index, 1);
         }
+        if (this._executor && typeof this._executor.abortRuns === "function") this._executor.abortRuns(new Error(MSG_DESTROYED));
         const release = () => {
           this._releasePlan();
         };
