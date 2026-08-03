@@ -53,6 +53,14 @@ export class GPU {
     subKernels: ISubKernelObject,
     rootKernel: ThreadFunction<ArgTypes, ConstantsType>,
     settings?: IGPUKernelSettings): (((this: IKernelFunctionThis<ConstantsType>, ...args: ArgTypes) => IMappedKernelResult) & IKernelMapRunShortcut<typeof subKernels>);
+  /**
+   * Compile a whole multi-kernel computation into one callable plan. The
+   * orchestration function runs once, at build time (first call), with
+   * opaque handles for arguments; the kernel calls it makes are recorded
+   * and replayed on later calls with intermediates kept resident. Calling
+   * the pipeline always returns a Promise.
+   */
+  createPipeline(fn: PipelineFunction, settings?: IPipelineSettings): IPipelineRunShortcut;
   destroy(): Promise<void>;
   Kernel: typeof Kernel;
   mode: string;
@@ -386,6 +394,62 @@ export interface IKernelRunShortcut extends IKernelRunShortcutBase {
 
 export interface IKernelMapRunShortcut<SubKernelType> extends IKernelRunShortcutBase<
   { result: KernelOutput } & { [key in keyof SubKernelType]: KernelOutput }> {}
+
+/**
+ * Opaque stand-in for an intermediate result during pipeline orchestration.
+ * Reading elements or properties, or using it in arithmetic or conditions,
+ * throws at build time; its only legal uses are as a kernel argument and in
+ * the orchestration function's return value.  Typed `any` because the same
+ * kernel shortcut that normally returns values returns handles while a trace
+ * is open — a distinction the type system cannot express; the trace enforces
+ * it at build time with named errors.
+ */
+export type IPipelineHandle = any;
+
+export type PipelineFunction = (this: { constants: IConstantsThis }, ...args: IPipelineHandle[]) =>
+  IPipelineHandle | IPipelineHandle[] | { [key: string]: IPipelineHandle };
+
+export interface IPipelineSettings {
+  /** false pins the webasm lowering to its sync path (no worker pool) */
+  threads?: boolean;
+  /** trace-time facts; change via setConstants, which re-traces on the next call */
+  constants?: IConstants;
+}
+
+export type PipelineResult = KernelOutput | KernelOutput[] | { [key: string]: KernelOutput };
+
+/** the underlying Pipeline instance behind an IPipelineRunShortcut */
+export interface IPipeline {
+  constants: IConstants;
+  destroyed: boolean;
+  executorKind: string;
+  fallbackReason: string | null;
+  plan: object | null;
+  call(args: KernelVariable[] | IArguments): Promise<PipelineResult>;
+  setConstants(constants: IConstants): this;
+  destroy(): Promise<void>;
+}
+
+export interface IPipelineRunShortcut {
+  /** the backend mode that actually executes the plan (the clones'), null before the first call */
+  readonly backend: string | null;
+  (...args: KernelVariable[]): Promise<PipelineResult>;
+  pipeline: IPipeline;
+  setConstants(constants: IConstants): this;
+  destroy(): Promise<void>;
+  /**
+   * 'generic' runs step-by-step through the normal kernel machinery on every
+   * backend; 'fused-sync' runs every step over one shared wasm memory on the
+   * webasm backend; 'fused-threaded' has pool workers walk the whole plan
+   * over that memory on an Atomics barrier; 'fused-encoder' records every
+   * step into one WebGPU command encoder over persistent storage buffers
+   */
+  readonly executorKind: string;
+  /** why the fused executor declined this plan; null while fused */
+  readonly fallbackReason: string | null;
+  /** the compiled plan IR; null until the first call builds it */
+  readonly plan: object | null;
+}
 
 export interface IKernelFeatures {
   isFloatRead: boolean;

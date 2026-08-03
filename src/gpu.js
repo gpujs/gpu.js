@@ -8,6 +8,7 @@ const { WebGLKernel } = require('./backend/web-gl/kernel');
 const { WebGPUKernel } = require('./backend/web-gpu/kernel');
 const { WebAssemblyKernel } = require('./backend/web-assembly/kernel');
 const { kernelRunShortcut } = require('./kernel-run-shortcut');
+const { Pipeline } = require('./pipeline');
 
 
 /**
@@ -172,6 +173,7 @@ class GPU {
       }
     }
     this.kernels = [];
+    this.pipelines = [];
     this.functions = [];
     this.nativeFunctions = [];
     this.injectedNative = null;
@@ -573,6 +575,69 @@ class GPU {
   }
 
   /**
+   * @desc Compile a whole multi-kernel computation into one callable plan
+   * (docs/design/pipeline-compilation.md). The orchestration function runs
+   * once, at build time, with opaque handles for arguments; the kernel calls
+   * it makes are recorded and replayed on later calls with intermediates
+   * kept resident. Calling the pipeline always returns a Promise.
+   * @param {Function} fn - orchestration function; may only call kernels
+   * created by this GPU instance
+   * @param {IPipelineSettings} [settings] - `constants` only in v1
+   * @returns {IPipelineRunShortcut} callable pipeline
+   */
+  createPipeline(fn, settings) {
+    if (typeof fn !== 'function') {
+      throw new Error('createPipeline requires an orchestration function');
+    }
+    if (this.mode === 'dev') {
+      throw new Error('createPipeline is not supported in dev mode');
+    }
+    const pipeline = new Pipeline(this, fn, settings);
+    this.pipelines.push(pipeline);
+    const shortcut = function() {
+      return pipeline.call(arguments);
+    };
+    shortcut.pipeline = pipeline;
+    shortcut.setConstants = function(constants) {
+      pipeline.setConstants(constants);
+      return shortcut;
+    };
+    shortcut.destroy = function() {
+      return pipeline.destroy();
+    };
+    Object.defineProperty(shortcut, 'executorKind', {
+      get: () => pipeline.executorKind,
+    });
+    Object.defineProperty(shortcut, 'fallbackReason', {
+      get: () => pipeline.fallbackReason,
+    });
+    Object.defineProperty(shortcut, 'plan', {
+      get: () => pipeline.plan,
+    });
+    // the backend that actually EXECUTES, derived from the executor that
+    // ran -- never from plan internals, which reorganize between releases.
+    // Under degradation inside the generic executor the writer clones swap
+    // to cpu and this says so: the silent-degradation safety net suites
+    // probe on kernels (#868), as supported API.
+    Object.defineProperty(shortcut, 'backend', {
+      get: () => {
+        const kind = pipeline.executorKind;
+        if (kind === 'fused-sync' || kind === 'fused-threaded') return 'webasm';
+        if (kind === 'fused-encoder') return 'webgpu';
+        const plan = pipeline.plan;
+        if (!plan) return null;
+        for (const [key, clone] of plan.genericClones) {
+          if (key.indexOf('up:') !== 0) return clone.kernel.constructor.mode;
+        }
+        // built but no generic run yet: the plan clones' mode is the
+        // backend a run WOULD execute on
+        return plan.kernels.length > 0 ? plan.kernels[0].clone.kernel.constructor.mode : null;
+      },
+    });
+    return shortcut;
+  }
+
+  /**
    *
    * Create a super kernel which executes sub kernels
    * and saves their output to be used with the next sub kernel.
@@ -779,29 +844,51 @@ class GPU {
       // if webGl is created and destroyed in the same run loop.
       setTimeout(() => {
         try {
-          // kernel.destroy() splices itself out of this.kernels, so walk a copy:
-          // mutating the list being indexed skipped every other kernel, and left
-          // this.kernels[0] undefined below, which meant a single-kernel GPU
-          // never released its WebGL context at all
-          const kernels = this.kernels.slice();
-          for (let i = 0; i < kernels.length; i++) {
-            kernels[i].destroy(true); // remove canvas if exists
+          // pipelines release their cloned kernel instances, which splice
+          // themselves out of this.kernels -- so pipelines go first, then
+          // the surviving kernels. Their releases queue behind in-flight
+          // call tails, so the whole teardown AWAITS them: gpu.destroy()
+          // resolving while a threaded executor's workers are still alive
+          // is a lie the caller acts on
+          let pipelinesDone = Promise.resolve();
+          if (this.pipelines) {
+            const pipelines = this.pipelines.slice();
+            pipelinesDone = Promise.all(pipelines.map(pipeline => Promise.resolve(pipeline.destroy()).catch(() => undefined)));
           }
-          // all kernels are associated with one context, go ahead and take care of it here
-          let firstKernel = kernels[0];
-          if (firstKernel) {
-            // if it is shortcut
-            if (firstKernel.kernel) {
-              firstKernel = firstKernel.kernel;
+          // a closure, not a method: destroy() is exercised against bare
+          // mock objects via GPU.prototype.destroy.call in the test suite,
+          // so `this` cannot be assumed to carry anything beyond data
+          const destroyKernels = () => {
+            try {
+              // kernel.destroy() splices itself out of this.kernels, so walk a copy:
+              // mutating the list being indexed skipped every other kernel, and left
+              // this.kernels[0] undefined below, which meant a single-kernel GPU
+              // never released its WebGL context at all
+              const kernels = this.kernels.slice();
+              for (let i = 0; i < kernels.length; i++) {
+                kernels[i].destroy(true); // remove canvas if exists
+              }
+              // all kernels are associated with one context, go ahead and take care of it here
+              let firstKernel = kernels[0];
+              if (firstKernel) {
+                // if it is shortcut
+                if (firstKernel.kernel) {
+                  firstKernel = firstKernel.kernel;
+                }
+                if (firstKernel.constructor.destroyContext) {
+                  firstKernel.constructor.destroyContext(this.context);
+                }
+              }
+            } catch (e) {
+              reject(e);
+              return;
             }
-            if (firstKernel.constructor.destroyContext) {
-              firstKernel.constructor.destroyContext(this.context);
-            }
-          }
+            resolve();
+          };
+          pipelinesDone.then(destroyKernels).catch(reject);
         } catch (e) {
           reject(e);
         }
-        resolve();
       }, 0);
     });
   }

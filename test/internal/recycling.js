@@ -427,13 +427,16 @@ function testMutableLeak(mode) {
     pipeline: true
   });
   kernel.build();
-  const cloneTextureSpy = sinon.spy(kernel.texture.constructor.prototype, 'beforeMutate');
+  // the leak signal is a NEW texture being made per run -- beforeMutate
+  // itself now runs every render as the refs check that keeps clone()
+  // honest on mutable kernels, and is a no-op when nothing was cloned
+  const newTextureSpy = sinon.spy(kernel.texture.constructor.prototype, 'newTexture');
   const texture1 = kernel();
   const texture2 = kernel();
-  assert.equal(cloneTextureSpy.callCount, 0);
+  assert.equal(newTextureSpy.callCount, 0);
   assert.equal(texture1.texture._refs, 1);
   assert.ok(texture1 === texture2);
-  cloneTextureSpy.restore();
+  newTextureSpy.restore();
   gpu.destroy();
 }
 

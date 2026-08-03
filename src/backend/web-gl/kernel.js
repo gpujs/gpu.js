@@ -698,9 +698,12 @@ class WebGLKernel extends GLKernel {
     }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-    if (this.immutable) {
-      this._replaceOutputTexture();
-    }
+    // not only for immutable kernels: clone() shares the underlying GL
+    // texture and counts a ref, so a mutable kernel re-rendering must honor
+    // outstanding clones by detaching first (beforeMutate is a no-op when
+    // nothing was cloned) -- otherwise every clone silently reads the next
+    // run's values
+    this._replaceOutputTexture();
 
     if (this.subKernels !== null) {
       if (this.immutable) {

@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.22.0
- * @date Mon Aug 03 2026 12:06:42 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 18:10:17 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -5271,6 +5271,7 @@
         this.onRequestSwitchKernel = null;
         this.argumentNames = typeof source === "string" ? utils.getArgumentNamesFromString(source) : null;
         this.argumentTypes = null;
+        this.declaredArgumentTypes = null;
         this.argumentSizes = null;
         this.argumentBitRatios = null;
         this.kernelArguments = null;
@@ -5316,6 +5317,11 @@
         for (let p in settings) {
           if (!settings.hasOwnProperty(p) || !this.hasOwnProperty(p)) continue;
           switch (p) {
+           case "argumentTypes":
+            this.argumentTypes = settings[p];
+            if (settings[p]) this.declaredArgumentTypes = Array.isArray(settings[p]) ? settings[p].slice() : settings[p];
+            continue;
+
            case "output":
             if (!Array.isArray(settings.output)) {
               this.setOutput(settings.output);
@@ -5548,6 +5554,7 @@
         return this;
       }
       setArgumentTypes(argumentTypes) {
+        this.declaredArgumentTypes = Array.isArray(argumentTypes) ? argumentTypes.slice() : argumentTypes;
         if (Array.isArray(argumentTypes)) this.argumentTypes = argumentTypes; else {
           this.argumentTypes = [];
           for (const p in argumentTypes) {
@@ -13922,7 +13929,7 @@
           return;
         }
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-        if (this.immutable) this._replaceOutputTexture();
+        this._replaceOutputTexture();
         if (this.subKernels !== null) {
           if (this.immutable) this._replaceSubOutputTextures();
           this.drawBuffers();
@@ -17332,10 +17339,10 @@
         const context = await WebGPUContext.acquire();
         this.context = context;
         const device = this._device = context.device;
-        const module$5 = device.createShaderModule({
+        const module$6 = device.createShaderModule({
           code: this.compiledSource
         });
-        const errors = (await module$5.getCompilationInfo()).messages.filter(message => message.type === "error");
+        const errors = (await module$6.getCompilationInfo()).messages.filter(message => message.type === "error");
         if (errors.length > 0) throw new Error("Error compiling WGSL compute shader:\n" + errors.map(message => `  ${message.lineNum}:${message.linePos} ${message.message}`).join("\n") + `\n--- generated WGSL ---\n${this.compiledSource}`);
         const {arrayArgs: arrayArgs, bufferConstants: bufferConstants, byteLength: byteLength} = this.paramsLayout;
         const layoutEntries = [ {
@@ -17376,7 +17383,7 @@
             bindGroupLayouts: [ this.bindGroupLayout ]
           }),
           compute: {
-            module: module$5,
+            module: module$6,
             entryPoint: "main"
           }
         });
@@ -18324,12 +18331,12 @@
         };
         return this;
       }
-      addFuncImport(name, params, results, module$3 = "env") {
+      addFuncImport(name, params, results, module$4 = "env") {
         if (name in this.funcImportIndexByName || name in this.functionIndexByName) throw new Error(`WasmModuleBuilder: duplicate function name "${name}"`);
         const index = this.funcImports.length;
         this.funcImports.push({
           name: name,
-          module: module$3,
+          module: module$4,
           typeIndex: this._typeIndex(params, results)
         });
         this.funcImportIndexByName[name] = index;
@@ -18402,8 +18409,8 @@
             uleb(initial, payload);
             if (hasMax) uleb(maximum, payload);
           }
-          for (const {name: name, module: module$4, typeIndex: typeIndex} of this.funcImports) {
-            utf8(module$4, payload);
+          for (const {name: name, module: module$5, typeIndex: typeIndex} of this.funcImports) {
+            utf8(module$5, payload);
             utf8(name, payload);
             payload.push(0);
             uleb(typeIndex, payload);
@@ -18673,9 +18680,9 @@
       }
       emitFunction(assembler) {
         this.assembler = assembler;
-        const {module: module$2} = assembler;
+        const {module: module$3} = assembler;
         let em;
-        if (this.isRootKernel) em = module$2.addFunction("kernel", {
+        if (this.isRootKernel) em = module$3.addFunction("kernel", {
           params: [],
           results: []
         }); else {
@@ -18696,7 +18703,7 @@
            default:
             throw new Error(`WebAssembly backend does not yet support helper functions returning ${this.returnType}`);
           }
-          em = module$2.addFunction(this.mangleFunctionName(this.name), {
+          em = module$3.addFunction(this.mangleFunctionName(this.name), {
             params: params,
             results: results
           });
@@ -22327,7 +22334,7 @@
       }
       return 4;
     }
-    const WORKER_SOURCE = `\nvar entries = {};\nfunction handleMessage(message, post) {\n  if (message.type === 'setup') {\n    var imports = { env: { memory: message.memory } };\n    for (var i = 0; i < message.mathImports.length; i++) {\n      imports.env['math_' + message.mathImports[i]] = Math[message.mathImports[i]];\n    }\n    var instance = new WebAssembly.Instance(message.module, imports);\n    entries[message.id] = {\n      run: instance.exports.run,\n      runSimd: instance.exports.run_simd || null,\n      sizeX: message.sizeX\n    };\n    post({ type: 'ready', id: message.id });\n  } else if (message.type === 'release') {\n    delete entries[message.id];\n  } else if (message.type === 'run') {\n    var entry = entries[message.id];\n    var start = message.start;\n    var end = message.end;\n    var seed = message.seed;\n    if (entry.runSimd && (entry.sizeX & 3) === 0 && (start & 3) === 0) {\n      var quadEnd = end - ((end - start) & 3);\n      if (quadEnd > start) entry.runSimd(start, quadEnd, seed);\n      if (quadEnd < end) entry.run(quadEnd, end, seed);\n    } else {\n      entry.run(start, end, seed);\n    }\n    post({ type: 'done', taskId: message.taskId });\n  }\n}\nif (typeof self !== 'undefined' && typeof postMessage === 'function') {\n  self.onmessage = function(event) {\n    handleMessage(event.data, function(message) { postMessage(message); });\n  };\n} else {\n  var parentPort = require('worker_threads').parentPort;\n  parentPort.on('message', function(message) {\n    handleMessage(message, function(reply) { parentPort.postMessage(reply); });\n  });\n}\n`;
+    const WORKER_SOURCE = `\nvar entries = {};\nvar pipelines = {};\nfunction handleMessage(message, post) {\n  if (message.type === 'setup') {\n    var imports = { env: { memory: message.memory } };\n    for (var i = 0; i < message.mathImports.length; i++) {\n      imports.env['math_' + message.mathImports[i]] = Math[message.mathImports[i]];\n    }\n    var instance = new WebAssembly.Instance(message.module, imports);\n    entries[message.id] = {\n      run: instance.exports.run,\n      runSimd: instance.exports.run_simd || null,\n      sizeX: message.sizeX\n    };\n    post({ type: 'ready', id: message.id });\n  } else if (message.type === 'pipelineSetup') {\n    var instances = [];\n    for (var i = 0; i < message.modules.length; i++) {\n      var imports = { env: { memory: message.memory } };\n      var math = message.moduleMathImports[i];\n      for (var j = 0; j < math.length; j++) {\n        imports.env['math_' + math[j]] = Math[math[j]];\n      }\n      instances.push(new WebAssembly.Instance(message.modules[i], imports));\n    }\n    var steps = [];\n    for (var i = 0; i < message.steps.length; i++) {\n      var exported = instances[message.steps[i].module].exports;\n      steps.push({\n        run: exported.run,\n        runSimd: exported.run_simd || null,\n        sizeX: message.steps[i].sizeX\n      });\n    }\n    pipelines[message.id] = {\n      steps: steps,\n      i32: new Int32Array(message.memory.buffer),\n      countIndex: message.countIndex,\n      genIndex: message.genIndex,\n      abortIndex: message.abortIndex\n    };\n    post({ type: 'ready', id: message.id });\n  } else if (message.type === 'release') {\n    delete entries[message.id];\n    delete pipelines[message.id];\n  } else if (message.type === 'run') {\n    var entry = entries[message.id];\n    var start = message.start;\n    var end = message.end;\n    var seed = message.seed;\n    if (entry.runSimd && (entry.sizeX & 3) === 0 && (start & 3) === 0) {\n      var quadEnd = end - ((end - start) & 3);\n      if (quadEnd > start) entry.runSimd(start, quadEnd, seed);\n      if (quadEnd < end) entry.run(quadEnd, end, seed);\n    } else {\n      entry.run(start, end, seed);\n    }\n    post({ type: 'done', taskId: message.taskId });\n  } else if (message.type === 'pipelineRun') {\n    var pipeline = pipelines[message.id];\n    var i32 = pipeline.i32;\n    var gen = message.baseGen;\n    var aborted = false;\n    for (var s = 0; s < pipeline.steps.length && !aborted; s++) {\n      if (Atomics.load(i32, pipeline.abortIndex)) {\n        aborted = true;\n        break;\n      }\n      var step = pipeline.steps[s];\n      var start = message.ranges[s * 2];\n      var end = message.ranges[s * 2 + 1];\n      var seed = message.seeds[s];\n      if (end > start) {\n        if (step.runSimd && (step.sizeX & 3) === 0 && (start & 3) === 0) {\n          var quadEnd = end - ((end - start) & 3);\n          if (quadEnd > start) step.runSimd(start, quadEnd, seed);\n          if (quadEnd < end) step.run(quadEnd, end, seed);\n        } else {\n          step.run(start, end, seed);\n        }\n      }\n      gen++;\n      if (Atomics.add(i32, pipeline.countIndex, 1) + 1 === message.workerCount) {\n        Atomics.store(i32, pipeline.countIndex, 0);\n        Atomics.store(i32, pipeline.genIndex, gen);\n        Atomics.notify(i32, pipeline.genIndex);\n      } else {\n        for (;;) {\n          if (Atomics.load(i32, pipeline.genIndex) >= gen) break;\n          if (Atomics.load(i32, pipeline.abortIndex)) {\n            aborted = true;\n            break;\n          }\n          Atomics.wait(i32, pipeline.genIndex, gen - 1, 100);\n        }\n      }\n    }\n    post({ type: 'done', taskId: message.taskId, aborted: aborted });\n  }\n}\nif (typeof self !== 'undefined' && typeof postMessage === 'function') {\n  self.onmessage = function(event) {\n    handleMessage(event.data, function(message) { postMessage(message); });\n  };\n} else {\n  var parentPort = require('worker_threads').parentPort;\n  parentPort.on('message', function(message) {\n    handleMessage(message, function(reply) { parentPort.postMessage(reply); });\n  });\n}\n`;
     var WebAssemblyWorkerPool = class {
       constructor(size) {
         this.size = size || defaultConcurrency();
@@ -22431,7 +22438,17 @@
           });
           worker.state.settingUp.set(entry.id, wait);
           this._updateRef(worker);
-          worker.handle.postMessage({
+          worker.handle.postMessage(entry.pipeline ? {
+            type: "pipelineSetup",
+            id: entry.id,
+            memory: entry.memory,
+            modules: entry.modules,
+            moduleMathImports: entry.moduleMathImports,
+            steps: entry.steps,
+            countIndex: entry.countIndex,
+            genIndex: entry.genIndex,
+            abortIndex: entry.abortIndex
+          } : {
             type: "setup",
             id: entry.id,
             module: entry.module,
@@ -22472,6 +22489,40 @@
             });
           }));
         });
+        return Promise.all(runs).then(() => void 0);
+      }
+      dispatchPipeline(entry, run) {
+        if (this.destroyed) return Promise.reject(new Error("WebAssembly worker pool has been destroyed"));
+        this.dispatchCount++;
+        this.lastDispatch = {
+          workerCount: entry.workerCount,
+          ranges: entry.workerRanges.map(ranges => ranges.slice())
+        };
+        const runs = [];
+        for (let index = 0; index < entry.workerCount; index++) {
+          const worker = this._worker(index);
+          runs.push(this._ensureSetup(worker, entry).then(() => new Promise((resolve, reject) => {
+            if (worker.dead) {
+              reject(new Error("WebAssembly worker died before the task could run"));
+              return;
+            }
+            const taskId = ++this._taskId;
+            worker.state.pending.set(taskId, {
+              resolve: resolve,
+              reject: reject
+            });
+            this._updateRef(worker);
+            worker.handle.postMessage({
+              type: "pipelineRun",
+              id: entry.id,
+              taskId: taskId,
+              ranges: entry.workerRanges[index],
+              seeds: run.seeds,
+              baseGen: run.baseGen,
+              workerCount: entry.workerCount
+            });
+          })));
+        }
         return Promise.all(runs).then(() => void 0);
       }
       release(entryId) {
@@ -22587,6 +22638,24 @@
           return "webasm" + (argumentTypes.length > 0 ? ":" + argumentTypes.join(",") : "");
         }
         static destroyContext(context) {}
+        static dispatchSpans(run, runSimd, cells, sizeX, seed) {
+          if (!runSimd || cells === 0) {
+            run(0, cells, seed);
+            return "scalar";
+          }
+          if ((sizeX & 3) === 0) {
+            runSimd(0, cells, seed);
+            return "simd";
+          }
+          const quadSpan = sizeX & -4;
+          const rows = cells / sizeX;
+          for (let row = 0; row < rows; row++) {
+            const base = row * sizeX;
+            if (quadSpan > 0) runSimd(base, base + quadSpan, seed);
+            run(base + quadSpan, base + sizeX, seed);
+          }
+          return quadSpan > 0 ? "simd+scalar-tail" : "scalar";
+        }
         static nativeFunctionArguments() {
           throw new Error("WebAssembly backend does not yet support native functions");
         }
@@ -22791,7 +22860,7 @@
         }
         _assembleModule(layout, cells, shared) {
           const builder = new WasmModuleBuilder;
-          const totalBytes = layout.outputOffset + cells * this.componentCount * 4;
+          const totalBytes = layout.totalBytes || layout.outputOffset + cells * this.componentCount * 4;
           const initial = Math.ceil(totalBytes / PAGE_BYTES) + 16;
           const maximum = Math.max(initial, 4096);
           builder.addMemoryImport(initial, maximum, shared);
@@ -23001,8 +23070,8 @@
               }
             };
             for (const name of this.usedMathImports) imports.env["math_" + name] = Math[name];
-            const module$1 = new WebAssembly.Module(bytes);
-            const instance = new WebAssembly.Instance(module$1, imports);
+            const module$2 = new WebAssembly.Module(bytes);
+            const instance = new WebAssembly.Instance(module$2, imports);
             entry = {
               id: nextEntryId++,
               sizeSignature: entryKey,
@@ -23010,7 +23079,7 @@
               layout: layout,
               cells: cells,
               bytes: bytes,
-              module: module$1,
+              module: module$2,
               memory: memory,
               mathImports: Array.from(this.usedMathImports).sort(),
               sizeX: tx,
@@ -23090,25 +23159,7 @@
           let seed = 0;
           if (this.usesRandom) seed = this.randomSeed !== null ? this.randomSeed >>> 0 : Math.random() * 4294967296 >>> 0;
           seed = seed | 0;
-          if (runSimd && cells > 0) {
-            const sizeX = threadDim[0];
-            if ((sizeX & 3) === 0) {
-              runSimd(0, cells, seed);
-              this._lastRunPath = "simd";
-            } else {
-              const quadSpan = sizeX & -4;
-              const rows = cells / sizeX;
-              for (let row = 0; row < rows; row++) {
-                const base = row * sizeX;
-                if (quadSpan > 0) runSimd(base, base + quadSpan, seed);
-                run(base + quadSpan, base + sizeX, seed);
-              }
-              this._lastRunPath = quadSpan > 0 ? "simd+scalar-tail" : "scalar";
-            }
-          } else {
-            run(0, cells, seed);
-            this._lastRunPath = "scalar";
-          }
+          this._lastRunPath = WebAssemblyKernel.dispatchSpans(run, runSimd, cells, threadDim[0], seed);
           const base = layout.outputOffset / 4;
           const data = f32.slice(base, base + cells * this.componentCount);
           return this._shapeOutput(data, Array.from(this.output), this.componentCount);
@@ -23260,9 +23311,1590 @@
       }
     };
   });
+  var require_pipeline_executor$1 = __commonJSMin((exports, module) => {
+    const {utils: utils} = require_utils();
+    const {Input: Input} = require_input();
+    const {WebAssemblyKernel: WebAssemblyKernel} = require_kernel();
+    const {WebAssemblyWorkerPool: WebAssemblyWorkerPool} = require_worker_pool();
+    const SUPPORTED_VALUE_TYPES = [ "Array", "Input", "Number", "Float", "Integer", "Boolean" ];
+    const THREAD_MIN_CELLS = 4096;
+    let nextPipelineEntryId = 1;
+    var FusionFallback = class extends Error {
+      constructor(reason, recompilable) {
+        super(reason);
+        this.isFusionFallback = true;
+        this.recompilable = Boolean(recompilable);
+      }
+    };
+    function unwrapResultValue(value) {
+      if (value && typeof value.toArray === "function") return value.toArray();
+      return value;
+    }
+    function valueDimensions(value) {
+      const dims = value instanceof Input ? Array.from(value.size) : Array.from(utils.getDimensions(value));
+      while (dims.length < 3) dims.push(1);
+      return dims;
+    }
+    function scalarMatches(type, value) {
+      switch (type) {
+       case "Integer":
+        return typeof value === "number" && Number.isInteger(value);
+
+       case "Boolean":
+        return typeof value === "boolean";
+
+       default:
+        return typeof value === "number";
+      }
+    }
+    module.exports = {
+      WebAssemblyPipelineExecutor: class WebAssemblyPipelineExecutor {
+        static compile(pipeline, plan, args) {
+          for (let i = 0; i < plan.kernels.length; i++) {
+            const kernel = plan.kernels[i].clone.kernel;
+            if (kernel.constructor.mode !== "webasm") throw new FusionFallback(`pipeline backend is ${kernel.constructor.mode}; the fused executor requires webasm`);
+          }
+          if (plan.steps.length === 0) throw new FusionFallback("plan has no kernel steps to fuse");
+          const executor = new WebAssemblyPipelineExecutor(pipeline, plan);
+          executor._compile(args);
+          return executor;
+        }
+        constructor(pipeline, plan) {
+          this.pipeline = pipeline;
+          this.gpu = pipeline.gpu;
+          this.plan = plan;
+          this.kind = "fused-sync";
+          this.threaded = false;
+          this.destroyed = false;
+          this.memory = null;
+          this.f32 = null;
+          this.i32 = null;
+          this.pool = null;
+          this.sanityTimeoutMs = 6e4;
+          this._entry = null;
+          this._abortError = null;
+          this._stepRuns = null;
+          this._argArrayRegions = null;
+          this._argScalarSlots = null;
+          this._resultReads = null;
+          this._extraShortcuts = [];
+          this._scratch = new Map;
+        }
+        _compile(args) {
+          const plan = this.plan;
+          const programs = new Map;
+          const cloneClaimed = new Array(plan.kernels.length).fill(false);
+          const stepPrograms = new Array(plan.steps.length);
+          const stepReps = new Array(plan.steps.length);
+          for (let i = 0; i < plan.steps.length; i++) {
+            const step = plan.steps[i];
+            const kernelEntry = plan.kernels[step.kernel];
+            const reps = this._representativeArgs(step, args);
+            const strict = kernelEntry.clone.kernel.strictIntegers;
+            const programKey = step.kernel + ":" + reps.map(value => utils.getVariableType(value, strict)).join(",");
+            let program = programs.get(programKey);
+            if (!program) {
+              let kernel;
+              if (!cloneClaimed[step.kernel]) {
+                cloneClaimed[step.kernel] = true;
+                kernel = kernelEntry.clone.kernel;
+              } else {
+                const extra = this.pipeline._cloneKernel(kernelEntry.clone);
+                this._extraShortcuts.push(extra);
+                kernel = extra.kernel;
+              }
+              this._prepareKernel(kernel, reps);
+              program = {
+                id: programs.size,
+                kernel: kernel,
+                constantRegions: null
+              };
+              programs.set(programKey, program);
+            }
+            stepPrograms[i] = program;
+            stepReps[i] = reps;
+          }
+          for (let i = 0; i < plan.steps.length; i++) {
+            const bindings = plan.steps[i].argBindings;
+            for (let j = 0; j < bindings.length; j++) {
+              const binding = bindings[j];
+              if (binding.source === "step" && stepPrograms[binding.step].kernel.componentCount !== 1) throw new FusionFallback(`a step returning ${stepPrograms[binding.step].kernel.returnType} cannot feed another step in the fused executor`);
+            }
+          }
+          const align16 = value => Math.ceil(value / 16) * 16;
+          let offset = 0;
+          const alloc = bytes => {
+            const at = offset;
+            offset = align16(offset + bytes);
+            return at;
+          };
+          let threadWorkerCount = 0;
+          let controlOffset = -1;
+          if (!this.pipeline._threadsDisabled && WebAssemblyKernel.isThreadsSupported) {
+            let maxCells = 0;
+            for (let i = 0; i < plan.steps.length; i++) {
+              const output = plan.steps[i].output;
+              let cells = 1;
+              for (let d = 0; d < output.length; d++) cells *= output[d];
+              if (cells > maxCells) maxCells = cells;
+            }
+            const pool = new WebAssemblyWorkerPool;
+            threadWorkerCount = Math.min(pool.size, Math.ceil(maxCells / THREAD_MIN_CELLS));
+            if (threadWorkerCount > 1) {
+              this.threaded = true;
+              this.kind = "fused-threaded";
+              this.pool = pool;
+              controlOffset = alloc(12);
+            } else pool.destroy();
+          }
+          const argArrayRegions = new Map;
+          const argScalarSlots = new Map;
+          const literalArrayRegions = new Map;
+          const uploadArrays = [];
+          const uploadScalars = [];
+          const bufferPatches = [];
+          const stepLayouts = new Array(plan.steps.length);
+          for (let i = 0; i < plan.steps.length; i++) {
+            const step = plan.steps[i];
+            const program = stepPrograms[i];
+            const local = program.kernel.computeLayout(stepReps[i]);
+            const arrays = {};
+            for (const name in local.arrays) {
+              const record = local.arrays[name];
+              const binding = step.argBindings[record.index];
+              const relocated = {
+                index: record.index,
+                offset: 0,
+                dims: record.dims,
+                flatLength: record.flatLength
+              };
+              if (binding.source === "pipelineArg") {
+                let region = argArrayRegions.get(binding.index);
+                if (!region) {
+                  region = {
+                    offset: alloc(record.flatLength * 4),
+                    dims: record.dims,
+                    flatLength: record.flatLength
+                  };
+                  argArrayRegions.set(binding.index, region);
+                }
+                relocated.offset = region.offset;
+              } else if (binding.source === "literal") {
+                let region = literalArrayRegions.get(binding.value);
+                if (!region) {
+                  region = {
+                    offset: alloc(record.flatLength * 4)
+                  };
+                  literalArrayRegions.set(binding.value, region);
+                  uploadArrays.push({
+                    offset: region.offset,
+                    flatLength: record.flatLength,
+                    value: binding.value
+                  });
+                }
+                relocated.offset = region.offset;
+              } else bufferPatches.push({
+                record: relocated,
+                buffer: plan.steps[binding.step].outputBuffer
+              });
+              arrays[name] = relocated;
+            }
+            const scalars = {};
+            for (const name in local.scalars) {
+              const record = local.scalars[name];
+              const binding = step.argBindings[record.index];
+              if (binding.source === "pipelineArg") {
+                const key = binding.index + ":" + record.type;
+                let slot = argScalarSlots.get(key);
+                if (!slot) {
+                  slot = {
+                    index: binding.index,
+                    offset: alloc(4),
+                    type: record.type
+                  };
+                  argScalarSlots.set(key, slot);
+                }
+                scalars[name] = {
+                  index: record.index,
+                  offset: slot.offset,
+                  type: record.type
+                };
+              } else if (binding.source === "literal") {
+                const slotOffset = alloc(4);
+                uploadScalars.push({
+                  offset: slotOffset,
+                  type: record.type,
+                  value: binding.value
+                });
+                scalars[name] = {
+                  index: record.index,
+                  offset: slotOffset,
+                  type: record.type
+                };
+              } else throw new FusionFallback("a step output cannot bind to a scalar argument");
+            }
+            if (!program.constantRegions) {
+              const regions = {};
+              for (const name in local.constantArrays) {
+                const record = local.constantArrays[name];
+                regions[name] = {
+                  offset: alloc(record.flatLength * 4),
+                  dims: record.dims,
+                  flatLength: record.flatLength
+                };
+                const value = program.kernel.constants[name];
+                uploadArrays.push({
+                  offset: regions[name].offset,
+                  flatLength: record.flatLength,
+                  value: value
+                });
+              }
+              program.constantRegions = regions;
+            }
+            stepLayouts[i] = {
+              arrays: arrays,
+              scalars: scalars
+            };
+          }
+          const bufferComponents = new Array(plan.buffers.length).fill(1);
+          for (let i = 0; i < plan.steps.length; i++) {
+            const b = plan.steps[i].outputBuffer;
+            bufferComponents[b] = Math.max(bufferComponents[b], stepPrograms[i].kernel.componentCount);
+          }
+          const bufferRegions = new Array(plan.buffers.length);
+          for (let b = 0; b < plan.buffers.length; b++) {
+            const dims = plan.buffers[b].output;
+            let cells = 1;
+            for (let d = 0; d < dims.length; d++) cells *= dims[d];
+            bufferRegions[b] = {
+              offset: alloc(cells * bufferComponents[b] * 4),
+              cells: cells
+            };
+          }
+          for (let i = 0; i < bufferPatches.length; i++) bufferPatches[i].record.offset = bufferRegions[bufferPatches[i].buffer].offset;
+          const totalBytes = offset;
+          const moduleCache = new Map;
+          const stepRuns = new Array(plan.steps.length);
+          const threadModules = [];
+          const threadModuleImports = [];
+          for (let i = 0; i < plan.steps.length; i++) {
+            const program = stepPrograms[i];
+            const kernel = program.kernel;
+            const stepLayout = stepLayouts[i];
+            const outputOffset = bufferRegions[plan.steps[i].outputBuffer].offset;
+            const offsets = [];
+            for (const name of kernel.argumentNames) {
+              const record = stepLayout.arrays[name] || stepLayout.scalars[name];
+              offsets.push(record ? record.offset : -1);
+            }
+            const moduleKey = `${program.id}:${offsets.join(",")}>${outputOffset}`;
+            let compiled = moduleCache.get(moduleKey);
+            if (!compiled) {
+              const layout = {
+                arrays: stepLayout.arrays,
+                scalars: stepLayout.scalars,
+                constantArrays: program.constantRegions,
+                outputOffset: outputOffset,
+                totalBytes: totalBytes
+              };
+              const cells = bufferRegions[plan.steps[i].outputBuffer].cells;
+              const assembled = kernel._assembleModule(layout, cells, this.threaded);
+              if (this.memory === null) {
+                this.memory = this.threaded ? new WebAssembly.Memory({
+                  initial: assembled.initial,
+                  maximum: assembled.maximum,
+                  shared: true
+                }) : new WebAssembly.Memory({
+                  initial: assembled.initial,
+                  maximum: assembled.maximum
+                });
+                this.f32 = new Float32Array(this.memory.buffer);
+                this.i32 = new Int32Array(this.memory.buffer);
+              }
+              const imports = {
+                env: {
+                  memory: this.memory
+                }
+              };
+              for (const name of kernel.usedMathImports) imports.env["math_" + name] = Math[name];
+              const module$1 = new WebAssembly.Module(assembled.bytes);
+              const instance = new WebAssembly.Instance(module$1, imports);
+              compiled = {
+                run: instance.exports.run,
+                runSimd: instance.exports.run_simd || null,
+                moduleIndex: threadModules.length
+              };
+              threadModules.push(module$1);
+              threadModuleImports.push(Array.from(kernel.usedMathImports).sort());
+              moduleCache.set(moduleKey, compiled);
+            }
+            stepRuns[i] = {
+              run: compiled.run,
+              runSimd: compiled.runSimd,
+              moduleIndex: compiled.moduleIndex,
+              cells: bufferRegions[plan.steps[i].outputBuffer].cells,
+              sizeX: kernel.threadDim[0],
+              usesRandom: kernel.usesRandom,
+              randomSeed: kernel.randomSeed
+            };
+          }
+          if (this.threaded) {
+            const workerRanges = [];
+            for (let w = 0; w < threadWorkerCount; w++) {
+              const ranges = new Array(plan.steps.length * 2);
+              for (let i = 0; i < plan.steps.length; i++) {
+                const cells = stepRuns[i].cells;
+                let chunk = Math.ceil(cells / threadWorkerCount) & -4;
+                if (chunk < 4) chunk = 4;
+                const start = w * chunk;
+                if (start >= cells) {
+                  ranges[i * 2] = 0;
+                  ranges[i * 2 + 1] = 0;
+                } else {
+                  ranges[i * 2] = start;
+                  ranges[i * 2 + 1] = w === threadWorkerCount - 1 ? cells : Math.min(start + chunk, cells);
+                }
+              }
+              workerRanges.push(ranges);
+            }
+            this._entry = {
+              id: "pipeline:" + nextPipelineEntryId++,
+              pipeline: true,
+              memory: this.memory,
+              modules: threadModules,
+              moduleMathImports: threadModuleImports,
+              steps: stepRuns.map(stepRun => ({
+                module: stepRun.moduleIndex,
+                sizeX: stepRun.sizeX
+              })),
+              countIndex: controlOffset / 4,
+              genIndex: controlOffset / 4 + 1,
+              abortIndex: controlOffset / 4 + 2,
+              workerCount: threadWorkerCount,
+              workerRanges: workerRanges
+            };
+          }
+          for (let i = 0; i < uploadArrays.length; i++) {
+            const upload = uploadArrays[i];
+            utils.flattenTo(upload.value instanceof Input ? upload.value.value : upload.value, this.f32.subarray(upload.offset / 4, upload.offset / 4 + upload.flatLength));
+          }
+          for (let i = 0; i < uploadScalars.length; i++) this._writeScalar(uploadScalars[i], uploadScalars[i].value);
+          this._resultReads = plan.results.entries.map(entry => {
+            const binding = entry.binding;
+            if (binding.source === "step") {
+              const stepIndex = binding.step;
+              const region = bufferRegions[plan.steps[stepIndex].outputBuffer];
+              const kernel = stepPrograms[stepIndex].kernel;
+              return {
+                kind: "step",
+                base: region.offset / 4,
+                count: region.cells * kernel.componentCount,
+                output: plan.steps[stepIndex].output,
+                componentCount: kernel.componentCount,
+                kernel: kernel
+              };
+            }
+            if (binding.source === "pipelineArg") return {
+              kind: "arg",
+              index: binding.index
+            };
+            return {
+              kind: "literal",
+              value: binding.value
+            };
+          });
+          this._stepRuns = stepRuns;
+          this._argArrayRegions = argArrayRegions;
+          this._argScalarSlots = argScalarSlots;
+          this._scratch = null;
+        }
+        _representativeArgs(step, args) {
+          const reps = new Array(step.argBindings.length);
+          for (let j = 0; j < step.argBindings.length; j++) {
+            const binding = step.argBindings[j];
+            if (binding.source === "pipelineArg") reps[j] = args[binding.index]; else if (binding.source === "literal") reps[j] = binding.value; else {
+              const output = this.plan.steps[binding.step].output;
+              let flatLength = 1;
+              for (let d = 0; d < output.length; d++) flatLength *= output[d];
+              let scratch = this._scratch.get(flatLength);
+              if (!scratch) {
+                scratch = new Float32Array(flatLength);
+                this._scratch.set(flatLength, scratch);
+              }
+              reps[j] = new Input(scratch, Array.from(output));
+            }
+          }
+          return reps;
+        }
+        _prepareKernel(kernel, reps) {
+          kernel.argumentTypes = kernel.declaredArgumentTypes ? kernel.declaredArgumentTypes.slice() : null;
+          kernel.setupConstants();
+          kernel.setupArguments(reps);
+          for (let i = 0; i < kernel.argumentTypes.length; i++) if (SUPPORTED_VALUE_TYPES.indexOf(kernel.argumentTypes[i]) === -1) throw new FusionFallback(`argument "${kernel.argumentNames[i]}" of type ${kernel.argumentTypes[i]} is not supported on the webasm backend`);
+          for (const name in kernel.constantTypes) if (SUPPORTED_VALUE_TYPES.indexOf(kernel.constantTypes[name]) === -1) throw new FusionFallback(`constant "${name}" of type ${kernel.constantTypes[name]} is not supported on the webasm backend`);
+          kernel.validateSettings(reps);
+          const threadDim = kernel.threadDim = Array.from(kernel.output);
+          while (threadDim.length < 3) threadDim.push(1);
+          if (!kernel.translateSource()) throw new FusionFallback(`return type ${kernel.returnType} is not supported on the webasm backend`);
+        }
+        _checkArguments(args) {
+          for (const [index, region] of this._argArrayRegions) {
+            const value = args[index];
+            if (!value || typeof value !== "object") throw new FusionFallback(`pipeline argument ${index} is no longer an array`, true);
+            if (typeof value.toArray === "function" && !(value instanceof Input)) throw new FusionFallback(`pipeline argument ${index} is now a GPU-resident handle`, true);
+            const dims = valueDimensions(value);
+            if (dims[0] !== region.dims[0] || dims[1] !== region.dims[1] || dims[2] !== region.dims[2]) throw new FusionFallback(`pipeline argument ${index} changed size from [${region.dims.join(", ")}] to [${dims.join(", ")}]`, true);
+          }
+          for (const slot of this._argScalarSlots.values()) if (!scalarMatches(slot.type, args[slot.index])) throw new FusionFallback(`pipeline argument ${slot.index} is no longer of type ${slot.type}`, true);
+        }
+        _writeScalar(slot, value) {
+          if (slot.type === "Integer") this.i32[slot.offset / 4] = value | 0; else if (slot.type === "Boolean") this.i32[slot.offset / 4] = value ? 1 : 0; else this.f32[slot.offset / 4] = value;
+        }
+        execute(args) {
+          if (this.destroyed) throw new Error("pipeline fused executor has been destroyed");
+          if (this._abortError) throw this._abortError;
+          this._checkArguments(args);
+          const f32 = this.f32;
+          for (const [index, region] of this._argArrayRegions) {
+            const value = args[index];
+            utils.flattenTo(value instanceof Input ? value.value : value, f32.subarray(region.offset / 4, region.offset / 4 + region.flatLength));
+          }
+          for (const slot of this._argScalarSlots.values()) this._writeScalar(slot, args[slot.index]);
+          if (this.threaded) return this._executeThreaded(args);
+          const stepRuns = this._stepRuns;
+          for (let i = 0; i < stepRuns.length; i++) {
+            const stepRun = stepRuns[i];
+            WebAssemblyKernel.dispatchSpans(stepRun.run, stepRun.runSimd, stepRun.cells, stepRun.sizeX, this._drawSeed(stepRun));
+          }
+          return this._readResults(args);
+        }
+        _drawSeed(stepRun) {
+          if (!stepRun.usesRandom) return 0;
+          return (stepRun.randomSeed !== null ? stepRun.randomSeed >>> 0 : Math.random() * 4294967296 >>> 0) | 0;
+        }
+        _executeThreaded(args) {
+          const entry = this._entry;
+          const i32 = this.i32;
+          const seeds = this._stepRuns.map(stepRun => this._drawSeed(stepRun));
+          if (this._lastRunAborted) {
+            Atomics.store(i32, entry.countIndex, 0);
+            Atomics.store(i32, entry.abortIndex, 0);
+            this._lastRunAborted = false;
+            this._abortError = null;
+          }
+          const baseGen = Atomics.load(i32, entry.genIndex);
+          const finalGen = baseGen + this._stepRuns.length;
+          this.pool.dispatchPipeline(entry, {
+            baseGen: baseGen,
+            seeds: seeds
+          }).then(null, error => this._abort(error));
+          return this._waitForGeneration(finalGen).then(() => this._readResults(args));
+        }
+        _waitForGeneration(target) {
+          const i32 = this.i32;
+          const genIndex = this._entry.genIndex;
+          const waitAsync = typeof Atomics.waitAsync === "function" ? Atomics.waitAsync : null;
+          return new Promise((resolve, reject) => {
+            const keepAlive = typeof setInterval === "function" ? setInterval(() => {}, 200) : null;
+            const settle = (fn, value) => {
+              if (keepAlive !== null) clearInterval(keepAlive);
+              fn(value);
+            };
+            const countIndex = this._entry.countIndex;
+            let lastSeen = Atomics.load(i32, genIndex);
+            let lastCount = Atomics.load(i32, countIndex);
+            let lastProgress = Date.now();
+            const check = () => {
+              if (this._abortError) {
+                settle(reject, this._abortError);
+                return;
+              }
+              const gen = Atomics.load(i32, genIndex);
+              if (gen >= target) {
+                settle(resolve);
+                return;
+              }
+              const count = Atomics.load(i32, countIndex);
+              if (gen !== lastSeen || count !== lastCount) {
+                lastSeen = gen;
+                lastCount = count;
+                lastProgress = Date.now();
+              } else if (Date.now() - lastProgress >= this.sanityTimeoutMs) {
+                const error = new Error(`pipeline threaded barrier stalled at generation ${gen} of ${target} for ${this.sanityTimeoutMs}ms`);
+                this._abort(error);
+                settle(reject, error);
+                return;
+              }
+              if (waitAsync) {
+                const slice = Math.max(1, Math.min(200, this.sanityTimeoutMs));
+                const wait = waitAsync(i32, genIndex, gen, slice);
+                if (wait.async) wait.value.then(check); else Promise.resolve().then(check);
+              } else setTimeout(check, 1);
+            };
+            check();
+          });
+        }
+        _abort(error) {
+          if (this._abortError) return;
+          this._abortError = error || new Error("pipeline threaded run aborted");
+          this._lastRunAborted = true;
+          if (this.i32 && this._entry) {
+            Atomics.store(this.i32, this._entry.abortIndex, 1);
+            Atomics.notify(this.i32, this._entry.genIndex);
+          }
+          if (this.pool && this.pool.workers) {
+            for (const worker of this.pool.workers) if (!worker.dead && worker.state.pending.size > 0) worker.die(this._abortError);
+          }
+        }
+        abortRuns(error) {
+          if (this.threaded) this._abort(error);
+        }
+        _readResults(args) {
+          const f32 = this.f32;
+          const results = this.plan.results;
+          const values = new Array(this._resultReads.length);
+          for (let i = 0; i < this._resultReads.length; i++) {
+            const read = this._resultReads[i];
+            if (read.kind === "step") {
+              const data = f32.slice(read.base, read.base + read.count);
+              values[i] = read.kernel._shapeOutput(data, read.output, read.componentCount);
+            } else if (read.kind === "arg") values[i] = unwrapResultValue(args[read.index]); else values[i] = unwrapResultValue(read.value);
+          }
+          if (results.kind === "single") return values[0];
+          if (results.kind === "array") return values;
+          const shaped = {};
+          for (let i = 0; i < values.length; i++) shaped[results.entries[i].key] = values[i];
+          return shaped;
+        }
+        destroy() {
+          if (this.destroyed) return;
+          this.destroyed = true;
+          if (this.pool) {
+            this._abort(new Error("pipeline fused executor has been destroyed"));
+            this.pool.destroy();
+            this.pool = null;
+          }
+          const gpuKernels = this.gpu && this.gpu.kernels;
+          for (let i = 0; i < this._extraShortcuts.length; i++) {
+            const shortcut = this._extraShortcuts[i];
+            if (!gpuKernels || gpuKernels.indexOf(shortcut.kernel) !== -1) shortcut.destroy();
+          }
+          this._extraShortcuts = [];
+          this._entry = null;
+          this._stepRuns = null;
+          this._resultReads = null;
+          this._argArrayRegions = null;
+          this._argScalarSlots = null;
+          this.memory = null;
+          this.f32 = null;
+          this.i32 = null;
+        }
+      },
+      FusionFallback: FusionFallback
+    };
+  });
+  var require_pipeline_executor = __commonJSMin((exports, module) => {
+    const {utils: utils} = require_utils();
+    const {Input: Input} = require_input();
+    const {FusionFallback: FusionFallback} = require_pipeline_executor$1();
+    const USAGE_STORAGE = 128;
+    const MAP_MODE_READ = 1;
+    function unwrapResultValue(value) {
+      if (value && typeof value.toArray === "function") return value.toArray();
+      return value;
+    }
+    function checkStorageSize(device, byteLength, what) {
+      const limits = device.limits;
+      const max = Math.min(limits.maxStorageBufferBindingSize, limits.maxBufferSize);
+      if (byteLength > max) throw new FusionFallback(`${what} needs ${byteLength} bytes but this device allows ${max} per storage buffer`);
+    }
+    function valueDimensions(value) {
+      const dims = value instanceof Input ? Array.from(value.size) : Array.from(utils.getDimensions(value));
+      while (dims.length < 3) dims.push(1);
+      return dims;
+    }
+    function scalarMatches(type, value) {
+      switch (type) {
+       case "Integer":
+        return typeof value === "number" && Number.isInteger(value);
+
+       case "Boolean":
+        return typeof value === "boolean";
+
+       default:
+        return typeof value === "number";
+      }
+    }
+    function isResidentHandle(value) {
+      return Boolean(value) && typeof value === "object" && !(value instanceof Input) && (typeof value.toArray === "function" || typeof value.delete === "function");
+    }
+    function align16(value) {
+      return Math.ceil(value / 16) * 16;
+    }
+    module.exports = {
+      WebGPUPipelineExecutor: class WebGPUPipelineExecutor {
+        static async compile(pipeline, plan, args) {
+          for (let i = 0; i < plan.kernels.length; i++) {
+            const kernel = plan.kernels[i].clone.kernel;
+            if (kernel.constructor.mode !== "webgpu") throw new FusionFallback(`pipeline backend is ${kernel.constructor.mode}; the fused encoder requires webgpu`);
+          }
+          if (plan.steps.length === 0) throw new FusionFallback("plan has no kernel steps to fuse");
+          const executor = new WebGPUPipelineExecutor(pipeline, plan);
+          try {
+            await executor._compile(args);
+          } catch (e) {
+            executor.destroy();
+            throw e;
+          }
+          return executor;
+        }
+        constructor(pipeline, plan) {
+          this.pipeline = pipeline;
+          this.gpu = pipeline.gpu;
+          this.plan = plan;
+          this.kind = "fused-encoder";
+          this.destroyed = false;
+          this.context = null;
+          this._device = null;
+          this._planBuffers = null;
+          this._argRegions = new Map;
+          this._argScalarSlots = new Map;
+          this._literalBuffers = new Map;
+          this._paramsRecords = [];
+          this._passes = null;
+          this._resultReads = null;
+          this._staging = null;
+          this._extraShortcuts = [];
+          this._scratch = new Map;
+        }
+        async _compile(args) {
+          const plan = this.plan;
+          for (let i = 0; i < plan.steps.length; i++) {
+            const bindings = plan.steps[i].argBindings;
+            for (let j = 0; j < bindings.length; j++) {
+              const binding = bindings[j];
+              if (binding.source === "pipelineArg" && isResidentHandle(args[binding.index])) throw new FusionFallback(`pipeline argument ${binding.index} is a GPU-resident handle; the fused encoder takes plain arrays`);
+            }
+          }
+          this._resultArgIndexes = [];
+          for (let i = 0; i < plan.results.entries.length; i++) {
+            const binding = plan.results.entries[i].binding;
+            if (binding.source !== "pipelineArg") continue;
+            if (isResidentHandle(args[binding.index])) throw new FusionFallback(`pipeline argument ${binding.index} is a GPU-resident handle; the fused encoder takes plain arrays`);
+            this._resultArgIndexes.push(binding.index);
+          }
+          const programs = new Map;
+          const cloneClaimed = new Array(plan.kernels.length).fill(false);
+          const stepPrograms = new Array(plan.steps.length);
+          for (let i = 0; i < plan.steps.length; i++) {
+            const step = plan.steps[i];
+            const kernelEntry = plan.kernels[step.kernel];
+            const reps = this._representativeArgs(step, args);
+            const strict = kernelEntry.clone.kernel.strictIntegers;
+            const programKey = step.kernel + ":" + reps.map(value => utils.getVariableType(value, strict)).join(",");
+            let program = programs.get(programKey);
+            if (!program) {
+              let kernel;
+              if (!cloneClaimed[step.kernel]) {
+                cloneClaimed[step.kernel] = true;
+                kernel = kernelEntry.clone.kernel;
+              } else {
+                const extra = this.pipeline._cloneKernel(kernelEntry.clone);
+                this._extraShortcuts.push(extra);
+                kernel = extra.kernel;
+              }
+              await this._prepareKernel(kernel, reps);
+              program = {
+                id: programs.size,
+                kernel: kernel
+              };
+              programs.set(programKey, program);
+            }
+            stepPrograms[i] = program;
+          }
+          this._scratch = null;
+          for (let i = 0; i < plan.steps.length; i++) {
+            const bindings = plan.steps[i].argBindings;
+            for (let j = 0; j < bindings.length; j++) {
+              const binding = bindings[j];
+              if (binding.source === "step" && stepPrograms[binding.step].kernel.componentCount !== 1) throw new FusionFallback(`a step returning ${stepPrograms[binding.step].kernel.returnType} cannot feed another step in the fused encoder`);
+            }
+          }
+          const device = this._device = stepPrograms[0].kernel._device;
+          this.context = stepPrograms[0].kernel.context;
+          const queue = device.queue;
+          const bufferComponents = new Array(plan.buffers.length).fill(1);
+          for (let i = 0; i < plan.steps.length; i++) {
+            const b = plan.steps[i].outputBuffer;
+            bufferComponents[b] = Math.max(bufferComponents[b], stepPrograms[i].kernel.componentCount);
+          }
+          this._planBuffers = plan.buffers.map((record, b) => {
+            const dims = record.output;
+            let cells = 1;
+            for (let d = 0; d < dims.length; d++) cells *= dims[d];
+            return {
+              cells: cells,
+              buffer: device.createBuffer({
+                size: cells * bufferComponents[b] * 4,
+                usage: 132
+              })
+            };
+          });
+          const bufferIds = new Map;
+          const idOf = buffer => {
+            let id = bufferIds.get(buffer);
+            if (id === void 0) {
+              id = bufferIds.size;
+              bufferIds.set(buffer, id);
+            }
+            return id;
+          };
+          const passRecords = new Map;
+          this._passes = new Array(plan.steps.length);
+          for (let i = 0; i < plan.steps.length; i++) {
+            const step = plan.steps[i];
+            const program = stepPrograms[i];
+            const kernel = program.kernel;
+            const layout = kernel.paramsLayout;
+            const argBuffers = new Array(layout.arrayArgs.length);
+            const argDims = new Array(layout.arrayArgs.length);
+            for (let j = 0; j < layout.arrayArgs.length; j++) {
+              const record = layout.arrayArgs[j];
+              const binding = step.argBindings[record.index];
+              if (binding.source === "pipelineArg") {
+                let region = this._argRegions.get(binding.index);
+                if (!region) {
+                  const dims = valueDimensions(args[binding.index]);
+                  const flatLength = dims[0] * dims[1] * dims[2];
+                  checkStorageSize(device, flatLength * 4, `pipeline argument ${binding.index}`);
+                  region = {
+                    dims: dims,
+                    flatLength: flatLength,
+                    scratch: new Float32Array(flatLength),
+                    buffer: device.createBuffer({
+                      size: Math.max(flatLength * 4, 4),
+                      usage: 136
+                    })
+                  };
+                  this._argRegions.set(binding.index, region);
+                }
+                argBuffers[j] = region.buffer;
+                argDims[j] = region.dims;
+              } else if (binding.source === "literal") {
+                let literal = this._literalBuffers.get(binding.value);
+                if (!literal) {
+                  const dims = valueDimensions(binding.value);
+                  const flatLength = dims[0] * dims[1] * dims[2];
+                  checkStorageSize(device, flatLength * 4, "a literal array argument");
+                  const buffer = device.createBuffer({
+                    size: Math.max(flatLength * 4, 4),
+                    usage: USAGE_STORAGE,
+                    mappedAtCreation: true
+                  });
+                  const mapped = new Float32Array(buffer.getMappedRange());
+                  utils.flattenTo(binding.value instanceof Input ? binding.value.value : binding.value, mapped.subarray(0, flatLength));
+                  buffer.unmap();
+                  literal = {
+                    buffer: buffer,
+                    dims: dims
+                  };
+                  this._literalBuffers.set(binding.value, literal);
+                }
+                argBuffers[j] = literal.buffer;
+                argDims[j] = literal.dims;
+              } else {
+                const producer = plan.steps[binding.step];
+                const dims = Array.from(producer.output);
+                while (dims.length < 3) dims.push(1);
+                argBuffers[j] = this._planBuffers[producer.outputBuffer].buffer;
+                argDims[j] = dims;
+              }
+            }
+            const outputBuffer = this._planBuffers[step.outputBuffer].buffer;
+            const scalarSignature = layout.scalarArgs.map(record => {
+              const binding = step.argBindings[record.index];
+              return binding.source === "literal" ? "l" + binding.value : "a" + binding.index;
+            }).join(",");
+            const unpinnedRandom = layout.randomSeedOffset !== null && kernel.randomSeed === null;
+            const key = program.id + ":" + argBuffers.map(idOf).join(",") + ">" + idOf(outputBuffer) + ":" + scalarSignature + (unpinnedRandom ? "#" + i : "");
+            let stepPass = passRecords.get(key);
+            if (!stepPass) {
+              const mirror = new ArrayBuffer(layout.byteLength);
+              const u32 = new Uint32Array(mirror);
+              const i32 = new Int32Array(mirror);
+              const f32 = new Float32Array(mirror);
+              const dispatch = kernel._computeDispatch(kernel.threadDim);
+              u32[0] = kernel.threadDim[0];
+              u32[1] = kernel.threadDim[1];
+              u32[2] = kernel.threadDim[2];
+              u32[3] = dispatch.dispatchWidth;
+              for (let j = 0; j < layout.arrayArgs.length; j++) {
+                const base = layout.arrayArgs[j].dimsOffset / 4;
+                u32[base] = argDims[j][0];
+                u32[base + 1] = argDims[j][1];
+                u32[base + 2] = argDims[j][2];
+                u32[base + 3] = argDims[j][0] * argDims[j][1] * argDims[j][2];
+              }
+              const perCallScalars = [];
+              for (let j = 0; j < layout.scalarArgs.length; j++) {
+                const record = layout.scalarArgs[j];
+                const binding = step.argBindings[record.index];
+                if (binding.source === "literal") this._writeScalar(u32, i32, f32, record, binding.value); else if (binding.source === "pipelineArg") {
+                  perCallScalars.push({
+                    index: binding.index,
+                    offset: record.offset,
+                    type: record.type
+                  });
+                  this._argScalarSlots.set(binding.index + ":" + record.type, {
+                    index: binding.index,
+                    type: record.type
+                  });
+                } else throw new FusionFallback("a step output cannot bind to a scalar argument");
+              }
+              if (layout.randomSeedOffset !== null && kernel.randomSeed !== null) u32[layout.randomSeedOffset / 4] = kernel.randomSeed >>> 0;
+              const paramsBuffer = device.createBuffer({
+                size: layout.byteLength,
+                usage: 72
+              });
+              const perCall = perCallScalars.length > 0 || unpinnedRandom;
+              if (!perCall) queue.writeBuffer(paramsBuffer, 0, mirror);
+              const entries = [ {
+                binding: 0,
+                resource: {
+                  buffer: paramsBuffer
+                }
+              } ];
+              for (let j = 0; j < argBuffers.length; j++) entries.push({
+                binding: 1 + j,
+                resource: {
+                  buffer: argBuffers[j]
+                }
+              });
+              const outBinding = 1 + argBuffers.length;
+              entries.push({
+                binding: outBinding,
+                resource: {
+                  buffer: outputBuffer
+                }
+              });
+              for (let j = 0; j < layout.bufferConstants.length; j++) entries.push({
+                binding: outBinding + 1 + j,
+                resource: {
+                  buffer: layout.bufferConstants[j].buffer
+                }
+              });
+              stepPass = {
+                pipeline: kernel.computePipeline,
+                bindGroup: device.createBindGroup({
+                  layout: kernel.bindGroupLayout,
+                  entries: entries
+                }),
+                groups: dispatch.groups,
+                paramsBuffer: paramsBuffer,
+                mirror: mirror,
+                u32: u32,
+                i32: i32,
+                f32: f32,
+                perCall: perCall,
+                perCallScalars: perCallScalars,
+                seedOffset: unpinnedRandom ? layout.randomSeedOffset : null
+              };
+              this._paramsRecords.push(stepPass);
+              passRecords.set(key, stepPass);
+            }
+            this._passes[i] = stepPass;
+          }
+          let stagingBytes = 0;
+          this._resultReads = plan.results.entries.map(entry => {
+            const binding = entry.binding;
+            if (binding.source === "step") {
+              const step = plan.steps[binding.step];
+              const planBuffer = this._planBuffers[step.outputBuffer];
+              const kernel = stepPrograms[binding.step].kernel;
+              const byteLength = planBuffer.cells * kernel.componentCount * 4;
+              const read = {
+                kind: "step",
+                buffer: planBuffer.buffer,
+                offset: stagingBytes,
+                byteLength: byteLength,
+                output: step.output,
+                componentCount: kernel.componentCount,
+                kernel: kernel
+              };
+              stagingBytes += align16(byteLength);
+              return read;
+            }
+            if (binding.source === "pipelineArg") return {
+              kind: "arg",
+              index: binding.index
+            };
+            return {
+              kind: "literal",
+              value: binding.value
+            };
+          });
+          if (stagingBytes > 0) this._staging = device.createBuffer({
+            size: stagingBytes,
+            usage: 9
+          });
+        }
+        _representativeArgs(step, args) {
+          const reps = new Array(step.argBindings.length);
+          for (let j = 0; j < step.argBindings.length; j++) {
+            const binding = step.argBindings[j];
+            if (binding.source === "pipelineArg") reps[j] = args[binding.index]; else if (binding.source === "literal") reps[j] = binding.value; else {
+              const output = this.plan.steps[binding.step].output;
+              let flatLength = 1;
+              for (let d = 0; d < output.length; d++) flatLength *= output[d];
+              let scratch = this._scratch.get(flatLength);
+              if (!scratch) {
+                scratch = new Float32Array(flatLength);
+                this._scratch.set(flatLength, scratch);
+              }
+              reps[j] = new Input(scratch, Array.from(output));
+            }
+          }
+          return reps;
+        }
+        async _prepareKernel(kernel, reps) {
+          if (kernel.built || kernel._buildPromise) {
+            const gpuKernels = kernel.gpu && kernel.gpu.kernels;
+            kernel.destroy();
+            if (gpuKernels && gpuKernels.indexOf(kernel) === -1) gpuKernels.push(kernel);
+            kernel.argumentTypes = kernel.declaredArgumentTypes ? kernel.declaredArgumentTypes.slice() : null;
+          }
+          await kernel.build.apply(kernel, reps);
+          if (kernel.outputBuffer) {
+            if (--kernel.outputBuffer._refs === 0) kernel.outputBuffer.destroy();
+            kernel.outputBuffer = null;
+          }
+        }
+        _checkArguments(args) {
+          for (const [index, region] of this._argRegions) {
+            const value = args[index];
+            if (!value || typeof value !== "object") throw new FusionFallback(`pipeline argument ${index} is no longer an array`, true);
+            if (isResidentHandle(value)) throw new FusionFallback(`pipeline argument ${index} is now a GPU-resident handle`, true);
+            const dims = valueDimensions(value);
+            if (dims[0] !== region.dims[0] || dims[1] !== region.dims[1] || dims[2] !== region.dims[2]) throw new FusionFallback(`pipeline argument ${index} changed size from [${region.dims.join(", ")}] to [${dims.join(", ")}]`, true);
+          }
+          for (const slot of this._argScalarSlots.values()) if (!scalarMatches(slot.type, args[slot.index])) throw new FusionFallback(`pipeline argument ${slot.index} is no longer of type ${slot.type}`, true);
+          for (let i = 0; i < this._resultArgIndexes.length; i++) {
+            const index = this._resultArgIndexes[i];
+            if (isResidentHandle(args[index])) throw new FusionFallback(`pipeline argument ${index} is now a GPU-resident handle`, true);
+          }
+        }
+        _writeScalar(u32, i32, f32, record, value) {
+          const slot = record.offset / 4;
+          if (record.type === "Integer") i32[slot] = value | 0; else if (record.type === "Boolean") u32[slot] = value ? 1 : 0; else f32[slot] = value;
+        }
+        execute(args) {
+          if (this.destroyed) throw new Error("pipeline fused executor has been destroyed");
+          if (this.context && this.context.isLost) return Promise.reject(new Error("WebGPU device was lost; the pipeline will rebuild on a fresh device on its next call"));
+          this._checkArguments(args);
+          const device = this._device;
+          const queue = device.queue;
+          for (const [index, region] of this._argRegions) {
+            const value = args[index];
+            utils.flattenTo(value instanceof Input ? value.value : value, region.scratch);
+            queue.writeBuffer(region.buffer, 0, region.scratch);
+          }
+          for (let i = 0; i < this._paramsRecords.length; i++) {
+            const record = this._paramsRecords[i];
+            if (!record.perCall) continue;
+            for (let j = 0; j < record.perCallScalars.length; j++) {
+              const slot = record.perCallScalars[j];
+              this._writeScalar(record.u32, record.i32, record.f32, slot, args[slot.index]);
+            }
+            if (record.seedOffset !== null) record.u32[record.seedOffset / 4] = Math.random() * 4294967296 >>> 0;
+            queue.writeBuffer(record.paramsBuffer, 0, record.mirror);
+          }
+          const encoder = device.createCommandEncoder();
+          for (let i = 0; i < this._passes.length; i++) {
+            const stepPass = this._passes[i];
+            const pass = encoder.beginComputePass();
+            pass.setPipeline(stepPass.pipeline);
+            pass.setBindGroup(0, stepPass.bindGroup);
+            pass.dispatchWorkgroups(stepPass.groups[0], stepPass.groups[1], stepPass.groups[2]);
+            pass.end();
+          }
+          for (let i = 0; i < this._resultReads.length; i++) {
+            const read = this._resultReads[i];
+            if (read.kind === "step") encoder.copyBufferToBuffer(read.buffer, 0, this._staging, read.offset, read.byteLength);
+          }
+          queue.submit([ encoder.finish() ]);
+          if (!this._staging) return Promise.resolve(this._shapeResults(args, null));
+          return this._staging.mapAsync(MAP_MODE_READ).then(() => {
+            const mapped = this._staging.getMappedRange();
+            const values = this._shapeResults(args, mapped);
+            this._staging.unmap();
+            return values;
+          });
+        }
+        _shapeResults(args, mapped) {
+          const results = this.plan.results;
+          const values = new Array(this._resultReads.length);
+          for (let i = 0; i < this._resultReads.length; i++) {
+            const read = this._resultReads[i];
+            if (read.kind === "step") {
+              const data = new Float32Array(mapped.slice(read.offset, read.offset + read.byteLength));
+              values[i] = read.kernel._shapeOutput(data, read.output, read.componentCount);
+            } else if (read.kind === "arg") values[i] = unwrapResultValue(args[read.index]); else values[i] = unwrapResultValue(read.value);
+          }
+          if (results.kind === "single") return values[0];
+          if (results.kind === "array") return values;
+          const shaped = {};
+          for (let i = 0; i < values.length; i++) shaped[results.entries[i].key] = values[i];
+          return shaped;
+        }
+        destroy() {
+          if (this.destroyed) return;
+          this.destroyed = true;
+          if (this._planBuffers) for (let i = 0; i < this._planBuffers.length; i++) this._planBuffers[i].buffer.destroy();
+          for (const region of this._argRegions.values()) region.buffer.destroy();
+          for (const literal of this._literalBuffers.values()) literal.buffer.destroy();
+          for (let i = 0; i < this._paramsRecords.length; i++) this._paramsRecords[i].paramsBuffer.destroy();
+          if (this._staging) {
+            this._staging.destroy();
+            this._staging = null;
+          }
+          const gpuKernels = this.gpu && this.gpu.kernels;
+          for (let i = 0; i < this._extraShortcuts.length; i++) {
+            const shortcut = this._extraShortcuts[i];
+            if (!gpuKernels || gpuKernels.indexOf(shortcut.kernel) !== -1) shortcut.destroy();
+          }
+          this._extraShortcuts = [];
+          this._planBuffers = null;
+          this._argRegions = new Map;
+          this._argScalarSlots = new Map;
+          this._literalBuffers = new Map;
+          this._paramsRecords = [];
+          this._passes = null;
+          this._resultReads = null;
+        }
+      }
+    };
+  });
+  var require_pipeline = __commonJSMin((exports, module) => {
+    const {Input: Input} = require_input();
+    const {utils: utils} = require_utils();
+    const MSG_HANDLE_READ = "pipeline intermediate results cannot be read during orchestration";
+    const MSG_HANDLE_PRIMITIVE = "pipeline intermediate results cannot be used in arithmetic or conditions during orchestration";
+    const MSG_MATH_RANDOM = "Math.random() is not allowed during pipeline orchestration; orchestration must be deterministic";
+    const MSG_FOREIGN_KERNEL = "pipelines can only call kernels created by the same GPU instance";
+    const MSG_GRAPHICAL = "graphical kernels are not supported inside pipelines";
+    const MSG_KERNEL_MAP = "kernel maps are not supported inside pipelines";
+    const MSG_RETURN_SHAPE = "a pipeline must return a handle, or an Array or plain object of handles";
+    const MSG_FIXED_OUTPUT = "kernels called inside a pipeline must have a fixed output size";
+    const MSG_DESTROYED = "pipeline has been destroyed";
+    const MSG_ASYNC_ORCHESTRATION = "the orchestration function must be synchronous; async functions and generators cannot be traced";
+    const MSG_STALE_HANDLE = "this handle belongs to a different trace; handles do not survive re-trace or cross pipelines";
+    var PipelineHandle = class {};
+    let activeTrace = null;
+    function getActiveTrace() {
+      return activeTrace;
+    }
+    var PipelineTrace = class {
+      constructor(gpu) {
+        this.gpu = gpu;
+        this.steps = [];
+        this.kernels = [];
+        this.kernelIndexes = new Map;
+        this.handleMeta = new WeakMap;
+        this.held = [];
+      }
+      createHandle(meta) {
+        const trace = this;
+        const target = Object.freeze(new PipelineHandle);
+        const handle = new Proxy(target, {
+          get(_, property) {
+            if (property === Symbol.toPrimitive || property === "valueOf" || property === "toString") return () => {
+              throw new Error(MSG_HANDLE_PRIMITIVE);
+            };
+            throw new Error(MSG_HANDLE_READ);
+          },
+          set() {
+            throw new Error(MSG_HANDLE_READ);
+          },
+          ownKeys() {
+            throw new Error(MSG_HANDLE_READ);
+          },
+          has() {
+            throw new Error(MSG_HANDLE_READ);
+          },
+          getOwnPropertyDescriptor() {
+            throw new Error(MSG_HANDLE_READ);
+          }
+        });
+        trace.handleMeta.set(handle, meta);
+        return handle;
+      }
+      recordKernelCall(shortcut, args) {
+        const kernel = shortcut.kernel;
+        if (kernel.gpu !== this.gpu) throw new Error(MSG_FOREIGN_KERNEL);
+        if (kernel.graphical) throw new Error(MSG_GRAPHICAL);
+        if (kernel.subKernels && kernel.subKernels.length > 0) throw new Error(MSG_KERNEL_MAP);
+        if (!kernel.output) throw new Error(MSG_FIXED_OUTPUT);
+        let kernelIndex = this.kernelIndexes.get(shortcut);
+        if (kernelIndex === void 0) {
+          kernelIndex = this.kernels.length;
+          this.kernels.push(shortcut);
+          this.kernelIndexes.set(shortcut, kernelIndex);
+        }
+        const argBindings = new Array(args.length);
+        for (let i = 0; i < args.length; i++) argBindings[i] = this.bindValue(args[i]);
+        const stepIndex = this.steps.length;
+        this.steps.push({
+          kernel: kernelIndex,
+          argBindings: argBindings,
+          output: Array.from(kernel.output),
+          outputBuffer: -1
+        });
+        return this.createHandle({
+          source: "step",
+          step: stepIndex
+        });
+      }
+      bindValue(value) {
+        const meta = this.handleMeta.get(value);
+        if (meta) return meta;
+        if (value instanceof PipelineHandle) throw new Error(MSG_STALE_HANDLE);
+        return {
+          source: "literal",
+          value: snapshotValue(value, this.held)
+        };
+      }
+    };
+    function snapshotValue(value, held) {
+      if (!value || typeof value !== "object") return value;
+      if (value instanceof Input) return new Input(snapshotValue(value.value, held), value.size);
+      if (typeof value.delete === "function" || typeof value.toArray === "function") {
+        if (typeof value.clone === "function" && held) {
+          const cloned = value.clone();
+          held.push(cloned);
+          return cloned;
+        }
+        return value;
+      }
+      if (ArrayBuffer.isView(value)) return value.slice(0);
+      if (Array.isArray(value)) return value.map(v => snapshotValue(v, held));
+      return value;
+    }
+    function releaseSnapshots(held) {
+      for (let i = 0; i < held.length; i++) try {
+        held[i].delete();
+      } catch (e) {}
+      held.length = 0;
+    }
+    function assignBuffers(steps, resultBindings) {
+      const lastRead = new Array(steps.length).fill(-1);
+      for (let i = 0; i < steps.length; i++) {
+        const bindings = steps[i].argBindings;
+        for (let j = 0; j < bindings.length; j++) {
+          const binding = bindings[j];
+          if (binding.source === "step") lastRead[binding.step] = Math.max(lastRead[binding.step], i);
+        }
+      }
+      for (let i = 0; i < resultBindings.length; i++) {
+        const binding = resultBindings[i];
+        if (binding.source === "step") lastRead[binding.step] = steps.length;
+      }
+      const buffers = [];
+      const occupantLastRead = [];
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        let assigned = -1;
+        for (let b = 0; b < buffers.length; b++) if (occupantLastRead[b] < i && sameShape(buffers[b].output, step.output)) {
+          assigned = b;
+          break;
+        }
+        if (assigned === -1) {
+          assigned = buffers.length;
+          buffers.push({
+            output: step.output.slice()
+          });
+          occupantLastRead.push(-1);
+        }
+        step.outputBuffer = assigned;
+        occupantLastRead[assigned] = lastRead[i];
+      }
+      return buffers;
+    }
+    function sameShape(a, b) {
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+      return true;
+    }
+    function bindResults(trace, returned) {
+      if (returned === null || returned === void 0) throw new Error(MSG_RETURN_SHAPE);
+      if (trace.handleMeta.has(returned)) return {
+        kind: "single",
+        entries: [ {
+          binding: trace.bindValue(returned)
+        } ]
+      };
+      if (Array.isArray(returned)) return {
+        kind: "array",
+        entries: returned.map((value, i) => ({
+          key: i,
+          binding: trace.bindValue(value)
+        }))
+      };
+      if (returned instanceof PipelineHandle) throw new Error(MSG_STALE_HANDLE);
+      if (typeof returned === "object" && !ArrayBuffer.isView(returned)) {
+        if (typeof returned.then === "function") throw new Error(MSG_ASYNC_ORCHESTRATION);
+        const proto = Object.getPrototypeOf(returned);
+        if (proto !== Object.prototype && proto !== null) throw new Error(MSG_RETURN_SHAPE);
+        const entries = [];
+        for (const key in returned) {
+          if (!returned.hasOwnProperty(key)) continue;
+          entries.push({
+            key: key,
+            binding: trace.bindValue(returned[key])
+          });
+        }
+        if (entries.length === 0) throw new Error(MSG_RETURN_SHAPE);
+        return {
+          kind: "object",
+          entries: entries
+        };
+      }
+      throw new Error(MSG_RETURN_SHAPE);
+    }
+    var Pipeline = class {
+      constructor(gpu, fn, settings) {
+        settings = settings || {};
+        this.gpu = gpu;
+        this.fn = fn;
+        this.argumentCount = fn.length;
+        this.constants = Object.assign({}, settings.constants || {});
+        this._threadsDisabled = settings.threads === false;
+        this._inFlight = 0;
+        this.plan = null;
+        this.executorKind = "generic";
+        this.fallbackReason = null;
+        this._executor = void 0;
+        this._fusionDisabled = false;
+        this.destroyed = false;
+        this._tail = Promise.resolve();
+      }
+      call(args) {
+        if (this.destroyed) return Promise.reject(new Error(MSG_DESTROYED));
+        const sampled = new Array(args.length);
+        const held = [];
+        let preUploaded = null;
+        if (this._inFlight === 0 && this.plan && this._executor === false && this._genericEagerUploadsPay(this.plan)) preUploaded = this._eagerUploads(this.plan, args);
+        for (let i = 0; i < args.length; i++) if (preUploaded && preUploaded[i]) sampled[i] = args[i]; else sampled[i] = snapshotValue(args[i], held);
+        this._inFlight++;
+        const promise = this._tail.then(async () => {
+          if (this.destroyed) throw new Error(MSG_DESTROYED);
+          if (!this.plan) {
+            this.plan = this._buildPlan();
+            this._executor = void 0;
+          }
+          if (this._executor === void 0) await this._prepareExecutor(sampled);
+          if (this._executor) try {
+            return await this._guardAsync(this._executor.execute(sampled));
+          } catch (e) {
+            if (!e || !e.isFusionFallback) throw e;
+            this._dropExecutor();
+            if (e.recompilable) {
+              await this._prepareExecutor(sampled);
+              if (this._executor) try {
+                return await this._guardAsync(this._executor.execute(sampled));
+              } catch (e2) {
+                if (!e2 || !e2.isFusionFallback) throw e2;
+                this._dropExecutor();
+                this._degrade(e2.message);
+              }
+            } else this._degrade(e.message);
+          }
+          return this._executeGeneric(this.plan, sampled, preUploaded);
+        });
+        const settle = () => {
+          this._inFlight--;
+          if (held.length > 0) releaseSnapshots(held);
+        };
+        promise.then(settle, settle);
+        this._tail = promise.then(noop, noop);
+        return promise;
+      }
+      _guardAsync(result) {
+        if (result && typeof result.then === "function") return result.then(null, error => {
+          this._dropExecutor();
+          throw error;
+        });
+        return result;
+      }
+      setConstants(constants) {
+        this.constants = Object.assign({}, constants || {});
+        const release = () => {
+          this._releasePlan();
+        };
+        this._tail = this._tail.then(release, release);
+        return this;
+      }
+      destroy() {
+        this.destroyed = true;
+        if (this.gpu && this.gpu.pipelines) {
+          const index = this.gpu.pipelines.indexOf(this);
+          if (index !== -1) this.gpu.pipelines.splice(index, 1);
+        }
+        if (this._executor && typeof this._executor.abortRuns === "function") this._executor.abortRuns(new Error(MSG_DESTROYED));
+        const release = () => {
+          this._releasePlan();
+        };
+        const tail = this._tail.then(release, release);
+        this._tail = tail;
+        return tail;
+      }
+      _buildPlan() {
+        const trace = new PipelineTrace(this.gpu);
+        const argHandles = new Array(this.argumentCount);
+        for (let i = 0; i < this.argumentCount; i++) argHandles[i] = trace.createHandle({
+          source: "pipelineArg",
+          index: i
+        });
+        const originalRandom = Math.random;
+        Math.random = function pipelineTraceRandom() {
+          throw new Error(MSG_MATH_RANDOM);
+        };
+        activeTrace = trace;
+        let returned;
+        try {
+          const ctorName = this.fn.constructor && this.fn.constructor.name;
+          if (ctorName === "AsyncFunction" || ctorName === "GeneratorFunction" || ctorName === "AsyncGeneratorFunction") throw new Error(MSG_ASYNC_ORCHESTRATION);
+          returned = this.fn.apply({
+            constants: Object.assign({}, this.constants)
+          }, argHandles);
+        } finally {
+          activeTrace = null;
+          Math.random = originalRandom;
+        }
+        const results = bindResults(trace, returned);
+        const buffers = assignBuffers(trace.steps, results.entries.map(entry => entry.binding));
+        const kernels = trace.kernels.map(shortcut => ({
+          shortcut: shortcut,
+          clone: this._cloneKernel(shortcut)
+        }));
+        return {
+          steps: trace.steps,
+          buffers: buffers,
+          results: results,
+          kernels: kernels,
+          held: trace.held,
+          genericClones: new Map
+        };
+      }
+      _genericClone(plan, step) {
+        const signature = step.argBindings.map(binding => binding.source === "step" ? "T" : binding.source === "pipelineArg" ? "a" + binding.index : "l").join(",");
+        const key = step.kernel + ":" + step.outputBuffer + ":" + signature;
+        let clone = plan.genericClones.get(key);
+        if (!clone) {
+          clone = this._cloneKernel(plan.kernels[step.kernel].clone, {
+            immutable: false,
+            dynamicArguments: false
+          });
+          plan.genericClones.set(key, clone);
+        }
+        return clone;
+      }
+      _prepareExecutor(args) {
+        if (this._fusionDisabled) {
+          this._executor = false;
+          return;
+        }
+        const kernels = this.plan.kernels;
+        if (kernels.length > 0 && kernels[0].clone.kernel.constructor.mode === "webgpu") {
+          const {WebGPUPipelineExecutor: WebGPUPipelineExecutor} = require_pipeline_executor();
+          return WebGPUPipelineExecutor.compile(this, this.plan, args).then(executor => {
+            this._executor = executor;
+            this.executorKind = executor.kind;
+            this.fallbackReason = null;
+          }, e => {
+            this._degrade(e && e.message || "fused executor unavailable");
+          });
+        }
+        try {
+          const {WebAssemblyPipelineExecutor: WebAssemblyPipelineExecutor} = require_pipeline_executor$1();
+          this._executor = WebAssemblyPipelineExecutor.compile(this, this.plan, args);
+          this.executorKind = this._executor.kind;
+          this.fallbackReason = null;
+        } catch (e) {
+          this._degrade(e && e.message || "fused executor unavailable");
+        }
+      }
+      _dropExecutor() {
+        if (this._executor) this._executor.destroy();
+        this._executor = void 0;
+      }
+      _degrade(reason) {
+        this._executor = false;
+        this.executorKind = "generic";
+        this.fallbackReason = reason;
+      }
+      _cloneKernel(shortcut, overrides) {
+        const kernel = shortcut.kernel;
+        const settings = Object.assign({
+          output: Array.from(kernel.output),
+          pipeline: true,
+          immutable: true,
+          dynamicArguments: true
+        }, overrides || {});
+        const optional = [ "constants", "constantTypes", "precision", "loopMaxIterations", "strictIntegers", "fixIntegerDivisionAccuracy", "optimizeFloatMemory", "tactic", "functions", "nativeFunctions", "injectedNative", "debug", "randomSeed", "returnType" ];
+        if (kernel.declaredArgumentTypes) settings.argumentTypes = kernel.declaredArgumentTypes.slice();
+        for (let i = 0; i < optional.length; i++) {
+          const name = optional[i];
+          if (kernel[name] !== null && kernel[name] !== void 0) settings[name] = kernel[name];
+        }
+        return this.gpu.createKernel(kernel.source, settings);
+      }
+      _uploadArg(plan, index, value) {
+        const key = "up:" + index;
+        let upload = plan.genericClones.get(key);
+        if (!upload) {
+          const dims = argDimensions(value);
+          const source = dims[2] > 1 ? "function (v) { return v[this.thread.z][this.thread.y][this.thread.x]; }" : dims[1] > 1 ? "function (v) { return v[this.thread.y][this.thread.x]; }" : "function (v) { return v[this.thread.x]; }";
+          const output = dims[2] > 1 ? [ dims[0], dims[1], dims[2] ] : dims[1] > 1 ? [ dims[0], dims[1] ] : [ dims[0] ];
+          upload = this.gpu.createKernel(source, {
+            output: output,
+            pipeline: true,
+            immutable: false
+          });
+          plan.genericClones.set(key, upload);
+        }
+        return upload(value);
+      }
+      _genericEagerUploadsPay(plan) {
+        if (plan.kernels.length === 0) return false;
+        return plan.kernels[0].clone.kernel.constructor.mode === "gpu";
+      }
+      _eagerUploads(plan, args) {
+        const uploaded = new Array(args.length).fill(null);
+        for (let i = 0; i < plan.steps.length; i++) {
+          const bindings = plan.steps[i].argBindings;
+          for (let j = 0; j < bindings.length; j++) {
+            const binding = bindings[j];
+            if (binding.source !== "pipelineArg" || uploaded[binding.index]) continue;
+            const value = args[binding.index];
+            if (!value || typeof value !== "object") continue;
+            if (typeof value.toArray === "function" && !(value instanceof Input)) continue;
+            if (plan.genericArgDims) {
+              const known = plan.genericArgDims.get(binding.index);
+              if (known !== void 0 && known !== argDimensions(value).join("x")) return null;
+            }
+            const handle = this._uploadArg(plan, binding.index, value);
+            if (handle && typeof handle.then === "function") return null;
+            uploaded[binding.index] = handle;
+          }
+        }
+        return uploaded;
+      }
+      async _executeGeneric(plan, args, preUploaded) {
+        const slots = new Array(plan.buffers.length).fill(null);
+        if (!plan.genericArgDims) plan.genericArgDims = new Map;
+        for (let i = 0; i < args.length; i++) {
+          const value = args[i];
+          if (!value || typeof value !== "object") continue;
+          if (typeof value.toArray === "function" && !(value instanceof Input)) continue;
+          const dims = argDimensions(value).join("x");
+          const known = plan.genericArgDims.get(i);
+          if (known === void 0) plan.genericArgDims.set(i, dims); else if (known !== dims) {
+            const gpuKernels = this.gpu && this.gpu.kernels;
+            for (const clone of plan.genericClones.values()) if (!gpuKernels || gpuKernels.indexOf(clone.kernel) !== -1) clone.destroy();
+            plan.genericClones.clear();
+            plan.genericArgDims = new Map([ [ i, dims ] ]);
+            break;
+          }
+        }
+        const backendMode = plan.kernels.length > 0 ? plan.kernels[0].clone.kernel.constructor.mode : null;
+        const uploadsPay = backendMode === "gpu" || backendMode === "webgpu";
+        const uploaded = preUploaded || new Array(args.length).fill(null);
+        if (uploadsPay && !preUploaded) for (let i = 0; i < plan.steps.length; i++) {
+          const bindings = plan.steps[i].argBindings;
+          for (let j = 0; j < bindings.length; j++) {
+            const binding = bindings[j];
+            if (binding.source !== "pipelineArg" || uploaded[binding.index]) continue;
+            const value = args[binding.index];
+            if (!value || typeof value !== "object") continue;
+            if (typeof value.toArray === "function" && !(value instanceof Input)) continue;
+            let handle = this._uploadArg(plan, binding.index, value);
+            if (handle && typeof handle.then === "function") handle = await handle;
+            uploaded[binding.index] = handle;
+          }
+        }
+        try {
+          for (let i = 0; i < plan.steps.length; i++) {
+            const step = plan.steps[i];
+            const bindings = step.argBindings;
+            const resolved = new Array(bindings.length);
+            for (let j = 0; j < bindings.length; j++) {
+              const binding = bindings[j];
+              if (binding.source === "pipelineArg") resolved[j] = uploaded[binding.index] || args[binding.index]; else if (binding.source === "step") resolved[j] = slots[plan.steps[binding.step].outputBuffer]; else resolved[j] = binding.value;
+            }
+            let output = this._genericClone(plan, step).apply(null, resolved);
+            if (output && typeof output.then === "function") output = await output;
+            slots[step.outputBuffer] = output;
+          }
+          const results = plan.results;
+          const values = new Array(results.entries.length);
+          for (let i = 0; i < results.entries.length; i++) {
+            const binding = results.entries[i].binding;
+            let value;
+            if (binding.source === "pipelineArg") value = args[binding.index]; else if (binding.source === "step") value = slots[plan.steps[binding.step].outputBuffer]; else value = binding.value;
+            if (value && typeof value.toArray === "function") {
+              value = value.toArray();
+              if (value && typeof value.then === "function") value = await value;
+            } else if (binding.source === "step") value = copyPlainResult(value);
+            values[i] = value;
+          }
+          if (results.kind === "single") return values[0];
+          if (results.kind === "array") return values;
+          const shaped = {};
+          for (let i = 0; i < results.entries.length; i++) shaped[results.entries[i].key] = values[i];
+          return shaped;
+        } finally {
+          slots.length = 0;
+        }
+      }
+      _releasePlan() {
+        if (this._executor) this._executor.destroy();
+        this._executor = void 0;
+        this.executorKind = "generic";
+        this.fallbackReason = null;
+        if (!this.plan) return;
+        const kernels = this.plan.kernels;
+        const gpuKernels = this.gpu && this.gpu.kernels;
+        for (let i = 0; i < kernels.length; i++) {
+          const clone = kernels[i].clone;
+          if (!gpuKernels || gpuKernels.indexOf(clone.kernel) !== -1) clone.destroy();
+        }
+        for (const clone of this.plan.genericClones.values()) if (!gpuKernels || gpuKernels.indexOf(clone.kernel) !== -1) clone.destroy();
+        this.plan.genericClones.clear();
+        if (this.plan.held) releaseSnapshots(this.plan.held);
+        this.plan = null;
+      }
+    };
+    function argDimensions(value) {
+      const dims = value instanceof Input ? Array.from(value.size) : Array.from(utils.getDimensions(value));
+      while (dims.length < 3) dims.push(1);
+      return dims;
+    }
+    function copyPlainResult(value) {
+      if (ArrayBuffer.isView(value)) return value.slice(0);
+      if (Array.isArray(value)) return value.map(copyPlainResult);
+      return value;
+    }
+    function noop() {}
+    module.exports = {
+      Pipeline: Pipeline,
+      PipelineHandle: PipelineHandle,
+      getActiveTrace: getActiveTrace
+    };
+  });
   var require_kernel_run_shortcut = __commonJSMin((exports, module) => {
     const {utils: utils} = require_utils();
     const {Input: Input} = require_input();
+    const {getActiveTrace: getActiveTrace} = require_pipeline();
     function kernelRunShortcut(kernel) {
       const MAX_SWITCHES = 4;
       function syncBody(args) {
@@ -23347,6 +24979,8 @@
         return value;
       }
       function run() {
+        const trace = getActiveTrace();
+        if (trace) return trace.recordKernelCall(shortcut, arguments);
         if (kernel.constructor.isAsync === true || kernel.asyncMode === true) return asyncRun(arguments);
         return syncRun(arguments);
       }
@@ -23407,6 +25041,7 @@
     const {WebGPUKernel: WebGPUKernel} = require_kernel$1();
     const {WebAssemblyKernel: WebAssemblyKernel} = require_kernel();
     const {kernelRunShortcut: kernelRunShortcut} = require_kernel_run_shortcut();
+    const {Pipeline: Pipeline} = require_pipeline();
     const kernelOrder = [ HeadlessGLKernel, WebGL2Kernel, WebGLKernel, WebAssemblyKernel ];
     const kernelTypes = [ "gpu", "cpu" ];
     const internalKernels = {
@@ -23474,6 +25109,7 @@
           this._webGPUDecision = false;
         }); else this._webGPUDecision = false;
         this.kernels = [];
+        this.pipelines = [];
         this.functions = [];
         this.nativeFunctions = [];
         this.injectedNative = null;
@@ -23716,6 +25352,44 @@
         kernels.push(kernel);
         return kernelRun;
       }
+      createPipeline(fn, settings) {
+        if (typeof fn !== "function") throw new Error("createPipeline requires an orchestration function");
+        if (this.mode === "dev") throw new Error("createPipeline is not supported in dev mode");
+        const pipeline = new Pipeline(this, fn, settings);
+        this.pipelines.push(pipeline);
+        const shortcut = function() {
+          return pipeline.call(arguments);
+        };
+        shortcut.pipeline = pipeline;
+        shortcut.setConstants = function(constants) {
+          pipeline.setConstants(constants);
+          return shortcut;
+        };
+        shortcut.destroy = function() {
+          return pipeline.destroy();
+        };
+        Object.defineProperty(shortcut, "executorKind", {
+          get: () => pipeline.executorKind
+        });
+        Object.defineProperty(shortcut, "fallbackReason", {
+          get: () => pipeline.fallbackReason
+        });
+        Object.defineProperty(shortcut, "plan", {
+          get: () => pipeline.plan
+        });
+        Object.defineProperty(shortcut, "backend", {
+          get: () => {
+            const kind = pipeline.executorKind;
+            if (kind === "fused-sync" || kind === "fused-threaded") return "webasm";
+            if (kind === "fused-encoder") return "webgpu";
+            const plan = pipeline.plan;
+            if (!plan) return null;
+            for (const [key, clone] of plan.genericClones) if (key.indexOf("up:") !== 0) return clone.kernel.constructor.mode;
+            return plan.kernels.length > 0 ? plan.kernels[0].clone.kernel.constructor.mode : null;
+          }
+        });
+        return shortcut;
+      }
       createKernelMap() {
         let fn;
         let settings;
@@ -23808,17 +25482,30 @@
           if (!this.kernels) resolve();
           setTimeout(() => {
             try {
-              const kernels = this.kernels.slice();
-              for (let i = 0; i < kernels.length; i++) kernels[i].destroy(true);
-              let firstKernel = kernels[0];
-              if (firstKernel) {
-                if (firstKernel.kernel) firstKernel = firstKernel.kernel;
-                if (firstKernel.constructor.destroyContext) firstKernel.constructor.destroyContext(this.context);
+              let pipelinesDone = Promise.resolve();
+              if (this.pipelines) {
+                const pipelines = this.pipelines.slice();
+                pipelinesDone = Promise.all(pipelines.map(pipeline => Promise.resolve(pipeline.destroy()).catch(() => void 0)));
               }
+              const destroyKernels = () => {
+                try {
+                  const kernels = this.kernels.slice();
+                  for (let i = 0; i < kernels.length; i++) kernels[i].destroy(true);
+                  let firstKernel = kernels[0];
+                  if (firstKernel) {
+                    if (firstKernel.kernel) firstKernel = firstKernel.kernel;
+                    if (firstKernel.constructor.destroyContext) firstKernel.constructor.destroyContext(this.context);
+                  }
+                } catch (e) {
+                  reject(e);
+                  return;
+                }
+                resolve();
+              };
+              pipelinesDone.then(destroyKernels).catch(reject);
             } catch (e) {
               reject(e);
             }
-            resolve();
           }, 0);
         });
       }

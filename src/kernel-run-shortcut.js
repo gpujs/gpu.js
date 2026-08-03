@@ -1,5 +1,6 @@
 const { utils } = require('./utils');
 const { Input } = require('./input');
+const { getActiveTrace } = require('./pipeline');
 
 /**
  * Makes kernels easier for mortals (including me)
@@ -162,6 +163,14 @@ function kernelRunShortcut(kernel) {
   }
 
   function run() {
+    // an open pipeline trace owns every kernel call made under it: the call
+    // is recorded into the plan and answered with a handle instead of
+    // executing (src/pipeline.js); traces are synchronous, so no user run
+    // can be misrecorded
+    const trace = getActiveTrace();
+    if (trace) {
+      return trace.recordKernelCall(shortcut, arguments);
+    }
     if (kernel.constructor.isAsync === true || kernel.asyncMode === true) {
       return asyncRun(arguments);
     }
