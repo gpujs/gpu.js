@@ -614,13 +614,24 @@ class GPU {
     Object.defineProperty(shortcut, 'plan', {
       get: () => pipeline.plan,
     });
-    // the backend that actually EXECUTES: the plan clones', not the user
-    // kernels' -- under degradation the clone swaps to cpu and this says so,
-    // which is the silent-degradation safety net benchmark suites probe
+    // the backend that actually EXECUTES, derived from the executor that
+    // ran -- never from plan internals, which reorganize between releases.
+    // Under degradation inside the generic executor the writer clones swap
+    // to cpu and this says so: the silent-degradation safety net suites
+    // probe on kernels (#868), as supported API.
     Object.defineProperty(shortcut, 'backend', {
       get: () => {
-        if (!pipeline.plan || pipeline.plan.kernels.length === 0) return null;
-        return pipeline.plan.kernels[0].clone.kernel.constructor.mode;
+        const kind = pipeline.executorKind;
+        if (kind === 'fused-sync' || kind === 'fused-threaded') return 'webasm';
+        if (kind === 'fused-encoder') return 'webgpu';
+        const plan = pipeline.plan;
+        if (!plan) return null;
+        for (const [key, clone] of plan.genericClones) {
+          if (key.indexOf('up:') !== 0) return clone.kernel.constructor.mode;
+        }
+        // built but no generic run yet: the plan clones' mode is the
+        // backend a run WOULD execute on
+        return plan.kernels.length > 0 ? plan.kernels[0].clone.kernel.constructor.mode : null;
       },
     });
     return shortcut;

@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.22.0
- * @date Mon Aug 03 2026 16:54:01 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 17:13:48 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -23741,6 +23741,7 @@
           for (const [index, region] of this._argArrayRegions) {
             const value = args[index];
             if (!value || typeof value !== "object") throw new FusionFallback(`pipeline argument ${index} is no longer an array`, true);
+            if (typeof value.toArray === "function" && !(value instanceof Input)) throw new FusionFallback(`pipeline argument ${index} is now a GPU-resident handle`, true);
             const dims = valueDimensions(value);
             if (dims[0] !== region.dims[0] || dims[1] !== region.dims[1] || dims[2] !== region.dims[2]) throw new FusionFallback(`pipeline argument ${index} changed size from [${region.dims.join(", ")}] to [${dims.join(", ")}]`, true);
           }
@@ -24567,6 +24568,7 @@
         this.argumentCount = fn.length;
         this.constants = Object.assign({}, settings.constants || {});
         this._threadsDisabled = settings.threads === false;
+        this._inFlight = 0;
         this.plan = null;
         this.executorKind = "generic";
         this.fallbackReason = null;
@@ -24579,7 +24581,10 @@
         if (this.destroyed) return Promise.reject(new Error(MSG_DESTROYED));
         const sampled = new Array(args.length);
         const held = [];
-        for (let i = 0; i < args.length; i++) sampled[i] = snapshotValue(args[i], held);
+        let preUploaded = null;
+        if (this._inFlight === 0 && this.plan && this._executor === null && this._genericEagerUploadsPay(this.plan)) preUploaded = this._eagerUploads(this.plan, args);
+        for (let i = 0; i < args.length; i++) if (preUploaded && preUploaded[i]) sampled[i] = args[i]; else sampled[i] = snapshotValue(args[i], held);
+        this._inFlight++;
         const promise = this._tail.then(async () => {
           if (this.destroyed) throw new Error(MSG_DESTROYED);
           if (!this.plan) {
@@ -24603,9 +24608,13 @@
               }
             } else this._degrade(e.message);
           }
-          return this._executeGeneric(this.plan, sampled);
+          return this._executeGeneric(this.plan, sampled, preUploaded);
         });
-        if (held.length > 0) promise.then(() => releaseSnapshots(held), () => releaseSnapshots(held));
+        const settle = () => {
+          this._inFlight--;
+          if (held.length > 0) releaseSnapshots(held);
+        };
+        promise.then(settle, settle);
         this._tail = promise.then(noop, noop);
         return promise;
       }
@@ -24755,7 +24764,28 @@
         }
         return upload(value);
       }
-      async _executeGeneric(plan, args) {
+      _genericEagerUploadsPay(plan) {
+        if (plan.kernels.length === 0) return false;
+        return plan.kernels[0].clone.kernel.constructor.mode === "gpu";
+      }
+      _eagerUploads(plan, args) {
+        const uploaded = new Array(args.length).fill(null);
+        for (let i = 0; i < plan.steps.length; i++) {
+          const bindings = plan.steps[i].argBindings;
+          for (let j = 0; j < bindings.length; j++) {
+            const binding = bindings[j];
+            if (binding.source !== "pipelineArg" || uploaded[binding.index]) continue;
+            const value = args[binding.index];
+            if (!value || typeof value !== "object") continue;
+            if (typeof value.toArray === "function" && !(value instanceof Input)) continue;
+            const handle = this._uploadArg(plan, binding.index, value);
+            if (handle && typeof handle.then === "function") return null;
+            uploaded[binding.index] = handle;
+          }
+        }
+        return uploaded;
+      }
+      async _executeGeneric(plan, args, preUploaded) {
         const slots = new Array(plan.buffers.length).fill(null);
         if (!plan.genericArgDims) plan.genericArgDims = new Map;
         for (let i = 0; i < args.length; i++) {
@@ -24774,8 +24804,8 @@
         }
         const backendMode = plan.kernels.length > 0 ? plan.kernels[0].clone.kernel.constructor.mode : null;
         const uploadsPay = backendMode === "gpu" || backendMode === "webgpu";
-        const uploaded = new Array(args.length).fill(null);
-        if (uploadsPay) for (let i = 0; i < plan.steps.length; i++) {
+        const uploaded = preUploaded || new Array(args.length).fill(null);
+        if (uploadsPay && !preUploaded) for (let i = 0; i < plan.steps.length; i++) {
           const bindings = plan.steps[i].argBindings;
           for (let j = 0; j < bindings.length; j++) {
             const binding = bindings[j];
@@ -25345,8 +25375,13 @@
         });
         Object.defineProperty(shortcut, "backend", {
           get: () => {
-            if (!pipeline.plan || pipeline.plan.kernels.length === 0) return null;
-            return pipeline.plan.kernels[0].clone.kernel.constructor.mode;
+            const kind = pipeline.executorKind;
+            if (kind === "fused-sync" || kind === "fused-threaded") return "webasm";
+            if (kind === "fused-encoder") return "webgpu";
+            const plan = pipeline.plan;
+            if (!plan) return null;
+            for (const [key, clone] of plan.genericClones) if (key.indexOf("up:") !== 0) return clone.kernel.constructor.mode;
+            return plan.kernels.length > 0 ? plan.kernels[0].clone.kernel.constructor.mode : null;
           }
         });
         return shortcut;

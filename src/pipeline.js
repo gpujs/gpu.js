@@ -315,6 +315,9 @@ class Pipeline {
     // without the pool's (the fused-encoder and generic paths are
     // unaffected; they were never threaded)
     this._threadsDisabled = settings.threads === false;
+    // calls queued or executing on the tail; zero means the plan's upload
+    // textures are quiescent and an eager synchronous upload is safe
+    this._inFlight = 0;
     this.plan = null;
     /**
      * executor identity probe for tests and later phases: 'generic' executes
@@ -359,9 +362,22 @@ class Pipeline {
     if (this.destroyed) return Promise.reject(new Error(MSG_DESTROYED));
     const sampled = new Array(args.length);
     const held = [];
-    for (let i = 0; i < args.length; i++) {
-      sampled[i] = snapshotValue(args[i], held);
+    // quiescent fast path: with no call in flight, a GL upload runs
+    // synchronously RIGHT NOW, so the upload texture IS the call-time
+    // snapshot and the deep copy is skipped -- copying was a fixed ~30 ms
+    // per call on image-sized arguments, which dominated short plans
+    let preUploaded = null;
+    if (this._inFlight === 0 && this.plan && this._executor === null && this._genericEagerUploadsPay(this.plan)) {
+      preUploaded = this._eagerUploads(this.plan, args);
     }
+    for (let i = 0; i < args.length; i++) {
+      if (preUploaded && preUploaded[i]) {
+        sampled[i] = args[i];
+      } else {
+        sampled[i] = snapshotValue(args[i], held);
+      }
+    }
+    this._inFlight++;
     const promise = this._tail.then(async () => {
       if (this.destroyed) throw new Error(MSG_DESTROYED);
       if (!this.plan) {
@@ -397,12 +413,13 @@ class Pipeline {
           }
         }
       }
-      return this._executeGeneric(this.plan, sampled);
+      return this._executeGeneric(this.plan, sampled, preUploaded);
     });
-    if (held.length > 0) {
-      // cloned texture snapshots live exactly as long as the call
-      promise.then(() => releaseSnapshots(held), () => releaseSnapshots(held));
-    }
+    const settle = () => {
+      this._inFlight--;
+      if (held.length > 0) releaseSnapshots(held);
+    };
+    promise.then(settle, settle);
     this._tail = promise.then(noop, noop);
     return promise;
   }
@@ -665,7 +682,38 @@ class Pipeline {
     return upload(value);
   }
 
-  async _executeGeneric(plan, args) {
+  /**
+   * Eager uploads are only sound where the upload call is SYNCHRONOUS (the
+   * GL family): the texture materializes before user code can run again.
+   * webgpu uploads return promises, so its generic path keeps copies.
+   */
+  _genericEagerUploadsPay(plan) {
+    if (plan.kernels.length === 0) return false;
+    return plan.kernels[0].clone.kernel.constructor.mode === 'gpu';
+  }
+
+  _eagerUploads(plan, args) {
+    const uploaded = new Array(args.length).fill(null);
+    for (let i = 0; i < plan.steps.length; i++) {
+      const bindings = plan.steps[i].argBindings;
+      for (let j = 0; j < bindings.length; j++) {
+        const binding = bindings[j];
+        if (binding.source !== 'pipelineArg' || uploaded[binding.index]) continue;
+        const value = args[binding.index];
+        if (!value || typeof value !== 'object') continue;
+        if (typeof value.toArray === 'function' && !(value instanceof Input)) continue;
+        const handle = this._uploadArg(plan, binding.index, value);
+        if (handle && typeof handle.then === 'function') {
+          // not synchronous after all: abandon the fast path for this call
+          return null;
+        }
+        uploaded[binding.index] = handle;
+      }
+    }
+    return uploaded;
+  }
+
+  async _executeGeneric(plan, args, preUploaded) {
     const slots = new Array(plan.buffers.length).fill(null);
     // the clones are statically typed and the uploads statically shaped, so
     // argument size drift rebuilds them (the fused executors' recompile
@@ -695,8 +743,8 @@ class Pipeline {
     }
     const backendMode = plan.kernels.length > 0 ? plan.kernels[0].clone.kernel.constructor.mode : null;
     const uploadsPay = backendMode === 'gpu' || backendMode === 'webgpu';
-    const uploaded = new Array(args.length).fill(null);
-    if (uploadsPay) {
+    const uploaded = preUploaded || new Array(args.length).fill(null);
+    if (uploadsPay && !preUploaded) {
       for (let i = 0; i < plan.steps.length; i++) {
         const bindings = plan.steps[i].argBindings;
         for (let j = 0; j < bindings.length; j++) {

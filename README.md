@@ -1391,6 +1391,15 @@ Calling a pipeline **always returns a Promise** — the [async contract](#asynch
 
 Every backend runs pipelines.  The reference path (`executorKind: 'generic'`) walks the plan through the normal kernel machinery — private per-pipeline kernel instances with `pipeline: true` forced on, your kernel's settings never observably touched — so on GL it is textures end-to-end.  On **webasm** the plan *fuses*: every step compiles over one shared `WebAssembly.Memory` laid out `[pipeline args | plan buffers]`, passes run back-to-back with intermediates never copied out between steps (`'fused-sync'`), and where wasm threads are available the worker pool executes the *whole plan* per worker with Atomics-based barriers between steps — one dispatch per pipeline call, no main-thread round trip per pass (`'fused-threaded'`).  Anything the webasm backend cannot take degrades to the generic executor under its usual contract: the reason is queryable at `pipeline.fallbackReason`, and `pipeline.executorKind` tells you which executor actually ran.
 
+### Reading what actually executed
+
+Introspection is **supported API**, not plan internals — it exists precisely so a correctness harness can assert the backend it asked for is the backend that ran (the guard that caught seventeen silent CPU degradations in #868):
+
+* `pipeline.executorKind` — `'fused-threaded'` / `'fused-sync'` (webasm), `'fused-encoder'` (webgpu), or `'generic'` (every backend, and the degradation target of the fused executors).
+* `pipeline.backend` — the mode of the kernels that actually execute, derived from the executor that ran; under degradation it says `'cpu'`, exactly like `kernel.kernel.constructor.mode` does for kernels.
+* `pipeline.fallbackReason` — why a fused executor declined this plan, `null` while fused.
+* `createPipeline(fn, { threads: false })` pins the webasm lowering to its sync path, for callers (benchmarks, mainly) whose comparisons must stay single-threaded.
+
 What the fusion buys, measured on the gauntlet's jacobi and heat benches rewritten via `createPipeline` (checksums identical to the per-pass versions): **5.7× on heat threaded, 5.2× on jacobi** (heat 890 ms vs 5073 ms per-pass, jacobi 387 ms vs 1997 ms — and 2.8×/3.2× over plain JavaScript on rows the webasm backend previously lost), against the same kernels called per pass on webasm.  The per-pass costs it deletes are exactly the ones that dominate short passes — a task round-trip through the worker pool per call, argument re-upload, and a readback per step — leaving the arithmetic, which was already SIMD.
 
 Not in v1, stated plainly:

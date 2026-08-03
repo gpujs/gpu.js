@@ -229,3 +229,21 @@ test('backend reports the executing clones\' mode, cpu', async assert => {
   assert.equal(p.backend, 'cpu');
   await gpu.destroy();
 });
+
+test('eager-upload fast path keeps call-time sampling headlessgl', async assert => {
+  if (!GPU.isHeadlessGLSupported) { assert.ok(true, 'no headlessgl'); return; }
+  const gpu = new GPU({ mode: 'headlessgl' });
+  const k = gpu.createKernel(function (a) { return a[this.thread.x] + 1; }, { output: [4] });
+  const p = gpu.createPipeline(function (v) { return k(v); });
+  await p([1, 2, 3, 4]); // plan built; pipeline quiescent -> next call is eager
+  const data = new Float32Array([10, 20, 30, 40]);
+  const pending = p(data);
+  data.fill(0); // mutated between call and settlement
+  assert.deepEqual(Array.from(await pending), [11, 21, 31, 41], 'sampled at call, not at run');
+  // overlapped calls take the copy path and sample independently
+  const a = p(new Float32Array([1, 1, 1, 1]));
+  const b = p(new Float32Array([2, 2, 2, 2]));
+  assert.deepEqual(Array.from(await a), [2, 2, 2, 2]);
+  assert.deepEqual(Array.from(await b), [3, 3, 3, 3]);
+  await gpu.destroy();
+});

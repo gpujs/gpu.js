@@ -512,6 +512,12 @@ class WebAssemblyPipelineExecutor {
       if (!value || typeof value !== 'object') {
         throw new FusionFallback(`pipeline argument ${ index } is no longer an array`, true);
       }
+      // a GPU-resident handle (a GL texture, a webgpu buffer result) has no
+      // bytes flattenTo can reach -- recompile declines it with its own
+      // named reason and the run lands on the generic executor
+      if (typeof value.toArray === 'function' && !(value instanceof Input)) {
+        throw new FusionFallback(`pipeline argument ${ index } is now a GPU-resident handle`, true);
+      }
       const dims = valueDimensions(value);
       if (dims[0] !== region.dims[0] || dims[1] !== region.dims[1] || dims[2] !== region.dims[2]) {
         throw new FusionFallback(`pipeline argument ${ index } changed size from [${ region.dims.join(', ') }] to [${ dims.join(', ') }]`, true);
