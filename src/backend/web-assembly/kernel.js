@@ -130,6 +130,11 @@ class WebAssemblyKernel extends Kernel {
 
     this.threadDim = null;
     this.componentCount = 1;
+    // wasm memories are near-invisible to JS heap accounting and each one
+    // also holds a large virtual guard reservation, so an unbounded
+    // per-size-signature cache can pin hundreds of MB the GC feels no
+    // pressure to collect (#870); size sweeps evict LRU past this bound
+    this.moduleCacheLimit = 8;
     this.functionBuilder = null;
     this.tracedFunctions = null;
     this.usesRandom = false;
@@ -601,8 +606,42 @@ class WebAssemblyKernel extends Kernel {
       .f32ConvertI32U().f32Const(16777216).f32Div();
   }
 
+  /**
+   * Frees everything an entry pins. The Memory itself has no explicit
+   * free, but dropping every reference (including the workers' — their
+   * instantiations hold the shared buffer) is the most a library can do
+   * to let it die young (#870). A shared entry defers until the threaded
+   * tail settles so an in-flight dispatch keeps what it captured.
+   */
+  _releaseEntry(entry) {
+    const scrub = () => {
+      entry.instance = null;
+      entry.module = null;
+      entry.memory = null;
+      entry.run = null;
+      entry.runSimd = null;
+      entry.f32 = null;
+      entry.i32 = null;
+      entry.bytes = null;
+    };
+    if (entry.shared && this._pool) {
+      const pool = this._pool;
+      this._threadedTail.then(() => {
+        pool.release(entry.id);
+        scrub();
+      }, scrub);
+    } else {
+      scrub();
+    }
+  }
+
   _instantiate(entryKey, args) {
     let entry = this._moduleCache.get(entryKey);
+    if (entry) {
+      // Map order is the LRU order: refresh on hit
+      this._moduleCache.delete(entryKey);
+      this._moduleCache.set(entryKey, entry);
+    }
     if (!entry) {
       const shared = this._threadable();
       const layout = this.computeLayout(args);
@@ -650,6 +689,12 @@ class WebAssemblyKernel extends Kernel {
         );
       }
       this._moduleCache.set(entryKey, entry);
+      while (this._moduleCache.size > Math.max(this.moduleCacheLimit, 1)) {
+        const oldestKey = this._moduleCache.keys().next().value;
+        const oldest = this._moduleCache.get(oldestKey);
+        this._moduleCache.delete(oldestKey);
+        this._releaseEntry(oldest);
+      }
     }
     this._active = entry;
   }
@@ -874,6 +919,14 @@ class WebAssemblyKernel extends Kernel {
       this._pool = null;
     }
     this._threadedTail = Promise.resolve();
+    // scrub entries rather than only dropping the map: anything still
+    // holding the kernel (the run shortcut closure, user code) would
+    // otherwise keep every cached wasm memory alive with it (#870). The
+    // pool is already destroyed, so no dispatch holds an entry.
+    for (const entry of this._moduleCache.values()) {
+      entry.shared = false;
+      this._releaseEntry(entry);
+    }
     this._moduleCache = new Map();
     this._active = null;
     this.built = false;

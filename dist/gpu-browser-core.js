@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.21.0
- * @date Mon Aug 03 2026 08:18:18 GMT+0800 (Singapore Standard Time)
+ * @date Mon Aug 03 2026 08:25:48 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -18115,7 +18115,7 @@
       }
       return 4;
     }
-    const WORKER_SOURCE = `\nvar entries = {};\nfunction handleMessage(message, post) {\n  if (message.type === 'setup') {\n    var imports = { env: { memory: message.memory } };\n    for (var i = 0; i < message.mathImports.length; i++) {\n      imports.env['math_' + message.mathImports[i]] = Math[message.mathImports[i]];\n    }\n    var instance = new WebAssembly.Instance(message.module, imports);\n    entries[message.id] = {\n      run: instance.exports.run,\n      runSimd: instance.exports.run_simd || null,\n      sizeX: message.sizeX\n    };\n    post({ type: 'ready', id: message.id });\n  } else if (message.type === 'run') {\n    var entry = entries[message.id];\n    var start = message.start;\n    var end = message.end;\n    var seed = message.seed;\n    if (entry.runSimd && (entry.sizeX & 3) === 0 && (start & 3) === 0) {\n      var quadEnd = end - ((end - start) & 3);\n      if (quadEnd > start) entry.runSimd(start, quadEnd, seed);\n      if (quadEnd < end) entry.run(quadEnd, end, seed);\n    } else {\n      entry.run(start, end, seed);\n    }\n    post({ type: 'done', taskId: message.taskId });\n  }\n}\nif (typeof self !== 'undefined' && typeof postMessage === 'function') {\n  self.onmessage = function(event) {\n    handleMessage(event.data, function(message) { postMessage(message); });\n  };\n} else {\n  var parentPort = require('worker_threads').parentPort;\n  parentPort.on('message', function(message) {\n    handleMessage(message, function(reply) { parentPort.postMessage(reply); });\n  });\n}\n`;
+    const WORKER_SOURCE = `\nvar entries = {};\nfunction handleMessage(message, post) {\n  if (message.type === 'setup') {\n    var imports = { env: { memory: message.memory } };\n    for (var i = 0; i < message.mathImports.length; i++) {\n      imports.env['math_' + message.mathImports[i]] = Math[message.mathImports[i]];\n    }\n    var instance = new WebAssembly.Instance(message.module, imports);\n    entries[message.id] = {\n      run: instance.exports.run,\n      runSimd: instance.exports.run_simd || null,\n      sizeX: message.sizeX\n    };\n    post({ type: 'ready', id: message.id });\n  } else if (message.type === 'release') {\n    delete entries[message.id];\n  } else if (message.type === 'run') {\n    var entry = entries[message.id];\n    var start = message.start;\n    var end = message.end;\n    var seed = message.seed;\n    if (entry.runSimd && (entry.sizeX & 3) === 0 && (start & 3) === 0) {\n      var quadEnd = end - ((end - start) & 3);\n      if (quadEnd > start) entry.runSimd(start, quadEnd, seed);\n      if (quadEnd < end) entry.run(quadEnd, end, seed);\n    } else {\n      entry.run(start, end, seed);\n    }\n    post({ type: 'done', taskId: message.taskId });\n  }\n}\nif (typeof self !== 'undefined' && typeof postMessage === 'function') {\n  self.onmessage = function(event) {\n    handleMessage(event.data, function(message) { postMessage(message); });\n  };\n} else {\n  var parentPort = require('worker_threads').parentPort;\n  parentPort.on('message', function(message) {\n    handleMessage(message, function(reply) { parentPort.postMessage(reply); });\n  });\n}\n`;
     var WebAssemblyWorkerPool = class {
       constructor(size) {
         this.size = size || defaultConcurrency();
@@ -18259,6 +18259,23 @@
         });
         return Promise.all(runs).then(() => void 0);
       }
+      release(entryId) {
+        if (this.destroyed) return;
+        for (const worker of this.workers) {
+          if (worker.dead) continue;
+          worker.state.setup.delete(entryId);
+          const wait = worker.state.settingUp.get(entryId);
+          if (wait) {
+            worker.state.settingUp.delete(entryId);
+            wait.reject(new Error("WebAssembly kernel entry released during setup"));
+            this._updateRef(worker);
+          }
+          worker.handle.postMessage({
+            type: "release",
+            id: entryId
+          });
+        }
+      }
       destroy() {
         if (this.destroyed) return;
         this.destroyed = true;
@@ -18371,6 +18388,7 @@
           if (this.precision === null) this.precision = "single";
           this.threadDim = null;
           this.componentCount = 1;
+          this.moduleCacheLimit = 8;
           this.functionBuilder = null;
           this.tracedFunctions = null;
           this.usesRandom = false;
@@ -18720,8 +18738,31 @@
           em.globalGet(stateGlobal).globalGet(stateGlobal).i32Const(28).i32ShrU().i32Const(4).i32Add().i32ShrU().globalGet(stateGlobal).i32Xor().i32Const(277803737).i32Mul().localTee(word);
           em.i32Const(22).i32ShrU().localGet(word).i32Xor().i32Const(8).i32ShrU().f32ConvertI32U().f32Const(16777216).f32Div();
         }
+        _releaseEntry(entry) {
+          const scrub = () => {
+            entry.instance = null;
+            entry.module = null;
+            entry.memory = null;
+            entry.run = null;
+            entry.runSimd = null;
+            entry.f32 = null;
+            entry.i32 = null;
+            entry.bytes = null;
+          };
+          if (entry.shared && this._pool) {
+            const pool = this._pool;
+            this._threadedTail.then(() => {
+              pool.release(entry.id);
+              scrub();
+            }, scrub);
+          } else scrub();
+        }
         _instantiate(entryKey, args) {
           let entry = this._moduleCache.get(entryKey);
+          if (entry) {
+            this._moduleCache.delete(entryKey);
+            this._moduleCache.set(entryKey, entry);
+          }
           if (!entry) {
             const shared = this._threadable();
             const layout = this.computeLayout(args);
@@ -18768,6 +18809,12 @@
               utils.flattenTo(value instanceof Input ? value.value : value, entry.f32.subarray(record.offset / 4, record.offset / 4 + record.flatLength));
             }
             this._moduleCache.set(entryKey, entry);
+            while (this._moduleCache.size > Math.max(this.moduleCacheLimit, 1)) {
+              const oldestKey = this._moduleCache.keys().next().value;
+              const oldest = this._moduleCache.get(oldestKey);
+              this._moduleCache.delete(oldestKey);
+              this._releaseEntry(oldest);
+            }
           }
           this._active = entry;
         }
@@ -18931,6 +18978,10 @@
             this._pool = null;
           }
           this._threadedTail = Promise.resolve();
+          for (const entry of this._moduleCache.values()) {
+            entry.shared = false;
+            this._releaseEntry(entry);
+          }
           this._moduleCache = new Map;
           this._active = null;
           this.built = false;

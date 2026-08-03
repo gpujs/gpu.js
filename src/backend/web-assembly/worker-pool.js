@@ -50,6 +50,8 @@ function handleMessage(message, post) {
       sizeX: message.sizeX
     };
     post({ type: 'ready', id: message.id });
+  } else if (message.type === 'release') {
+    delete entries[message.id];
   } else if (message.type === 'run') {
     var entry = entries[message.id];
     var start = message.start;
@@ -274,6 +276,28 @@ class WebAssemblyWorkerPool {
       }));
     });
     return Promise.all(runs).then(() => undefined);
+  }
+
+  /**
+   * Drops an entry's instantiation from every live worker: the worker-side
+   * instances are what keep an evicted entry's shared memory alive (#870).
+   * The caller guarantees no task for this entry is still in flight.
+   */
+  release(entryId) {
+    if (this.destroyed) return;
+    for (const worker of this.workers) {
+      if (worker.dead) continue;
+      worker.state.setup.delete(entryId);
+      const wait = worker.state.settingUp.get(entryId);
+      if (wait) {
+        // the caller's no-in-flight guarantee makes this unreachable, but a
+        // silently deleted wait would hang its dispatch forever; reject loud
+        worker.state.settingUp.delete(entryId);
+        wait.reject(new Error('WebAssembly kernel entry released during setup'));
+        this._updateRef(worker);
+      }
+      worker.handle.postMessage({ type: 'release', id: entryId });
+    }
   }
 
   destroy() {
