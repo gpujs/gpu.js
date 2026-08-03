@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.21.0
- * @date Mon Aug 03 2026 09:28:10 GMT+0800 (Singapore Standard Time)
+ * @version 2.22.0
+ * @date Mon Aug 03 2026 09:32:55 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
