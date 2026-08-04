@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.23.0
- * @date Wed Aug 05 2026 04:53:46 GMT+0800 (Singapore Standard Time)
+ * @date Wed Aug 05 2026 06:42:12 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -5788,6 +5788,7 @@
       }
       constructor(source, settings) {
         super(source, settings);
+        this._inliningDisabled = true;
         this.mergeSettings(source.settings || settings);
         this._imageData = null;
         this._colorData = null;
@@ -22350,7 +22351,7 @@
           immutable: true,
           dynamicArguments: true
         }, overrides || {});
-        const optional = [ "constants", "constantTypes", "precision", "loopMaxIterations", "strictIntegers", "fixIntegerDivisionAccuracy", "optimizeFloatMemory", "tactic", "functions", "nativeFunctions", "injectedNative", "debug", "randomSeed", "returnType", "loopUnrollLimit", "_optimizerDisabled" ];
+        const optional = [ "constants", "constantTypes", "precision", "loopMaxIterations", "strictIntegers", "fixIntegerDivisionAccuracy", "optimizeFloatMemory", "tactic", "functions", "nativeFunctions", "injectedNative", "debug", "randomSeed", "returnType", "loopUnrollLimit", "_optimizerDisabled", "_inliningDisabled" ];
         if (kernel.declaredArgumentTypes) settings.argumentTypes = kernel.declaredArgumentTypes.slice();
         for (let i = 0; i < optional.length; i++) {
           const name = optional[i];

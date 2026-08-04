@@ -33,8 +33,12 @@ function build(mode, kernelSource, settings, args, extra) {
   }
 }
 
+// cpu ships with T2 off (V8 inlines small helpers better than we do), but
+// the inliner's MECHANICS -- parameter binding, renaming, early-return
+// folding, evaluation order -- are backend-independent and far easiest to
+// read in emitted JavaScript, so these rows opt back in
 function cpuSource(kernelSource, settings, args) {
-  return build('cpu', kernelSource, settings, args).source;
+  return build('cpu', kernelSource, Object.assign({ _inliningDisabled: false }, settings), args).source;
 }
 
 /**
@@ -335,7 +339,7 @@ test('cpu bail: a sub-kernel is never a callee', () => {
       const v = poly(a[this.thread.x]);
       doubled(v);
       return v;
-    }, { output: [4], functions: [poly] });
+    }, { output: [4], functions: [poly], _inliningDisabled: false });
     kernel([1, 2, 3, 4]);
     const source = kernel.kernel.kernelString;
     assert.notOk(/function poly\(/.test(source), 'the helper inlined');
