@@ -35,7 +35,13 @@ class FunctionBuilder {
       followingReturnStatement,
       dynamicArguments,
       dynamicOutput,
+      loopUnrollLimit,
     } = kernel;
+
+    // the internal hook is read once here and handed to every function node,
+    // so a kernel that rebuilds with optimizations off gets a builder whose
+    // whole call graph agrees (the `_fusionDisabled` precedent)
+    const optimizerDisabled = Boolean(kernel._optimizerDisabled);
 
     const argumentTypes = new Array(kernelArguments.length);
     const constantTypes = {};
@@ -132,6 +138,8 @@ class FunctionBuilder {
       plugins,
       dynamicArguments,
       dynamicOutput,
+      optimizerDisabled,
+      loopUnrollLimit,
     }, extraNodeOptions || {});
 
     const rootNodeOptions = Object.assign({}, nodeOptions, {
@@ -174,6 +182,8 @@ class FunctionBuilder {
         triggerImplyArgumentBitRatio,
         onFunctionCall,
         onNestedFunction,
+        optimizerDisabled,
+        loopUnrollLimit,
       }));
     }
 

@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.23.0
- * @date Mon Aug 03 2026 18:12:01 GMT+0800 (Singapore Standard Time)
+ * @date Wed Aug 05 2026 01:15:00 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -5308,6 +5308,8 @@
         this.optimizeFloatMemory = null;
         this.strictIntegers = false;
         this.fixIntegerDivisionAccuracy = null;
+        this._optimizerDisabled = false;
+        this.loopUnrollLimit = 8;
         this.randomSeed = null;
         this.built = false;
         this.signature = null;
@@ -5576,6 +5578,17 @@
         this.fallbackReason = reason || null;
         return this.onRequestFallback(args);
       }
+      buildWithOptimizer(work) {
+        if (this._optimizerDisabled) return work();
+        try {
+          return work();
+        } catch (e) {
+          this._optimizerDisabled = true;
+          this.fallbackReason = `compiler optimizations disabled: ${e.message}`;
+          console.warn(`gpu.js: compiling this kernel with compiler optimizations threw (${e.message}); rebuilding with them off. Please report this at https://github.com/gpujs/gpu.js/issues`);
+          return work();
+        }
+      }
       validateSettings() {
         throw new Error(`"validateSettings" not defined on ${this.constructor.name}`);
       }
@@ -5717,7 +5730,8 @@
     module.exports = {
       FunctionBuilder: class FunctionBuilder {
         static fromKernel(kernel, FunctionNode, extraNodeOptions) {
-          const {kernelArguments: kernelArguments, kernelConstants: kernelConstants, argumentNames: argumentNames, argumentSizes: argumentSizes, argumentBitRatios: argumentBitRatios, constants: constants, constantBitRatios: constantBitRatios, debug: debug, loopMaxIterations: loopMaxIterations, nativeFunctions: nativeFunctions, output: output, optimizeFloatMemory: optimizeFloatMemory, precision: precision, plugins: plugins, source: source, subKernels: subKernels, functions: functions, leadingReturnStatement: leadingReturnStatement, followingReturnStatement: followingReturnStatement, dynamicArguments: dynamicArguments, dynamicOutput: dynamicOutput} = kernel;
+          const {kernelArguments: kernelArguments, kernelConstants: kernelConstants, argumentNames: argumentNames, argumentSizes: argumentSizes, argumentBitRatios: argumentBitRatios, constants: constants, constantBitRatios: constantBitRatios, debug: debug, loopMaxIterations: loopMaxIterations, nativeFunctions: nativeFunctions, output: output, optimizeFloatMemory: optimizeFloatMemory, precision: precision, plugins: plugins, source: source, subKernels: subKernels, functions: functions, leadingReturnStatement: leadingReturnStatement, followingReturnStatement: followingReturnStatement, dynamicArguments: dynamicArguments, dynamicOutput: dynamicOutput, loopUnrollLimit: loopUnrollLimit} = kernel;
+          const optimizerDisabled = Boolean(kernel._optimizerDisabled);
           const argumentTypes = new Array(kernelArguments.length);
           const constantTypes = {};
           for (let i = 0; i < kernelArguments.length; i++) argumentTypes[i] = kernelArguments[i].type;
@@ -5785,7 +5799,9 @@
             output: output,
             plugins: plugins,
             dynamicArguments: dynamicArguments,
-            dynamicOutput: dynamicOutput
+            dynamicOutput: dynamicOutput,
+            optimizerDisabled: optimizerDisabled,
+            loopUnrollLimit: loopUnrollLimit
           }, extraNodeOptions || {});
           const rootNodeOptions = Object.assign({}, nodeOptions, {
             isRootKernel: true,
@@ -5820,7 +5836,9 @@
             triggerImplyArgumentType: triggerImplyArgumentType,
             triggerImplyArgumentBitRatio: triggerImplyArgumentBitRatio,
             onFunctionCall: onFunctionCall,
-            onNestedFunction: onNestedFunction
+            onNestedFunction: onNestedFunction,
+            optimizerDisabled: optimizerDisabled,
+            loopUnrollLimit: loopUnrollLimit
           }));
           let subKernelNodes = null;
           if (subKernels) subKernelNodes = subKernels.map(subKernel => {
@@ -6348,10 +6366,569 @@
       FunctionTracer: FunctionTracer
     };
   });
+  var require_optimizer = __commonJSMin((exports, module) => {
+    let syntheticNodeId = 1610612736;
+    function stampSynthetic(node, source) {
+      node.start = syntheticNodeId++;
+      node.end = syntheticNodeId++;
+      if (source && source.loc) node.loc = source.loc;
+      return node;
+    }
+    const scalarTypes = [ "Number", "Float", "Integer" ];
+    const thisWrite = "@this";
+    const indexedReadSignatures = [ "value[]", "value[][]", "value[][][]", "value[][][][]", "this.constants.value[]", "this.constants.value[][]", "this.constants.value[][][]", "this.constants.value[][][][]" ];
+    function optimize(functionNode, ast, settings) {
+      if (!ast || !ast.body || ast.body.type !== "BlockStatement") return ast;
+      processBlock(new OptimizerContext(functionNode, ast, settings || {}), ast.body);
+      return ast;
+    }
+    var OptimizerContext = class {
+      constructor(functionNode, ast, settings) {
+        this.functionNode = functionNode;
+        this.loopUnrollLimit = typeof settings.loopUnrollLimit === "number" ? settings.loopUnrollLimit : 8;
+        this.mutatedNames = collectMutatedNames(ast.body);
+        this.usedNames = collectUsedNames(ast);
+        this.hoistCount = 0;
+      }
+      freshName() {
+        let name;
+        do {
+          name = `optHoist${this.hoistCount++}`;
+        } while (this.usedNames.has(name));
+        this.usedNames.add(name);
+        return name;
+      }
+      isImmutableArrayRoot(name) {
+        if (this.mutatedNames.has(name)) return false;
+        const {argumentNames: argumentNames} = this.functionNode;
+        return Boolean(argumentNames) && argumentNames.indexOf(name) > -1;
+      }
+      readElementType(ast, signature) {
+        const rootType = this.readRootType(ast, signature);
+        if (!rootType) return null;
+        try {
+          return this.functionNode.getLookupType(rootType);
+        } catch (e) {
+          return null;
+        }
+      }
+      readRootType(ast, signature) {
+        const {functionNode: functionNode} = this;
+        if (signature.indexOf("this.constants.") === 0) {
+          if (this.mutatedNames.has(thisWrite)) return null;
+          const name = constantReadName(ast, signature);
+          if (!name) return null;
+          const type = functionNode.constantTypes ? functionNode.constantTypes[name] : null;
+          return type === "Float" ? "Number" : type || null;
+        }
+        const root = memberRoot(ast);
+        if (!root || root.type !== "Identifier") return null;
+        if (!this.isImmutableArrayRoot(root.name)) return null;
+        const index = functionNode.argumentNames.indexOf(root.name);
+        return (functionNode.argumentTypes ? functionNode.argumentTypes[index] : null) || null;
+      }
+    };
+    function walk(node, visit) {
+      if (!node || typeof node !== "object") return;
+      if (Array.isArray(node)) {
+        for (let i = 0; i < node.length; i++) walk(node[i], visit);
+        return;
+      }
+      if (typeof node.type !== "string") return;
+      visit(node);
+      for (const key in node) {
+        if (key === "loc" || key === "range" || key === "parent") continue;
+        const child = node[key];
+        if (child && typeof child === "object") walk(child, visit);
+      }
+    }
+    function collectMutatedNames(ast) {
+      const names = new Set;
+      const addTarget = target => {
+        let node = target;
+        while (node && node.type === "MemberExpression") node = node.object;
+        if (node && node.type === "Identifier") names.add(node.name);
+        if (node && node.type === "ThisExpression") names.add(thisWrite);
+      };
+      walk(ast, node => {
+        switch (node.type) {
+         case "AssignmentExpression":
+          addTarget(node.left);
+          break;
+
+         case "UpdateExpression":
+          addTarget(node.argument);
+          break;
+
+         case "VariableDeclarator":
+          if (node.id && node.id.type === "Identifier") names.add(node.id.name);
+          break;
+
+         case "FunctionDeclaration":
+         case "FunctionExpression":
+         case "ArrowFunctionExpression":
+          if (node.id && node.id.name) names.add(node.id.name);
+          for (let i = 0; i < node.params.length; i++) if (node.params[i].type === "Identifier") names.add(node.params[i].name);
+          break;
+        }
+      });
+      return names;
+    }
+    function collectUsedNames(ast) {
+      const names = new Set;
+      walk(ast, node => {
+        if (node.type === "Identifier") names.add(node.name);
+      });
+      return names;
+    }
+    function memberRoot(ast) {
+      let node = ast;
+      while (node && node.type === "MemberExpression") node = node.object;
+      return node;
+    }
+    function constantReadName(ast, signature) {
+      let depth = (signature.match(/\[\]/g) || []).length;
+      let node = ast;
+      while (depth-- > 0) {
+        if (!node || node.type !== "MemberExpression") return null;
+        node = node.object;
+      }
+      return node && node.property && node.property.name ? node.property.name : null;
+    }
+    function processBlock(context, block) {
+      const body = block.body;
+      for (let i = 0; i < body.length; i++) {
+        const prefix = processStatement(context, body[i]);
+        if (prefix && prefix.length > 0) {
+          body.splice(i, 0, ...prefix);
+          i += prefix.length;
+        }
+      }
+    }
+    function processStatement(context, statement) {
+      switch (statement.type) {
+       case "BlockStatement":
+        processBlock(context, statement);
+        return null;
+
+       case "IfStatement":
+        processBranch(context, statement, "consequent");
+        processBranch(context, statement, "alternate");
+        return null;
+
+       case "SwitchStatement":
+        for (let i = 0; i < statement.cases.length; i++) {
+          const block = {
+            type: "BlockStatement",
+            body: statement.cases[i].consequent
+          };
+          processBlock(context, block);
+          statement.cases[i].consequent = block.body;
+        }
+        return null;
+
+       case "ForStatement":
+       case "WhileStatement":
+       case "DoWhileStatement":
+        processBranch(context, statement, "body");
+        return hoistFromLoop(context, statement);
+
+       default:
+        return null;
+      }
+    }
+    function processBranch(context, statement, key) {
+      const branch = statement[key];
+      if (!branch) return;
+      if (branch.type === "BlockStatement") {
+        processBlock(context, branch);
+        return;
+      }
+      const prefix = processStatement(context, branch);
+      if (prefix && prefix.length > 0) statement[key] = stampSynthetic({
+        type: "BlockStatement",
+        body: prefix.concat([ branch ])
+      }, branch);
+    }
+    function hoistFromLoop(context, loop) {
+      const varying = collectMutatedNames(loop);
+      const entries = [];
+      collectReachable(loop.body, entries);
+      if (entries.length === 0) return [];
+      const faultable = context.functionNode.readsCanFault && !loopIsAlwaysEntered(loop);
+      const hoisted = [];
+      const relocated = new Set;
+      const cache = new Map;
+      for (let i = 0; i < entries.length; i++) {
+        const {statement: statement} = entries[i];
+        if (statement.optimizerHoist && isInvariant(context, statement.declarations[0].init, varying) && !(faultable && canFault(context, statement.declarations[0].init))) {
+          const key = expressionKey(statement.declarations[0].init);
+          hoisted.push(statement);
+          relocated.add(statement);
+          if (key) cache.set(key, statement.declarations[0].id.name);
+          continue;
+        }
+        replaceInvariantReads(context, statement, varying, faultable, cache, hoisted);
+      }
+      if (relocated.size > 0) for (let i = 0; i < entries.length; i++) {
+        const {list: list} = entries[i];
+        if (!list.some(statement => relocated.has(statement))) continue;
+        const kept = list.filter(statement => !relocated.has(statement));
+        list.length = 0;
+        for (let j = 0; j < kept.length; j++) list.push(kept[j]);
+      }
+      return hoisted;
+    }
+    function collectReachableList(list, entries) {
+      for (let i = 0; i < list.length; i++) {
+        const statement = list[i];
+        switch (statement.type) {
+         case "ExpressionStatement":
+         case "VariableDeclaration":
+          entries.push({
+            list: list,
+            statement: statement
+          });
+          break;
+
+         case "EmptyStatement":
+         case "DebuggerStatement":
+          break;
+
+         case "BlockStatement":
+          if (!collectReachableList(statement.body, entries)) return false;
+          break;
+
+         case "IfStatement":
+         case "SwitchStatement":
+         case "ForStatement":
+         case "WhileStatement":
+         case "DoWhileStatement":
+          if (containsExit(statement)) return false;
+          break;
+
+         default:
+          return false;
+        }
+      }
+      return true;
+    }
+    function collectReachable(body, entries) {
+      if (!body) return false;
+      if (body.type === "BlockStatement") return collectReachableList(body.body, entries);
+      return collectReachableList([ body ], entries);
+    }
+    function containsExit(statement) {
+      let found = false;
+      const visit = (node, inBreakable, inContinuable) => {
+        if (!node || typeof node !== "object" || found) return;
+        if (Array.isArray(node)) {
+          for (let i = 0; i < node.length; i++) visit(node[i], inBreakable, inContinuable);
+          return;
+        }
+        if (typeof node.type !== "string") return;
+        switch (node.type) {
+         case "ReturnStatement":
+         case "ThrowStatement":
+          found = true;
+          return;
+
+         case "BreakStatement":
+          if (node.label || !inBreakable) found = true;
+          return;
+
+         case "ContinueStatement":
+          if (node.label || !inContinuable) found = true;
+          return;
+
+         case "ForStatement":
+         case "WhileStatement":
+         case "DoWhileStatement":
+          visit(node.init, true, true);
+          visit(node.test, true, true);
+          visit(node.update, true, true);
+          visit(node.body, true, true);
+          return;
+
+         case "SwitchStatement":
+          visit(node.discriminant, inBreakable, inContinuable);
+          visit(node.cases, true, inContinuable);
+          return;
+
+         case "FunctionDeclaration":
+         case "FunctionExpression":
+         case "ArrowFunctionExpression":
+          return;
+        }
+        for (const key in node) {
+          if (key === "loc" || key === "range" || key === "parent") continue;
+          const child = node[key];
+          if (child && typeof child === "object") visit(child, inBreakable, inContinuable);
+        }
+      };
+      visit(statement, false, false);
+      return found;
+    }
+    function replaceInvariantReads(context, statement, varying, faultable, cache, hoisted) {
+      const visit = (node, key) => {
+        const child = node[key];
+        if (!child || typeof child !== "object") return;
+        if (Array.isArray(child)) {
+          for (let i = 0; i < child.length; i++) visit(child, i);
+          return;
+        }
+        if (typeof child.type !== "string") return;
+        switch (child.type) {
+         case "FunctionDeclaration":
+         case "FunctionExpression":
+         case "ArrowFunctionExpression":
+          return;
+
+         case "ConditionalExpression":
+          visit(child, "test");
+          return;
+
+         case "LogicalExpression":
+          visit(child, "left");
+          return;
+
+         case "MemberExpression":
+          if (isHoistableRead(context, child, varying) && !(faultable && canFault(context, child))) {
+            node[key] = referenceFor(context, child, cache, hoisted);
+            return;
+          }
+          if (child.computed) visit(child, "property");
+          if (child.object && child.object.type !== "MemberExpression") visit(child, "object");
+          return;
+        }
+        for (const childKey in child) {
+          if (childKey === "loc" || childKey === "range" || childKey === "parent") continue;
+          const grandChild = child[childKey];
+          if (grandChild && typeof grandChild === "object") visit(child, childKey);
+        }
+      };
+      visit({
+        statement: statement
+      }, "statement");
+    }
+    function referenceFor(context, read, cache, hoisted) {
+      const key = expressionKey(read);
+      if (key && cache.has(key)) return stampSynthetic({
+        type: "Identifier",
+        name: cache.get(key)
+      }, read);
+      const name = context.freshName();
+      const declaration = stampSynthetic({
+        type: "VariableDeclaration",
+        kind: "const",
+        declarations: [ stampSynthetic({
+          type: "VariableDeclarator",
+          id: stampSynthetic({
+            type: "Identifier",
+            name: name
+          }, read),
+          init: read
+        }, read) ]
+      }, read);
+      declaration.optimizerHoist = true;
+      hoisted.push(declaration);
+      if (key) cache.set(key, name);
+      return stampSynthetic({
+        type: "Identifier",
+        name: name
+      }, read);
+    }
+    function canFault(context, ast) {
+      let found = false;
+      walk(ast, node => {
+        if (found || node.type !== "MemberExpression") return;
+        const signature = context.functionNode.getVariableSignature(node);
+        if (!signature || indexedReadSignatures.indexOf(signature) === -1) return;
+        if ((signature.match(/\[\]/g) || []).length < 2) return;
+        if (context.readRootType(node, signature) === "Input") return;
+        found = true;
+      });
+      return found;
+    }
+    function loopIsAlwaysEntered(loop) {
+      if (loop.type === "DoWhileStatement") return true;
+      if (loop.type !== "ForStatement") return false;
+      if (!loop.test) return true;
+      const {test: test} = loop;
+      if (test.type !== "BinaryExpression" || test.left.type !== "Identifier") return false;
+      const limit = literalNumber(test.right);
+      if (limit === null) return false;
+      const start = initialNumber(loop.init, test.left.name);
+      if (start === null) return false;
+      switch (test.operator) {
+       case "<":
+        return start < limit;
+
+       case "<=":
+        return start <= limit;
+
+       case ">":
+        return start > limit;
+
+       case ">=":
+        return start >= limit;
+
+       case "!==":
+       case "!=":
+        return start !== limit;
+
+       default:
+        return false;
+      }
+    }
+    function literalNumber(ast) {
+      if (!ast) return null;
+      if (ast.type === "Literal" && typeof ast.value === "number") return ast.value;
+      if (ast.type === "UnaryExpression" && ast.operator === "-") {
+        const value = literalNumber(ast.argument);
+        return value === null ? null : -value;
+      }
+      return null;
+    }
+    function initialNumber(init, name) {
+      if (!init) return null;
+      if (init.type === "VariableDeclaration") {
+        for (let i = 0; i < init.declarations.length; i++) {
+          const declaration = init.declarations[i];
+          if (declaration.id.type === "Identifier" && declaration.id.name === name) return literalNumber(declaration.init);
+        }
+        return null;
+      }
+      if (init.type === "AssignmentExpression" && init.operator === "=" && init.left.type === "Identifier" && init.left.name === name) return literalNumber(init.right);
+      return null;
+    }
+    function isHoistableRead(context, ast, varying) {
+      const signature = context.functionNode.getVariableSignature(ast);
+      if (!signature || indexedReadSignatures.indexOf(signature) === -1) return false;
+      const elementType = context.readElementType(ast, signature);
+      if (!elementType || scalarTypes.indexOf(elementType) === -1) return false;
+      return isInvariant(context, ast, varying);
+    }
+    function isInvariant(context, ast, varying) {
+      if (!ast || typeof ast !== "object") return false;
+      switch (ast.type) {
+       case "Literal":
+        return true;
+
+       case "ThisExpression":
+        return true;
+
+       case "Identifier":
+        return !varying.has(ast.name);
+
+       case "UnaryExpression":
+        return ast.operator !== "delete" && ast.operator !== "typeof" && isInvariant(context, ast.argument, varying);
+
+       case "BinaryExpression":
+       case "LogicalExpression":
+        return isInvariant(context, ast.left, varying) && isInvariant(context, ast.right, varying);
+
+       case "ConditionalExpression":
+        return isInvariant(context, ast.test, varying) && isInvariant(context, ast.consequent, varying) && isInvariant(context, ast.alternate, varying);
+
+       case "MemberExpression":
+        return isInvariantMember(context, ast, varying);
+
+       default:
+        return false;
+      }
+    }
+    function isInvariantMember(context, ast, varying) {
+      const signature = context.functionNode.getVariableSignature(ast);
+      if (!signature) return false;
+      switch (signature) {
+       case "this.thread.value":
+       case "this.output.value":
+        return true;
+
+       case "this.constants.value":
+        return !context.mutatedNames.has(thisWrite);
+
+       case "value.value":
+        return context.functionNode.isAstMathVariable(ast);
+
+       case "value[]":
+       case "value[][]":
+       case "value[][][]":
+       case "value[][][][]":
+        {
+          const root = memberRoot(ast);
+          if (!root || root.type !== "Identifier" || !context.isImmutableArrayRoot(root.name)) return false;
+          return everySubscriptInvariant(context, ast, varying);
+        }
+
+       case "this.constants.value[]":
+       case "this.constants.value[][]":
+       case "this.constants.value[][][]":
+       case "this.constants.value[][][][]":
+        if (context.mutatedNames.has(thisWrite)) return false;
+        return everySubscriptInvariant(context, ast, varying);
+
+       default:
+        return false;
+      }
+    }
+    function everySubscriptInvariant(context, ast, varying) {
+      let node = ast;
+      while (node && node.type === "MemberExpression") {
+        if (node.computed && !isInvariant(context, node.property, varying)) return false;
+        node = node.object;
+      }
+      return true;
+    }
+    function expressionKey(ast) {
+      if (!ast || typeof ast !== "object") return null;
+      switch (ast.type) {
+       case "Literal":
+        return `L${typeof ast.value}:${ast.value}`;
+
+       case "ThisExpression":
+        return "this";
+
+       case "Identifier":
+        return `#${ast.name}`;
+
+       case "MemberExpression":
+        {
+          const object = expressionKey(ast.object);
+          const property = expressionKey(ast.property);
+          if (object === null || property === null) return null;
+          return `M${ast.computed ? "[" : "."}(${object},${property})`;
+        }
+
+       case "UnaryExpression":
+        {
+          const argument = expressionKey(ast.argument);
+          return argument === null ? null : `U${ast.operator}(${argument})`;
+        }
+
+       case "BinaryExpression":
+       case "LogicalExpression":
+        {
+          const left = expressionKey(ast.left);
+          const right = expressionKey(ast.right);
+          if (left === null || right === null) return null;
+          return `B${ast.operator}(${left},${right})`;
+        }
+
+       default:
+        return null;
+      }
+    }
+    module.exports = {
+      optimize: optimize
+    };
+  });
   var require_function_node$5 = __commonJSMin((exports, module) => {
     const acorn = require_acorn();
     const {utils: utils} = require_utils();
     const {FunctionTracer: FunctionTracer} = require_function_tracer();
+    const {optimize: optimize} = require_optimizer();
     const mathProperties = [ "E", "PI", "SQRT2", "SQRT1_2", "LN2", "LN10", "LOG2E", "LOG10E" ];
     const mathFunctions = [ "abs", "acos", "acosh", "asin", "asinh", "atan", "atan2", "atanh", "cbrt", "ceil", "clz32", "cos", "cosh", "expm1", "exp", "floor", "fround", "imul", "log", "log2", "log10", "log1p", "max", "min", "pow", "random", "round", "sign", "sin", "sinh", "sqrt", "tan", "tanh", "trunc" ];
     const allowedExpressions = [ "value", "value[]", "value[][]", "value[][][]", "value[][][][]", "value.value", "value.thread.value", "this.thread.value", "this.output.value", "this.constants.value", "this.constants.value[]", "this.constants.value[][]", "this.constants.value[][][]", "this.constants.value[][][][]", "fn()[]", "fn()[][]", "fn()[][][]", "[][]" ];
@@ -6399,6 +6976,8 @@
         this.dynamicArguments = null;
         this.strictTypingChecking = false;
         this.fixIntegerDivisionAccuracy = null;
+        this.optimizerDisabled = false;
+        this.loopUnrollLimit = 8;
         if (settings) for (const p in settings) {
           if (!settings.hasOwnProperty(p)) continue;
           if (!this.hasOwnProperty(p)) continue;
@@ -6453,10 +7032,14 @@
       get requiresSequenceFreeForInit() {
         return false;
       }
+      get readsCanFault() {
+        return false;
+      }
       getJsAST(inParser) {
         if (this.ast) return this.ast;
         if (typeof this.source === "object") {
           normalizeMinifiedStatements(this.source, this.requiresSequenceFreeForInit);
+          this.optimizeAST(this.source);
           this.traceFunctionAST(this.source);
           return this.ast = this.source;
         }
@@ -6468,9 +7051,16 @@
         }));
         const functionAST = ast.body[0].declarations[0].init;
         normalizeMinifiedStatements(functionAST, this.requiresSequenceFreeForInit);
+        this.optimizeAST(functionAST);
         this.traceFunctionAST(functionAST);
         if (!ast) throw new Error("Failed to parse JS code");
         return this.ast = functionAST;
+      }
+      optimizeAST(ast) {
+        if (this.optimizerDisabled) return ast;
+        return optimize(this, ast, {
+          loopUnrollLimit: this.loopUnrollLimit
+        });
       }
       getAssignedArguments() {
         if (this._assignedArguments) return this._assignedArguments;
@@ -7664,6 +8254,9 @@
   var require_function_node$4 = __commonJSMin((exports, module) => {
     const {FunctionNode: FunctionNode} = require_function_node$5();
     var CPUFunctionNode = class extends FunctionNode {
+      get readsCanFault() {
+        return true;
+      }
       markupUserName(name) {
         if (this.isRootKernel && this.getAssignedArguments().has(name)) return `cellShadow_user_${name}`;
         return `user_${name}`;
@@ -8293,7 +8886,7 @@
         this.setupConstants();
         this.setupArguments(arguments);
         this.validateSettings(arguments);
-        this.translateSource();
+        this.buildWithOptimizer(() => this.translateSource());
         if (this.graphical) {
           const {canvas: canvas, output: output} = this;
           if (!canvas) throw new Error("no canvas available for using graphical output");
@@ -13805,7 +14398,7 @@
         this.setupArguments(arguments);
         if (this.fallbackRequested) return;
         this.updateMaxTexSize();
-        this.translateSource();
+        this.buildWithOptimizer(() => this.translateSource());
         const failureResult = this.pickRenderStrategy(arguments);
         if (failureResult) return failureResult;
         const {texSize: texSize, context: gl, canvas: canvas} = this;
@@ -17188,9 +17781,11 @@
         this.validateSettings(arguments);
         const threadDim = this.threadDim = Array.from(this.output);
         while (threadDim.length < 3) threadDim.push(1);
-        this.translateSource();
-        this.paramsLayout = this.computeParamsLayout();
-        this.compiledSource = this.assembleWGSL();
+        this.buildWithOptimizer(() => {
+          this.translateSource();
+          this.paramsLayout = this.computeParamsLayout();
+          this.compiledSource = this.assembleWGSL();
+        });
         if (this.debug) {
           console.log("WGSL Shader Output:");
           console.log(this.compiledSource);
@@ -22738,9 +23333,17 @@
           this.validateSettings(arguments);
           const threadDim = this.threadDim = Array.from(this.output);
           while (threadDim.length < 3) threadDim.push(1);
-          if (!this.translateSource()) return this.requestFallback(arguments, `return type ${this.returnType} is not supported on the webasm backend`);
-          this.buildSignature(arguments);
-          this._instantiate(this._entryKey(arguments), arguments);
+          let unsupportedReturnType = false;
+          this.buildWithOptimizer(() => {
+            if (!this.translateSource()) {
+              unsupportedReturnType = true;
+              return;
+            }
+            unsupportedReturnType = false;
+            this.buildSignature(arguments);
+            this._instantiate(this._entryKey(arguments), arguments);
+          });
+          if (unsupportedReturnType) return this.requestFallback(arguments, `return type ${this.returnType} is not supported on the webasm backend`);
           this.built = true;
         }
         validateSettings(args) {
@@ -25197,6 +25800,8 @@
             injectedNative: kernelRun.injectedNative,
             subKernels: kernelRun.subKernels,
             strictIntegers: kernelRun.strictIntegers,
+            _optimizerDisabled: kernelRun._optimizerDisabled,
+            loopUnrollLimit: kernelRun.loopUnrollLimit,
             randomSeed: kernelRun.randomSeed,
             debug: kernelRun.debug,
             asyncMode: kernelRun.asyncMode,
@@ -25249,6 +25854,8 @@
             injectedNative: _kernel.injectedNative,
             subKernels: _kernel.subKernels,
             strictIntegers: _kernel.strictIntegers,
+            _optimizerDisabled: _kernel._optimizerDisabled,
+            loopUnrollLimit: _kernel.loopUnrollLimit,
             randomSeed: _kernel.randomSeed,
             debug: _kernel.debug,
             asyncMode: _kernel.asyncMode,
@@ -25326,6 +25933,8 @@
                   precision: currentKernel.precision,
                   tactic: currentKernel.tactic,
                   strictIntegers: currentKernel.strictIntegers,
+                  _optimizerDisabled: currentKernel._optimizerDisabled,
+                  loopUnrollLimit: currentKernel.loopUnrollLimit,
                   fixIntegerDivisionAccuracy: currentKernel.fixIntegerDivisionAccuracy,
                   subKernels: currentKernel.subKernels,
                   graphical: currentKernel.graphical,

@@ -244,6 +244,22 @@ class Kernel {
     this.fixIntegerDivisionAccuracy = null;
 
     /**
+     * Turns the compiler optimizations off for this kernel. Internal hook
+     * (the `_fusionDisabled` precedent), not a public setting: it exists so a
+     * build that throws can be redone honestly, and so the test suite can
+     * compare optimized emission against un-optimized emission.
+     * @type {Boolean}
+     */
+    this._optimizerDisabled = false;
+
+    /**
+     * Trip-count threshold above which a literal loop is left as a loop; `0`
+     * turns the unroller off.
+     * @type {Number}
+     */
+    this.loopUnrollLimit = 8;
+
+    /**
      * Seed for Math.random() so kernel runs are reproducible; null seeds from Math.random()
      * @type {Number|null}
      */
@@ -807,6 +823,29 @@ class Kernel {
     this.fallbackRequested = true;
     this.fallbackReason = reason || null;
     return this.onRequestFallback(args);
+  }
+
+  /**
+   * @desc Runs the source translation with the compiler optimizations on. A
+   * synchronous throw from an optimized build is our bug, not the user's, so
+   * the kernel redoes the translation with the optimizer off, says so loudly,
+   * and records why (#868). Runtime throws are never routed through here --
+   * masking those helps nobody.
+   * @param {Function} work - the translation to run, re-runnable
+   * @returns {*} whatever `work` returns
+   */
+  buildWithOptimizer(work) {
+    if (this._optimizerDisabled) return work();
+    try {
+      return work();
+    } catch (e) {
+      this._optimizerDisabled = true;
+      this.fallbackReason = `compiler optimizations disabled: ${ e.message }`;
+      console.warn(
+        `gpu.js: compiling this kernel with compiler optimizations threw (${ e.message }); ` +
+        'rebuilding with them off. Please report this at https://github.com/gpujs/gpu.js/issues');
+      return work();
+    }
   }
 
   /**

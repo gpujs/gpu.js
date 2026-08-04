@@ -149,7 +149,7 @@ class CPUKernel extends Kernel {
     this.setupConstants();
     this.setupArguments(arguments);
     this.validateSettings(arguments);
-    this.translateSource();
+    this.buildWithOptimizer(() => this.translateSource());
 
     if (this.graphical) {
       const {

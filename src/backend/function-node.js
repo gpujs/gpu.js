@@ -1,6 +1,7 @@
 const acorn = require('acorn');
 const { utils } = require('../utils');
 const { FunctionTracer } = require('./function-tracer');
+const { optimize } = require('./optimizer');
 
 const mathProperties = [
   'E',
@@ -129,6 +130,8 @@ class FunctionNode {
     this.dynamicArguments = null;
     this.strictTypingChecking = false;
     this.fixIntegerDivisionAccuracy = null;
+    this.optimizerDisabled = false;
+    this.loopUnrollLimit = 8;
 
     if (settings) {
       for (const p in settings) {
@@ -266,12 +269,27 @@ class FunctionNode {
     return false;
   }
 
+  /**
+   * Whether an out-of-range element read can FAULT on this backend instead of
+   * yielding some value. The cpu backend emits plain JavaScript, where
+   * `a[y][x]` with `y` past the end throws a TypeError; every other backend
+   * reads a clamped texture or a bounds-checked buffer and cannot. The
+   * optimizer needs to know because moving a read to a place the un-optimized
+   * build never reaches is free where reads are total and a new crash where
+   * they are not.
+   * @returns {Boolean}
+   */
+  get readsCanFault() {
+    return false;
+  }
+
   getJsAST(inParser) {
     if (this.ast) {
       return this.ast;
     }
     if (typeof this.source === 'object') {
       normalizeMinifiedStatements(this.source, this.requiresSequenceFreeForInit);
+      this.optimizeAST(this.source);
       this.traceFunctionAST(this.source);
       return this.ast = this.source;
     }
@@ -290,6 +308,7 @@ class FunctionNode {
     // minifiers fold statements into expressions; unfold them before the
     // tracer records anything, so every backend sees plain statements
     normalizeMinifiedStatements(functionAST, this.requiresSequenceFreeForInit);
+    this.optimizeAST(functionAST);
     this.traceFunctionAST(functionAST);
 
     if (!ast) {
@@ -297,6 +316,22 @@ class FunctionNode {
     }
 
     return this.ast = functionAST;
+  }
+
+  /**
+   * @desc The optimizer's single invocation point, shared by every emitting
+   * backend. It runs AFTER de-minification -- the pass must never see a
+   * comma-folded expression -- and BEFORE the tracer, so the declarations it
+   * introduces are the ones type resolution registers, and before every
+   * per-backend normalization (webgl's linearization and do-while rotation,
+   * webasm's variance analysis and SIMD emission), which must see final
+   * shapes.
+   * @param {Object} ast - the parsed function node
+   * @returns {Object} the same ast
+   */
+  optimizeAST(ast) {
+    if (this.optimizerDisabled) return ast;
+    return optimize(this, ast, { loopUnrollLimit: this.loopUnrollLimit });
   }
 
   /**

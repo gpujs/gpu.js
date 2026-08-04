@@ -507,7 +507,7 @@ class WebGLKernel extends GLKernel {
     this.setupArguments(arguments);
     if (this.fallbackRequested) return;
     this.updateMaxTexSize();
-    this.translateSource();
+    this.buildWithOptimizer(() => this.translateSource());
     const failureResult = this.pickRenderStrategy(arguments);
     if (failureResult) {
       return failureResult;

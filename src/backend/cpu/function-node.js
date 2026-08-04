@@ -7,6 +7,14 @@ const { FunctionNode } = require('../function-node');
  */
 class CPUFunctionNode extends FunctionNode {
   /**
+   * The emitted body is plain JavaScript over real arrays, so `a[y][x]` past
+   * the end of `a` throws rather than reading a clamped texel.
+   */
+  get readsCanFault() {
+    return true;
+  }
+
+  /**
    * @desc Parses the abstract syntax tree for to its *named function*
    * @param {Object} ast - the AST object to parse
    * @param {Array} retArr - return array string
