@@ -253,6 +253,15 @@ class Kernel {
     this._optimizerDisabled = false;
 
     /**
+     * Turns helper inlining (T2) off while leaving the rest of the pass on.
+     * Internal, like `_optimizerDisabled`, and for the same reason: the
+     * benchmark has to price one transform at a time, and `loopUnrollLimit`
+     * alone cannot separate inlining from hoisting.
+     * @type {Boolean}
+     */
+    this._inliningDisabled = false;
+
+    /**
      * Trip-count threshold above which a loop with literal bounds is left as
      * a loop rather than unrolled; `0` turns unrolling off. The knob to reach
      * for when emitted size matters more than the loop overhead -- a mobile

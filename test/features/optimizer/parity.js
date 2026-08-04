@@ -152,6 +152,10 @@ function scale(x, by) {
   return poly(x) * by;
 }
 
+function outer(x) {
+  return scale(x, 2) + 1;
+}
+
 const VECTOR = [];
 for (let i = 0; i < 16; i++) VECTOR.push(((i * 13) % 100) / 50 - 1);
 
@@ -483,6 +487,7 @@ const CASES = [
       }],
     },
     calls: [{ args: [MATRIX] }],
+    enabledByInlining: ['webasm', 'webgpu'],
   },
   {
     name: 'T3: a counter counting down',
@@ -644,6 +649,7 @@ const CASES = [
       }],
     },
     calls: [{ args: [MATRIX] }],
+    enabledByInlining: ['webasm', 'webgpu'],
   },
   {
     name: 'T1: coordinates, constants and output together',
@@ -815,11 +821,295 @@ const CASES = [
     },
     output: [16],
     calls: [{ args: [VECTOR] }],
-    // the GL backends cannot compile Math.random() inside a user helper at
-    // all today -- the plugin's `random()` is only in scope in the kernel
-    // body -- so the seeded-draw-order question can only be asked where the
-    // shape builds. Inlining (T2) is what will make it buildable on GL.
-    modes: ['webasm', 'webgpu'],
+    // GL compiles this now: the random plugin is selected by matching the
+    // kernel's source, and a helper added with addFunction is part of the same
+    // shader but was never part of that match
+    modes: ['webgl', 'webgl2', 'headlessgl', 'webasm', 'webgpu'],
+  },
+
+  // ------------------------------------------------------------- T2 battery
+  //
+  // The edge list the design contract names for inlining, one row each. A row
+  // that must SKIP is here for the same reason as one that must transform: an
+  // over-eager bail and an over-eager inline are both failures, and only the
+  // pair of files can tell them apart -- this one says the answer did not
+  // move, inlining.js says the emission did (or did not).
+  {
+    name: 'T2: helper calling helper, three deep',
+    kernel: function (a) {
+      return outer(a[this.thread.x]) + outer(a[0]);
+    },
+    output: [16],
+    settings: { functions: [poly, scale, outer] },
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T2: a parameter reassigned inside the helper',
+    kernel: function (a) {
+      return bump(a[this.thread.x]) + bump(a[this.thread.x] * 2);
+    },
+    output: [16],
+    settings: {
+      functions: [function bump(v) {
+        v = v + 1;
+        v *= 0.5;
+        return v * v;
+      }],
+    },
+    calls: [{ args: [VECTOR] }],
+    // WGSL parameters are immutable, so the un-optimized build cannot compile
+    // the assignment at all (#867's shape, one level in); inlining binds the
+    // parameter as an ordinary mutable local
+    enabledByInlining: ['webgpu'],
+  },
+  {
+    name: 'T2: an array argument, aliased into both parameters',
+    kernel: function (a) {
+      return blend(a, a, this.thread.x);
+    },
+    output: [16],
+    settings: {
+      functions: [function blend(m, n, k) {
+        return m[k] * 0.25 + n[(k + 1) % 16] * 0.75;
+      }],
+    },
+    calls: [{ args: [VECTOR] }],
+    // an array parameter is a hard error on webasm AND webgpu; inlining
+    // removes the parameter, so this is a shape T2 makes buildable
+    enabledByInlining: ['webasm', 'webgpu'],
+  },
+  {
+    name: 'T2: helper locals shadowing kernel locals',
+    kernel: function (a) {
+      const v = a[this.thread.x];
+      const t = v * 2;
+      const s = shadowy(v) + shadowy(t);
+      return s + v + t;
+    },
+    output: [16],
+    settings: {
+      functions: [function shadowy(v) {
+        const t = v * 3;
+        const s = t + v;
+        return s * t;
+      }],
+    },
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T2: an early return inside a helper',
+    kernel: function (a) {
+      return clampish(a[this.thread.x]) + clampish(a[this.thread.x] - 0.5);
+    },
+    output: [16],
+    settings: {
+      functions: [function clampish(v) {
+        if (v < 0) return 0;
+        if (v > 0.5) return 1;
+        return v * 2;
+      }],
+    },
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T2 skip: a return this pass cannot fold to an expression',
+    kernel: function (a) {
+      return firstOver(a, this.thread.x * 0.05);
+    },
+    output: [16],
+    settings: {
+      functions: [function firstOver(m, limit) {
+        for (let i = 0; i < 8; i++) {
+          if (m[i] > limit) return i;
+        }
+        return -1;
+      }],
+    },
+    calls: [{ args: [VECTOR] }],
+    // the helper survives, so its array parameter still cannot be emitted on
+    // webasm -- identically on both sides, which is what the row asserts
+    modes: ['cpu', 'webgl', 'webgl2', 'headlessgl', 'webgpu'],
+  },
+  {
+    name: 'T2 skip: an early return whose branches draw',
+    // folding this to a conditional would be wrong on webasm's vector path,
+    // which evaluates BOTH sides of a conditional for every lane before
+    // selecting -- so a draw in the untaken branch would advance a stream the
+    // function never touched
+    kernel: function (a) {
+      return maybeDraw(a[this.thread.x]) + Math.random();
+    },
+    output: [16],
+    settings: {
+      randomSeed: 5,
+      functions: [function maybeDraw(v) {
+        if (v < 0) return Math.random();
+        return v * 2;
+      }],
+    },
+    calls: [{ args: [VECTOR] }],
+    modes: ['webgl', 'webgl2', 'headlessgl', 'webasm', 'webgpu'],
+  },
+  {
+    name: 'T2 skip: a call in a conditional operand',
+    kernel: function (a) {
+      return this.thread.x > 4 ? poly(a[this.thread.x]) : poly(a[0]);
+    },
+    output: [16],
+    settings: { functions: [poly] },
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T2 skip: a call after an update in the same statement',
+    kernel: function (a) {
+      let k = 0;
+      let s = 0;
+      s += a[k++] * poly(a[this.thread.x]);
+      return s + k;
+    },
+    output: [16],
+    settings: { functions: [poly] },
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T2: seeded random inside a helper, scalar and vector dispatch',
+    // 6 wide: webasm runs a vector span plus a scalar tail per row, so both
+    // dispatch paths draw from the same seeded stream in one run. That is the
+    // sharpest edge in the feature -- un-inlined, a helper's draws come from
+    // the scalar PCG with per-lane state swapped around the call; inlined,
+    // they come from the vector PCG directly
+    kernel: function (a) {
+      const p = Math.random();
+      const q = jitter(a[this.thread.x % 8]);
+      return p + q + Math.random();
+    },
+    output: [6, 4],
+    settings: {
+      randomSeed: 1234,
+      functions: [function jitter(v) { return v + Math.random() * 0.5; }],
+    },
+    calls: [{ args: [VECTOR] }],
+    modes: ['webgl', 'webgl2', 'headlessgl', 'webasm', 'webgpu'],
+  },
+  {
+    name: 'T2: seeded random in a helper under a branch',
+    kernel: function (a) {
+      let s = a[this.thread.x % 8];
+      if (this.thread.x % 2 === 0) {
+        s += jitter(s);
+      }
+      return s + Math.random();
+    },
+    output: [7, 3],
+    settings: {
+      randomSeed: 99,
+      functions: [function jitter(v) { return v + Math.random() * 0.5; }],
+    },
+    calls: [{ args: [VECTOR] }],
+    modes: ['webgl', 'webgl2', 'headlessgl', 'webasm', 'webgpu'],
+  },
+  {
+    name: 'T2: a sub-kernel calling a helper',
+    kernel: function (a) {
+      const v = poly(a[this.thread.x]);
+      subPoly(a[this.thread.x] * 2);
+      return v;
+    },
+    subKernels: { subPoly: function subPoly(v) { return poly(v) + 1; } },
+    output: [16],
+    settings: { functions: [poly] },
+    calls: [{ args: [VECTOR] }],
+    // kernel maps fall back to cpu on webasm, which would compare a cpu build
+    // against a cpu build under a webasm label
+    modes: ['cpu', 'webgl', 'webgl2', 'headlessgl', 'webgpu'],
+  },
+  {
+    name: 'T2: a helper reading thread and constants',
+    kernel: function (a) {
+      return corner(a) + this.thread.x * 0.5;
+    },
+    output: [8, 8],
+    settings: {
+      constants: { k: 0.375 },
+      functions: [function corner(m) {
+        return m[this.thread.y][this.thread.x] * this.constants.k;
+      }],
+    },
+    calls: [{ args: [MATRIX] }],
+    enabledByInlining: ['webasm', 'webgpu'],
+  },
+  {
+    name: 'T2: an Integer-typed argument through a helper',
+    // the binding a non-atom argument gets is typed from the argument, and an
+    // integer expression that is not a member read declares as a float. Whole
+    // numbers survive that round trip exactly at these magnitudes; the row is
+    // here so a change to that reasoning shows up as a failure
+    kernel: function (a) {
+      return pick(a, Math.floor(this.thread.x / 2) + 1) + pick(a, this.thread.x);
+    },
+    output: [16],
+    settings: {
+      functions: [function pick(m, k) {
+        return m[k % 16] * (k + 1);
+      }],
+    },
+    calls: [{ args: [VECTOR] }],
+    enabledByInlining: ['webasm', 'webgpu'],
+  },
+  {
+    name: 'T2: a void helper in statement position',
+    kernel: function (a) {
+      const v = a[this.thread.x];
+      note(v);
+      return v * 2;
+    },
+    output: [16],
+    settings: {
+      functions: [function note(v) {
+        const unused = v * v + 1;
+      }],
+    },
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T2 then T3: a helper carrying a tiny loop into a caller',
+    kernel: function (a) {
+      return rowish(a, this.thread.x) + a[this.thread.x];
+    },
+    output: [16],
+    settings: {
+      functions: [function rowish(m, k) {
+        let s = 0;
+        for (let i = 0; i < 3; i++) s += m[(k + i) % 16] * (i + 1);
+        return s;
+      }],
+    },
+    calls: [{ args: [VECTOR] }],
+    enabledByInlining: ['webasm', 'webgpu'],
+  },
+  {
+    name: 'T2 under strictIntegers and fixIntegerDivisionAccuracy',
+    kernel: function (a) {
+      return ratio(a[this.thread.x], this.thread.x + 1) + ratio(a[0], 4);
+    },
+    output: [16],
+    settings: {
+      strictIntegers: true,
+      fixIntegerDivisionAccuracy: true,
+      functions: [function ratio(v, d) {
+        return v / d + (d % 3) * 0.5 + v / 2.5;
+      }],
+    },
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T2 with a dynamic output and a helper',
+    kernel: function (a) {
+      return poly(a[this.thread.x % 8]) * this.output.x;
+    },
+    output: [8],
+    settings: { functions: [poly], dynamicOutput: true },
+    calls: [{ args: [VECTOR] }, { output: [16], args: [VECTOR] }],
   },
   {
     name: 'minified source, comma-folded',
@@ -881,6 +1171,16 @@ async function runCase(assert, mode, spec) {
     const optimized = await collect(gpu, spec, false);
     const disabled = await collect(gpu, spec, true);
 
+    // T2 makes a few shapes compile that never compiled before -- a helper
+    // taking an array argument is a hard error on webasm, and inlining leaves
+    // no helper to take one. A row says so explicitly; the assertion still
+    // fails if the disabled build starts working or the optimized one stops.
+    const enabled = spec.enabledByInlining && spec.enabledByInlining.indexOf(mode) > -1;
+    if (enabled && optimized.error === null && disabled.error !== null) {
+      assert.ok(true, `${ spec.name } / ${ mode }: inlining makes this shape buildable ` +
+        `(un-optimized: ${ disabled.error.split('\n')[0] })`);
+      return;
+    }
     if (optimized.error !== null || disabled.error !== null) {
       assert.equal(optimized.error, disabled.error,
         `${ spec.name } / ${ mode }: the optimizer decides nothing about whether this shape builds`);

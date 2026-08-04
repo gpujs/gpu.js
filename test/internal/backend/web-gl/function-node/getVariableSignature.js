@@ -5,7 +5,9 @@ describe('WebGLFunctionNode.getVariableSignature()');
 
 function run(value) {
   const mockInstance = {
+    name: 'mock',
     source: `function() { ${value}; }`,
+    getRawAST: WebGLFunctionNode.prototype.getRawAST,
     optimizeAST: () => {},
     traceFunctionAST: () => {}
   };

@@ -4,6 +4,13 @@ const { GPU, FunctionBuilder } = require('../../src');
 
 describe('internal: deep types');
 
+// Every kernel here is built with the optimizer OFF. What these tests measure
+// is the type-resolution machinery -- how many times the builder looks up a
+// callee's return type, and for which name -- and T2 answers those questions
+// by deleting the call. Inlining's own effect on these shapes is asserted in
+// test/features/optimizer.
+const OFF = { _optimizerDisabled: true };
+
 function oneLayerDeepFloat(mode) {
   const gpu = new GPU({ mode });
   function childFunction(childFunctionArgument1) {
@@ -13,7 +20,7 @@ function oneLayerDeepFloat(mode) {
 
   const kernel = gpu.createKernel(function(kernelArgument1) {
     return childFunction(kernelArgument1);
-  }, { output: [1] });
+  }, { output: [1], ...OFF });
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
   try {
     const result = kernel(1.5);
@@ -48,7 +55,7 @@ function twoLayerDeepFloat(mode) {
     .addFunction(child2Function);
   const kernel = gpu.createKernel(function(kernelArgument1) {
     return child1Function(kernelArgument1);
-  }, { output: [1] });
+  }, { output: [1], ...OFF });
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
   try {
     const result = kernel(1.5);
@@ -85,7 +92,7 @@ function twoArgumentLayerDeepFloat(mode) {
     .addFunction(child2Function);
   const kernel = gpu.createKernel(function(kernelArgument1) {
     return child1Function(child2Function(kernelArgument1));
-  }, { output: [1] });
+  }, { output: [1], ...OFF });
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
   try {
     const result = kernel(1.5);
@@ -128,7 +135,7 @@ function threeLayerDeepFloat(mode) {
     .addFunction(child3Function);
   const kernel = gpu.createKernel(function(kernelArgument1) {
     return child1Function(kernelArgument1);
-  }, { output: [1] });
+  }, { output: [1], ...OFF });
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
   try {
     const result = kernel(1.5);
@@ -171,7 +178,7 @@ function threeArgumentLayerDeepFloat(mode) {
     .addFunction(child3Function);
   const kernel = gpu.createKernel(function(kernelArgument1) {
     return child1Function(child2Function(child3Function(kernelArgument1)));
-  }, { output: [1] });
+  }, { output: [1], ...OFF });
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
   try {
     const result = kernel(1.5);
@@ -201,7 +208,7 @@ function threeArgumentLayerDeepNumberTexture1(mode) {
   const gpu = new GPU({ mode });
   const texture = gpu.createKernel(function() {
     return 1.5;
-  }, { output: [1], pipeline: true, precision: 'single' })();
+  }, { output: [1], pipeline: true, precision: 'single', ...OFF })();
   function child1Function(child1FunctionArgument1) {
     return child1FunctionArgument1 + 1;
   }
@@ -217,7 +224,7 @@ function threeArgumentLayerDeepNumberTexture1(mode) {
     .addFunction(child3Function);
   const kernel = gpu.createKernel(function(kernelArgument1) {
     return child1Function(child2Function(child3Function(kernelArgument1)));
-  }, { output: [1] });
+  }, { output: [1], ...OFF });
   sinon.spy(FunctionBuilder.prototype, 'lookupReturnType');
   try {
     const result = kernel(texture);
@@ -252,7 +259,7 @@ function circlicalLogic(mode) {
     .addFunction(child1Function);
   const kernel = gpu.createKernel(function(kernelArgument1) {
     return child1Function(kernelArgument1);
-  }, { output: [1] });
+  }, { output: [1], ...OFF });
   assert.throws(() => {
     kernel(1.5);
   });
@@ -287,7 +294,7 @@ function arrayTexture1(mode) {
 
   const kernel = gpu.createKernel(function(kernelValue) {
     return addOne(kernelValue);
-  }, { output: [1] });
+  }, { output: [1], ...OFF });
   const result = kernel(texture1);
   assert.equal(result[0], 2);
   gpu.destroy();
@@ -332,7 +339,7 @@ function arrayTexture2(mode) {
 
   const kernel = gpu.createKernel(function(kernelValue) {
     return addOne(kernelValue);
-  }, { output: [1] });
+  }, { output: [1], ...OFF });
   const result = kernel(texture1);
   assert.equal(result[0], 5);
   gpu.destroy();
@@ -379,7 +386,7 @@ function arrayTexture3(mode) {
 
   const kernel = gpu.createKernel(function(kernelValue) {
     return addOne(kernelValue);
-  }, { output: [1] });
+  }, { output: [1], ...OFF });
   const result = kernel(texture1);
   assert.equal(result[0], 9);
   gpu.destroy();
@@ -427,7 +434,7 @@ function arrayTexture4(mode) {
 
   const kernel = gpu.createKernel(function(kernelValue) {
     return addOne(kernelValue);
-  }, { output: [1] });
+  }, { output: [1], ...OFF });
   const result = kernel(texture1);
   assert.equal(result[0], 14);
   gpu.destroy();
@@ -479,7 +486,7 @@ function testTortureTest(mode) {
   try {
     const kernel = gpu.createKernel(function (v1, v2, v3, v4, v5) {
       return addFloatFloat(v4, addArrayFloat(v3, addFloatArray(addArrayArray(v1, v5), v2)));
-    }, {output: [1]});
+    }, {output: [1], ...OFF});
 
     const result = kernel([1], texture, [3], 4, new Float32Array([5]));
     assert.equal(result[0], 1 + 2 + 3 + 4 + 5);

@@ -132,6 +132,7 @@ class FunctionNode {
     this.fixIntegerDivisionAccuracy = null;
     this.optimizerDisabled = false;
     this.loopUnrollLimit = 8;
+    this.lookupInlineTarget = null;
 
     if (settings) {
       for (const p in settings) {
@@ -144,6 +145,7 @@ class FunctionNode {
     this.literalTypes = {};
 
     this.validate();
+    this._rawAST = null;
     this._string = null;
     this._internalVariableNames = {};
   }
@@ -283,15 +285,22 @@ class FunctionNode {
     return false;
   }
 
-  getJsAST(inParser) {
-    if (this.ast) {
-      return this.ast;
+  /**
+   * @desc The parsed, de-minified AST -- everything getJsAST does BEFORE the
+   * optimizer and the tracer. T2's call-graph plan reads helpers through this
+   * rather than through getJsAST: optimizing a helper early would run its
+   * pass out of order, and tracing it early would resolve its argument types
+   * from a caller the un-optimized build resolves them from second.
+   * @param {Object} [inParser]
+   * @returns {Object} The function AST Object, cached under this._rawAST
+   */
+  getRawAST(inParser) {
+    if (this._rawAST) {
+      return this._rawAST;
     }
     if (typeof this.source === 'object') {
       normalizeMinifiedStatements(this.source, this.requiresSequenceFreeForInit);
-      this.optimizeAST(this.source);
-      this.traceFunctionAST(this.source);
-      return this.ast = this.source;
+      return this._rawAST = this.source;
     }
 
     inParser = inParser || acorn;
@@ -308,13 +317,16 @@ class FunctionNode {
     // minifiers fold statements into expressions; unfold them before the
     // tracer records anything, so every backend sees plain statements
     normalizeMinifiedStatements(functionAST, this.requiresSequenceFreeForInit);
+    return this._rawAST = functionAST;
+  }
+
+  getJsAST(inParser) {
+    if (this.ast) {
+      return this.ast;
+    }
+    const functionAST = this.getRawAST(inParser);
     this.optimizeAST(functionAST);
     this.traceFunctionAST(functionAST);
-
-    if (!ast) {
-      throw new Error('Failed to parse JS code');
-    }
-
     return this.ast = functionAST;
   }
 
@@ -331,7 +343,10 @@ class FunctionNode {
    */
   optimizeAST(ast) {
     if (this.optimizerDisabled) return ast;
-    return optimize(this, ast, { loopUnrollLimit: this.loopUnrollLimit });
+    return optimize(this, ast, {
+      loopUnrollLimit: this.loopUnrollLimit,
+      lookupInlineTarget: this.lookupInlineTarget,
+    });
   }
 
   /**

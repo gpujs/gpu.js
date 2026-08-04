@@ -1,3 +1,5 @@
+const { buildInlinePlan } = require('./optimizer');
+
 /**
  * @desc This handles all the raw state, converted state, etc. of a single function.
  * [INTERNAL] A collection of functionNodes.
@@ -42,6 +44,7 @@ class FunctionBuilder {
     // so a kernel that rebuilds with optimizations off gets a builder whose
     // whole call graph agrees (the `_fusionDisabled` precedent)
     const optimizerDisabled = Boolean(kernel._optimizerDisabled);
+    const inliningDisabled = Boolean(kernel._inliningDisabled);
 
     const argumentTypes = new Array(kernelArguments.length);
     const constantTypes = {};
@@ -89,6 +92,10 @@ class FunctionBuilder {
 
     const onFunctionCall = (functionName, calleeFunctionName, args) => {
       functionBuilder.trackFunctionCall(functionName, calleeFunctionName, args);
+    };
+
+    const lookupInlineTarget = inliningDisabled ? null : (functionName) => {
+      return functionBuilder.lookupInlineTarget(functionName);
     };
 
     const onNestedFunction = (ast, source) => {
@@ -140,6 +147,7 @@ class FunctionBuilder {
       dynamicOutput,
       optimizerDisabled,
       loopUnrollLimit,
+      lookupInlineTarget,
     }, extraNodeOptions || {});
 
     const rootNodeOptions = Object.assign({}, nodeOptions, {
@@ -184,6 +192,7 @@ class FunctionBuilder {
         onNestedFunction,
         optimizerDisabled,
         loopUnrollLimit,
+        lookupInlineTarget,
       }));
     }
 
@@ -226,6 +235,7 @@ class FunctionBuilder {
     this.lookupChain = [];
     this.functionNodeDependencies = {};
     this.functionCalls = {};
+    this._inlinePlan = null;
 
     if (this.rootNode) {
       this.functionMap['kernel'] = this.rootNode;
@@ -249,6 +259,24 @@ class FunctionBuilder {
         this.nativeFunctionNames.push(nativeFunction.name);
       }
     }
+  }
+
+  /**
+   * @desc T2's view of the call graph. The whole graph is decided ONCE, before
+   * any function node is optimized, because inlining is all-or-nothing per
+   * helper: a helper left with some call sites and not others has its
+   * parameter types fixed by whichever site the emitter reaches first, and
+   * dropping a site can change which one that is. Deciding globally keeps the
+   * optimized build's surviving calls identical to the un-optimized build's.
+   * @param {String} functionName
+   * @returns {Object|null} the plan entry, or null when this name must keep
+   * its call sites
+   */
+  lookupInlineTarget(functionName) {
+    if (!this._inlinePlan) {
+      this._inlinePlan = buildInlinePlan(this);
+    }
+    return this._inlinePlan.get(functionName) || null;
   }
 
   /**

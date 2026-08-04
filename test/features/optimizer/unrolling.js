@@ -409,8 +409,11 @@ test('cpu: a rank the output does not have localizes to 0', () => {
 });
 
 test('cpu: a helper keeps the property read, which is all it can reach', () => {
+  // the call sits in a ternary branch, which is the one position T2 will not
+  // hoist a call out of -- so the helper survives as a function, which is the
+  // only way to ask what a helper's coordinate read emits as
   const source = cpuSource(function (a) {
-    return offset(a) + this.thread.x;
+    return (this.thread.x > 0 ? offset(a) : 0) + this.thread.x;
   }, {
     functions: [function offset(a) {
       return a[this.thread.x] * 2;
@@ -418,7 +421,7 @@ test('cpu: a helper keeps the property read, which is all it can reach', () => {
   });
   assert.ok(/function offset\(user_a\) \{\nreturn \(user_a\[_this\.thread\.x\]\*2\)/.test(source),
     'the helper reads _this.thread.x — the cell loop\'s counters are not in its scope');
-  assert.ok(/user_offset\(user_a\)\+x\)|offset\(user_a\)\+x\)/.test(source.replace(/\s/g, '')),
+  assert.ok(/offset\(user_a\):0\)\+x\)/.test(source.replace(/\s/g, '')),
     'the root body next to it uses the counter');
 });
 

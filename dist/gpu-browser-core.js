@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.23.0
- * @date Wed Aug 05 2026 02:31:25 GMT+0800 (Singapore Standard Time)
+ * @date Wed Aug 05 2026 03:23:07 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -1115,6 +1115,7 @@
         this.strictIntegers = false;
         this.fixIntegerDivisionAccuracy = null;
         this._optimizerDisabled = false;
+        this._inliningDisabled = false;
         this.loopUnrollLimit = 8;
         this.randomSeed = null;
         this.built = false;
@@ -1536,12 +1537,1628 @@
       Kernel: Kernel
     };
   });
+  var require_optimizer = __commonJSMin((exports, module) => {
+    let syntheticNodeId = 1610612736;
+    function stampSynthetic(node, source) {
+      node.start = syntheticNodeId++;
+      node.end = syntheticNodeId++;
+      if (source && source.loc) node.loc = source.loc;
+      return node;
+    }
+    const scalarTypes = [ "Number", "Float", "Integer" ];
+    const thisWrite = "@this";
+    const indexedReadSignatures = [ "value[]", "value[][]", "value[][][]", "value[][][][]", "this.constants.value[]", "this.constants.value[][]", "this.constants.value[][][]", "this.constants.value[][][][]" ];
+    function optimize(functionNode, ast, settings) {
+      if (!ast || !ast.body || ast.body.type !== "BlockStatement") return ast;
+      const context = new OptimizerContext(functionNode, ast, settings || {});
+      processBlock(context, ast.body);
+      inlineBlock(context, ast.body);
+      unrollBlock(context, ast.body);
+      return ast;
+    }
+    var OptimizerContext = class {
+      constructor(functionNode, ast, settings) {
+        this.functionNode = functionNode;
+        this.ast = ast;
+        this.loopUnrollLimit = typeof settings.loopUnrollLimit === "number" ? settings.loopUnrollLimit : 8;
+        this.lookupInlineTarget = settings.lookupInlineTarget || null;
+        this.inlineTargets = new Map;
+        this.inlineCount = 0;
+        this.mutatedNames = collectMutatedNames(ast.body);
+        this.usedNames = collectUsedNames(ast);
+        this.hoistCount = 0;
+      }
+      freshName() {
+        let name;
+        do {
+          name = `optHoist${this.hoistCount++}`;
+        } while (this.usedNames.has(name));
+        this.usedNames.add(name);
+        return name;
+      }
+      freshInlineName(suffix) {
+        let name;
+        do {
+          name = `optIn${this.inlineCount++}_${suffix}`;
+        } while (this.usedNames.has(name));
+        this.usedNames.add(name);
+        return name;
+      }
+      inlineTarget(name) {
+        if (!this.lookupInlineTarget) return null;
+        if (this.inlineTargets.has(name)) return this.inlineTargets.get(name);
+        let entry = null;
+        try {
+          entry = this.lookupInlineTarget(name) || null;
+        } catch (e) {
+          entry = null;
+        }
+        this.inlineTargets.set(name, entry);
+        return entry;
+      }
+      isImmutableArrayRoot(name) {
+        if (this.mutatedNames.has(name)) return false;
+        const {argumentNames: argumentNames} = this.functionNode;
+        return Boolean(argumentNames) && argumentNames.indexOf(name) > -1;
+      }
+      readElementType(ast, signature) {
+        const rootType = this.readRootType(ast, signature);
+        if (!rootType) return null;
+        try {
+          return this.functionNode.getLookupType(rootType);
+        } catch (e) {
+          return null;
+        }
+      }
+      readRootType(ast, signature) {
+        const {functionNode: functionNode} = this;
+        if (signature.indexOf("this.constants.") === 0) {
+          if (this.mutatedNames.has(thisWrite)) return null;
+          const name = constantReadName(ast, signature);
+          if (!name) return null;
+          const type = functionNode.constantTypes ? functionNode.constantTypes[name] : null;
+          return type === "Float" ? "Number" : type || null;
+        }
+        const root = memberRoot(ast);
+        if (!root || root.type !== "Identifier") return null;
+        if (!this.isImmutableArrayRoot(root.name)) return null;
+        const index = functionNode.argumentNames.indexOf(root.name);
+        return (functionNode.argumentTypes ? functionNode.argumentTypes[index] : null) || null;
+      }
+    };
+    function walk(node, visit) {
+      if (!node || typeof node !== "object") return;
+      if (Array.isArray(node)) {
+        for (let i = 0; i < node.length; i++) walk(node[i], visit);
+        return;
+      }
+      if (typeof node.type !== "string") return;
+      visit(node);
+      for (const key in node) {
+        if (key === "loc" || key === "range" || key === "parent") continue;
+        const child = node[key];
+        if (child && typeof child === "object") walk(child, visit);
+      }
+    }
+    function walkOwn(node, visit) {
+      if (!node || typeof node !== "object") return;
+      if (Array.isArray(node)) {
+        for (let i = 0; i < node.length; i++) walkOwn(node[i], visit);
+        return;
+      }
+      if (typeof node.type !== "string") return;
+      if (node.type === "FunctionDeclaration" || node.type === "FunctionExpression" || node.type === "ArrowFunctionExpression") return;
+      visit(node);
+      for (const key in node) {
+        if (key === "loc" || key === "range" || key === "parent") continue;
+        const child = node[key];
+        if (child && typeof child === "object") walkOwn(child, visit);
+      }
+    }
+    function collectMutatedNames(ast) {
+      const names = new Set;
+      const addTarget = target => {
+        let node = target;
+        while (node && node.type === "MemberExpression") node = node.object;
+        if (node && node.type === "Identifier") names.add(node.name);
+        if (node && node.type === "ThisExpression") names.add(thisWrite);
+      };
+      walk(ast, node => {
+        switch (node.type) {
+         case "AssignmentExpression":
+          addTarget(node.left);
+          break;
+
+         case "UpdateExpression":
+          addTarget(node.argument);
+          break;
+
+         case "VariableDeclarator":
+          if (node.id && node.id.type === "Identifier") names.add(node.id.name);
+          break;
+
+         case "FunctionDeclaration":
+         case "FunctionExpression":
+         case "ArrowFunctionExpression":
+          if (node.id && node.id.name) names.add(node.id.name);
+          for (let i = 0; i < node.params.length; i++) if (node.params[i].type === "Identifier") names.add(node.params[i].name);
+          break;
+        }
+      });
+      return names;
+    }
+    function collectUsedNames(ast) {
+      const names = new Set;
+      walk(ast, node => {
+        if (node.type === "Identifier") names.add(node.name);
+      });
+      return names;
+    }
+    function memberRoot(ast) {
+      let node = ast;
+      while (node && node.type === "MemberExpression") node = node.object;
+      return node;
+    }
+    function constantReadName(ast, signature) {
+      let depth = (signature.match(/\[\]/g) || []).length;
+      let node = ast;
+      while (depth-- > 0) {
+        if (!node || node.type !== "MemberExpression") return null;
+        node = node.object;
+      }
+      return node && node.property && node.property.name ? node.property.name : null;
+    }
+    function processBlock(context, block) {
+      const body = block.body;
+      for (let i = 0; i < body.length; i++) {
+        const prefix = processStatement(context, body[i]);
+        if (prefix && prefix.length > 0) {
+          body.splice(i, 0, ...prefix);
+          i += prefix.length;
+        }
+      }
+    }
+    function processStatement(context, statement) {
+      switch (statement.type) {
+       case "BlockStatement":
+        processBlock(context, statement);
+        return null;
+
+       case "IfStatement":
+        processBranch(context, statement, "consequent");
+        processBranch(context, statement, "alternate");
+        return null;
+
+       case "SwitchStatement":
+        for (let i = 0; i < statement.cases.length; i++) {
+          const block = {
+            type: "BlockStatement",
+            body: statement.cases[i].consequent
+          };
+          processBlock(context, block);
+          statement.cases[i].consequent = block.body;
+        }
+        return null;
+
+       case "ForStatement":
+       case "WhileStatement":
+       case "DoWhileStatement":
+        processBranch(context, statement, "body");
+        return hoistFromLoop(context, statement);
+
+       default:
+        return null;
+      }
+    }
+    function processBranch(context, statement, key) {
+      const branch = statement[key];
+      if (!branch) return;
+      if (branch.type === "BlockStatement") {
+        processBlock(context, branch);
+        return;
+      }
+      const prefix = processStatement(context, branch);
+      if (prefix && prefix.length > 0) statement[key] = stampSynthetic({
+        type: "BlockStatement",
+        body: prefix.concat([ branch ])
+      }, branch);
+    }
+    function hoistFromLoop(context, loop) {
+      const varying = collectMutatedNames(loop);
+      const entries = [];
+      collectReachable(loop.body, entries);
+      if (entries.length === 0) return [];
+      const faultable = context.functionNode.readsCanFault && !loopIsAlwaysEntered(loop);
+      const hoisted = [];
+      const relocated = new Set;
+      const cache = new Map;
+      for (let i = 0; i < entries.length; i++) {
+        const {statement: statement} = entries[i];
+        if (statement.optimizerHoist && isInvariant(context, statement.declarations[0].init, varying) && !(faultable && canFault(context, statement.declarations[0].init))) {
+          const key = expressionKey(statement.declarations[0].init);
+          hoisted.push(statement);
+          relocated.add(statement);
+          if (key) cache.set(key, statement.declarations[0].id.name);
+          continue;
+        }
+        replaceInvariantReads(context, statement, varying, faultable, cache, hoisted);
+      }
+      if (relocated.size > 0) for (let i = 0; i < entries.length; i++) {
+        const {list: list} = entries[i];
+        if (!list.some(statement => relocated.has(statement))) continue;
+        const kept = list.filter(statement => !relocated.has(statement));
+        list.length = 0;
+        for (let j = 0; j < kept.length; j++) list.push(kept[j]);
+      }
+      return hoisted;
+    }
+    function collectReachableList(list, entries) {
+      for (let i = 0; i < list.length; i++) {
+        const statement = list[i];
+        switch (statement.type) {
+         case "ExpressionStatement":
+         case "VariableDeclaration":
+          entries.push({
+            list: list,
+            statement: statement
+          });
+          break;
+
+         case "EmptyStatement":
+         case "DebuggerStatement":
+          break;
+
+         case "BlockStatement":
+          if (!collectReachableList(statement.body, entries)) return false;
+          break;
+
+         case "IfStatement":
+         case "SwitchStatement":
+         case "ForStatement":
+         case "WhileStatement":
+         case "DoWhileStatement":
+          if (containsExit(statement)) return false;
+          break;
+
+         default:
+          return false;
+        }
+      }
+      return true;
+    }
+    function collectReachable(body, entries) {
+      if (!body) return false;
+      if (body.type === "BlockStatement") return collectReachableList(body.body, entries);
+      return collectReachableList([ body ], entries);
+    }
+    function containsExit(statement) {
+      let found = false;
+      const visit = (node, inBreakable, inContinuable) => {
+        if (!node || typeof node !== "object" || found) return;
+        if (Array.isArray(node)) {
+          for (let i = 0; i < node.length; i++) visit(node[i], inBreakable, inContinuable);
+          return;
+        }
+        if (typeof node.type !== "string") return;
+        switch (node.type) {
+         case "ReturnStatement":
+         case "ThrowStatement":
+          found = true;
+          return;
+
+         case "BreakStatement":
+          if (node.label || !inBreakable) found = true;
+          return;
+
+         case "ContinueStatement":
+          if (node.label || !inContinuable) found = true;
+          return;
+
+         case "ForStatement":
+         case "WhileStatement":
+         case "DoWhileStatement":
+          visit(node.init, true, true);
+          visit(node.test, true, true);
+          visit(node.update, true, true);
+          visit(node.body, true, true);
+          return;
+
+         case "SwitchStatement":
+          visit(node.discriminant, inBreakable, inContinuable);
+          visit(node.cases, true, inContinuable);
+          return;
+
+         case "FunctionDeclaration":
+         case "FunctionExpression":
+         case "ArrowFunctionExpression":
+          return;
+        }
+        for (const key in node) {
+          if (key === "loc" || key === "range" || key === "parent") continue;
+          const child = node[key];
+          if (child && typeof child === "object") visit(child, inBreakable, inContinuable);
+        }
+      };
+      visit(statement, false, false);
+      return found;
+    }
+    function replaceInvariantReads(context, statement, varying, faultable, cache, hoisted) {
+      const visit = (node, key) => {
+        const child = node[key];
+        if (!child || typeof child !== "object") return;
+        if (Array.isArray(child)) {
+          for (let i = 0; i < child.length; i++) visit(child, i);
+          return;
+        }
+        if (typeof child.type !== "string") return;
+        switch (child.type) {
+         case "FunctionDeclaration":
+         case "FunctionExpression":
+         case "ArrowFunctionExpression":
+          return;
+
+         case "ConditionalExpression":
+          visit(child, "test");
+          return;
+
+         case "LogicalExpression":
+          visit(child, "left");
+          return;
+
+         case "MemberExpression":
+          if (isHoistableRead(context, child, varying) && !(faultable && canFault(context, child))) {
+            node[key] = referenceFor(context, child, cache, hoisted);
+            return;
+          }
+          if (child.computed) visit(child, "property");
+          if (child.object && child.object.type !== "MemberExpression") visit(child, "object");
+          return;
+        }
+        for (const childKey in child) {
+          if (childKey === "loc" || childKey === "range" || childKey === "parent") continue;
+          const grandChild = child[childKey];
+          if (grandChild && typeof grandChild === "object") visit(child, childKey);
+        }
+      };
+      visit({
+        statement: statement
+      }, "statement");
+    }
+    function referenceFor(context, read, cache, hoisted) {
+      const key = expressionKey(read);
+      if (key && cache.has(key)) return stampSynthetic({
+        type: "Identifier",
+        name: cache.get(key)
+      }, read);
+      const name = context.freshName();
+      const declaration = stampSynthetic({
+        type: "VariableDeclaration",
+        kind: "const",
+        declarations: [ stampSynthetic({
+          type: "VariableDeclarator",
+          id: stampSynthetic({
+            type: "Identifier",
+            name: name
+          }, read),
+          init: read
+        }, read) ]
+      }, read);
+      declaration.optimizerHoist = true;
+      hoisted.push(declaration);
+      if (key) cache.set(key, name);
+      return stampSynthetic({
+        type: "Identifier",
+        name: name
+      }, read);
+    }
+    function canFault(context, ast) {
+      let found = false;
+      walk(ast, node => {
+        if (found || node.type !== "MemberExpression") return;
+        const signature = context.functionNode.getVariableSignature(node);
+        if (!signature || indexedReadSignatures.indexOf(signature) === -1) return;
+        if ((signature.match(/\[\]/g) || []).length < 2) return;
+        if (context.readRootType(node, signature) === "Input") return;
+        found = true;
+      });
+      return found;
+    }
+    function loopIsAlwaysEntered(loop) {
+      if (loop.type === "DoWhileStatement") return true;
+      if (loop.type !== "ForStatement") return false;
+      if (!loop.test) return true;
+      const {test: test} = loop;
+      if (test.type !== "BinaryExpression" || test.left.type !== "Identifier") return false;
+      const limit = literalNumber(test.right);
+      if (limit === null) return false;
+      const start = initialNumber(loop.init, test.left.name);
+      if (start === null) return false;
+      switch (test.operator) {
+       case "<":
+        return start < limit;
+
+       case "<=":
+        return start <= limit;
+
+       case ">":
+        return start > limit;
+
+       case ">=":
+        return start >= limit;
+
+       case "!==":
+       case "!=":
+        return start !== limit;
+
+       default:
+        return false;
+      }
+    }
+    function literalNumber(ast) {
+      if (!ast) return null;
+      if (ast.type === "Literal" && typeof ast.value === "number") return ast.value;
+      if (ast.type === "UnaryExpression" && ast.operator === "-") {
+        const value = literalNumber(ast.argument);
+        return value === null ? null : -value;
+      }
+      return null;
+    }
+    function initialNumber(init, name) {
+      if (!init) return null;
+      if (init.type === "VariableDeclaration") {
+        for (let i = 0; i < init.declarations.length; i++) {
+          const declaration = init.declarations[i];
+          if (declaration.id.type === "Identifier" && declaration.id.name === name) return literalNumber(declaration.init);
+        }
+        return null;
+      }
+      if (init.type === "AssignmentExpression" && init.operator === "=" && init.left.type === "Identifier" && init.left.name === name) return literalNumber(init.right);
+      return null;
+    }
+    function isHoistableRead(context, ast, varying) {
+      const signature = context.functionNode.getVariableSignature(ast);
+      if (!signature || indexedReadSignatures.indexOf(signature) === -1) return false;
+      const elementType = context.readElementType(ast, signature);
+      if (!elementType || scalarTypes.indexOf(elementType) === -1) return false;
+      return isInvariant(context, ast, varying);
+    }
+    function isInvariant(context, ast, varying) {
+      if (!ast || typeof ast !== "object") return false;
+      switch (ast.type) {
+       case "Literal":
+        return true;
+
+       case "ThisExpression":
+        return true;
+
+       case "Identifier":
+        return !varying.has(ast.name);
+
+       case "UnaryExpression":
+        return ast.operator !== "delete" && ast.operator !== "typeof" && isInvariant(context, ast.argument, varying);
+
+       case "BinaryExpression":
+       case "LogicalExpression":
+        return isInvariant(context, ast.left, varying) && isInvariant(context, ast.right, varying);
+
+       case "ConditionalExpression":
+        return isInvariant(context, ast.test, varying) && isInvariant(context, ast.consequent, varying) && isInvariant(context, ast.alternate, varying);
+
+       case "MemberExpression":
+        return isInvariantMember(context, ast, varying);
+
+       default:
+        return false;
+      }
+    }
+    function isInvariantMember(context, ast, varying) {
+      const signature = context.functionNode.getVariableSignature(ast);
+      if (!signature) return false;
+      switch (signature) {
+       case "this.thread.value":
+       case "this.output.value":
+        return true;
+
+       case "this.constants.value":
+        return !context.mutatedNames.has(thisWrite);
+
+       case "value.value":
+        return context.functionNode.isAstMathVariable(ast);
+
+       case "value[]":
+       case "value[][]":
+       case "value[][][]":
+       case "value[][][][]":
+        {
+          const root = memberRoot(ast);
+          if (!root || root.type !== "Identifier" || !context.isImmutableArrayRoot(root.name)) return false;
+          return everySubscriptInvariant(context, ast, varying);
+        }
+
+       case "this.constants.value[]":
+       case "this.constants.value[][]":
+       case "this.constants.value[][][]":
+       case "this.constants.value[][][][]":
+        if (context.mutatedNames.has(thisWrite)) return false;
+        return everySubscriptInvariant(context, ast, varying);
+
+       default:
+        return false;
+      }
+    }
+    function everySubscriptInvariant(context, ast, varying) {
+      let node = ast;
+      while (node && node.type === "MemberExpression") {
+        if (node.computed && !isInvariant(context, node.property, varying)) return false;
+        node = node.object;
+      }
+      return true;
+    }
+    function expressionKey(ast) {
+      if (!ast || typeof ast !== "object") return null;
+      switch (ast.type) {
+       case "Literal":
+        return `L${typeof ast.value}:${ast.value}`;
+
+       case "ThisExpression":
+        return "this";
+
+       case "Identifier":
+        return `#${ast.name}`;
+
+       case "MemberExpression":
+        {
+          const object = expressionKey(ast.object);
+          const property = expressionKey(ast.property);
+          if (object === null || property === null) return null;
+          return `M${ast.computed ? "[" : "."}(${object},${property})`;
+        }
+
+       case "UnaryExpression":
+        {
+          const argument = expressionKey(ast.argument);
+          return argument === null ? null : `U${ast.operator}(${argument})`;
+        }
+
+       case "BinaryExpression":
+       case "LogicalExpression":
+        {
+          const left = expressionKey(ast.left);
+          const right = expressionKey(ast.right);
+          if (left === null || right === null) return null;
+          return `B${ast.operator}(${left},${right})`;
+        }
+
+       default:
+        return null;
+      }
+    }
+    const INLINE_MAX_HELPER_NODES = 320;
+    const INLINE_MAX_ADDED_NODES = 6e3;
+    const INLINE_MAX_STATEMENTS = 2e4;
+    function inlineBlock(context, block) {
+      if (!context.lookupInlineTarget) return;
+      block.body = inlineList(context, block.body);
+    }
+    function inlineList(context, list) {
+      const out = [];
+      const pending = list.slice();
+      let guard = 0;
+      while (pending.length > 0) {
+        if (++guard > INLINE_MAX_STATEMENTS) throw new Error("optimizer: inlining did not converge");
+        const statement = pending.shift();
+        const prefix = [];
+        const expansion = inlineStatementOwn(context, statement, prefix);
+        if (expansion.expanded > 0) {
+          const replacement = expansion.consumed ? stampSynthetic({
+            type: "EmptyStatement"
+          }, statement) : statement;
+          pending.unshift(...prefix, replacement);
+          continue;
+        }
+        inlineStatementChildren(context, statement);
+        out.push(statement);
+      }
+      return out;
+    }
+    function inlineStatementChildren(context, statement) {
+      switch (statement.type) {
+       case "BlockStatement":
+        inlineBlock(context, statement);
+        return;
+
+       case "IfStatement":
+        statement.consequent = inlineBranch(context, statement.consequent);
+        if (statement.alternate) statement.alternate = inlineBranch(context, statement.alternate);
+        return;
+
+       case "ForStatement":
+       case "WhileStatement":
+       case "DoWhileStatement":
+        statement.body = inlineBranch(context, statement.body);
+        return;
+
+       case "SwitchStatement":
+        for (let i = 0; i < statement.cases.length; i++) statement.cases[i].consequent = inlineList(context, statement.cases[i].consequent);
+        return;
+      }
+    }
+    function inlineBranch(context, branch) {
+      if (!branch) return branch;
+      if (branch.type === "BlockStatement") {
+        inlineBlock(context, branch);
+        return branch;
+      }
+      const replacement = inlineList(context, [ branch ]);
+      if (replacement.length === 1 && replacement[0] === branch) return branch;
+      return stampSynthetic({
+        type: "BlockStatement",
+        body: replacement
+      }, branch);
+    }
+    function inlineStatementOwn(context, statement, prefix) {
+      const sites = collectStatementSites(context, statement);
+      let consumed = false;
+      for (let i = 0; i < sites.length; i++) if (expandCall(context, sites[i], prefix)) consumed = true;
+      return {
+        expanded: sites.length,
+        consumed: consumed
+      };
+    }
+    function collectStatementSites(context, statement) {
+      const scan = {
+        candidates: name => context.inlineTarget(name),
+        sites: [],
+        clean: true
+      };
+      const roots = statementValueRoots(statement);
+      for (let i = 0; i < roots.length; i++) scanValue(roots[i].parent, roots[i].key, scan, Boolean(roots[i].statementPosition));
+      return scan.sites;
+    }
+    function statementValueRoots(statement) {
+      switch (statement.type) {
+       case "ExpressionStatement":
+        return [ {
+          parent: statement,
+          key: "expression",
+          statementPosition: true
+        } ];
+
+       case "ReturnStatement":
+        return statement.argument ? [ {
+          parent: statement,
+          key: "argument"
+        } ] : [];
+
+       case "IfStatement":
+        return [ {
+          parent: statement,
+          key: "test"
+        } ];
+
+       case "SwitchStatement":
+        return [ {
+          parent: statement,
+          key: "discriminant"
+        } ];
+
+       case "VariableDeclaration":
+        return declarationRoots(statement);
+
+       case "ForStatement":
+        if (!statement.init) return [];
+        if (statement.init.type === "VariableDeclaration") return declarationRoots(statement.init);
+        return [ {
+          parent: statement,
+          key: "init"
+        } ];
+
+       default:
+        return [];
+      }
+    }
+    function declarationRoots(declaration) {
+      const roots = [];
+      for (let i = 0; i < declaration.declarations.length; i++) if (declaration.declarations[i].init) roots.push({
+        parent: declaration.declarations[i],
+        key: "init"
+      });
+      return roots;
+    }
+    function scanValue(parent, key, scan, statementPosition, objectPosition) {
+      const node = parent[key];
+      if (!node || typeof node !== "object" || typeof node.type !== "string") return;
+      switch (node.type) {
+       case "Literal":
+       case "Identifier":
+       case "ThisExpression":
+        return;
+
+       case "MemberExpression":
+        scanValue(node, "object", scan, false, node.object && node.object.type === "CallExpression");
+        if (node.computed) scanValue(node, "property", scan, false);
+        return;
+
+       case "UnaryExpression":
+        scanValue(node, "argument", scan, false);
+        return;
+
+       case "BinaryExpression":
+        scanValue(node, "left", scan, false);
+        scanValue(node, "right", scan, false);
+        return;
+
+       case "LogicalExpression":
+        scanValue(node, "left", scan, false);
+        scanConditional(node.right, scan);
+        return;
+
+       case "ConditionalExpression":
+        scanValue(node, "test", scan, false);
+        scanConditional(node.consequent, scan);
+        scanConditional(node.alternate, scan);
+        return;
+
+       case "ArrayExpression":
+        for (let i = 0; i < node.elements.length; i++) scanValue(node.elements, i, scan, false);
+        return;
+
+       case "SequenceExpression":
+        for (let i = 0; i < node.expressions.length; i++) scanValue(node.expressions, i, scan, false);
+        return;
+
+       case "AssignmentExpression":
+        if (node.left.type === "MemberExpression") scanValue(node, "left", scan, false);
+        scanValue(node, "right", scan, false);
+        scan.clean = false;
+        return;
+
+       case "UpdateExpression":
+        scan.clean = false;
+        return;
+
+       case "CallExpression":
+        {
+          for (let i = 0; i < node.arguments.length; i++) scanValue(node.arguments, i, scan, false);
+          const name = inlineCalleeName(node);
+          const entry = name ? scan.candidates(name) : null;
+          if (entry && !objectPosition) {
+            if (scan.clean && (entry.returnsValue || statementPosition)) {
+              scan.sites.push({
+                parent: parent,
+                key: key,
+                node: node,
+                entry: entry,
+                statementPosition: statementPosition
+              });
+              return;
+            }
+            scan.clean = false;
+            return;
+          }
+          if (!isPureMathCall(node)) scan.clean = false;
+          return;
+        }
+
+       default:
+        scan.clean = false;
+      }
+    }
+    function scanConditional(node, scan) {
+      walk(node, child => {
+        if (child.type === "CallExpression") {
+          if (!isPureMathCall(child)) scan.clean = false;
+          return;
+        }
+        if (child.type === "AssignmentExpression" || child.type === "UpdateExpression") scan.clean = false;
+      });
+    }
+    function inlineCalleeName(ast) {
+      return ast.callee && ast.callee.type === "Identifier" ? ast.callee.name : null;
+    }
+    function isPureMathCall(ast) {
+      const {callee: callee} = ast;
+      return Boolean(callee) && callee.type === "MemberExpression" && !callee.computed && callee.object && callee.object.type === "Identifier" && callee.object.name === "Math" && callee.property && callee.property.name !== "random";
+    }
+    function expandCall(context, site, prefix) {
+      const {node: node, entry: entry, parent: parent, key: key} = site;
+      const bindings = new Map;
+      for (let i = 0; i < entry.params.length; i++) {
+        const param = entry.params[i];
+        const argument = node.arguments[i];
+        if (!entry.assignedParams.has(param) && isInlineAtom(context, argument)) {
+          bindings.set(param, {
+            atom: argument,
+            name: null
+          });
+          continue;
+        }
+        const name = context.freshInlineName(param);
+        prefix.push(inlineDeclaration(entry.assignedParams.has(param) ? "let" : "const", name, argument));
+        bindings.set(param, {
+          atom: null,
+          name: name
+        });
+      }
+      for (let i = entry.params.length; i < node.arguments.length; i++) prefix.push(inlineDeclaration("const", context.freshInlineName("arg"), node.arguments[i]));
+      const renames = new Map;
+      entry.localNames.forEach(local => {
+        renames.set(local, context.freshInlineName(local));
+      });
+      const reduced = reduceReturns(cloneInlineNodes(context, entry.body, bindings, renames));
+      if (!reduced) throw new Error(`optimizer: helper body no longer reduces`);
+      for (let i = 0; i < reduced.statements.length; i++) prefix.push(reduced.statements[i]);
+      if (site.statementPosition) {
+        if (reduced.value !== null) prefix.push(inlineDeclaration("const", context.freshInlineName("ret"), reduced.value));
+        return true;
+      }
+      parent[key] = reduced.value;
+      return false;
+    }
+    function inlineDeclaration(kind, name, init) {
+      return stampSynthetic({
+        type: "VariableDeclaration",
+        kind: kind,
+        declarations: [ stampSynthetic({
+          type: "VariableDeclarator",
+          id: stampSynthetic({
+            type: "Identifier",
+            name: name
+          }, init),
+          init: init
+        }, init) ]
+      }, init);
+    }
+    function isInlineAtom(context, ast) {
+      if (!ast || typeof ast !== "object") return false;
+      switch (ast.type) {
+       case "Literal":
+        return true;
+
+       case "Identifier":
+        return true;
+
+       case "UnaryExpression":
+        return (ast.operator === "-" || ast.operator === "+") && ast.argument.type === "Literal";
+
+       case "MemberExpression":
+        try {
+          switch (context.functionNode.getVariableSignature(ast)) {
+           case "this.thread.value":
+           case "this.output.value":
+            return true;
+
+           case "this.constants.value":
+            return !context.mutatedNames.has(thisWrite);
+
+           case "value.value":
+            return context.functionNode.isAstMathVariable(ast);
+
+           default:
+            return false;
+          }
+        } catch (e) {
+          return false;
+        }
+
+       default:
+        return false;
+      }
+    }
+    function cloneInlineNodes(context, nodes, bindings, renames) {
+      const result = new Array(nodes.length);
+      for (let i = 0; i < nodes.length; i++) result[i] = cloneInlineNode(context, nodes[i], bindings, renames);
+      return result;
+    }
+    function cloneInlineNode(context, node, bindings, renames) {
+      if (!node || typeof node !== "object") return node;
+      if (Array.isArray(node)) return cloneInlineNodes(context, node, bindings, renames);
+      if (typeof node.type !== "string") return node;
+      if (node.type === "Identifier") {
+        const bound = bindings.get(node.name);
+        if (bound) return bound.atom ? cloneNode(context, bound.atom, null, 0) : stampSynthetic({
+          type: "Identifier",
+          name: bound.name
+        }, node);
+        return stampSynthetic({
+          type: "Identifier",
+          name: renames.get(node.name) || node.name
+        }, node);
+      }
+      const copy = {};
+      const verbatimProperty = node.type === "MemberExpression" && !node.computed;
+      for (const key in node) {
+        if (key === "start" || key === "end") continue;
+        if (key === "loc" || key === "range" || key === "parent") {
+          copy[key] = node[key];
+          continue;
+        }
+        copy[key] = verbatimProperty && key === "property" ? cloneNode(context, node[key], null, 0) : cloneInlineNode(context, node[key], bindings, renames);
+      }
+      return stampSynthetic(copy, node);
+    }
+    function reduceReturns(statements) {
+      let first = -1;
+      for (let i = 0; i < statements.length; i++) if (containsReturn(statements[i])) {
+        first = i;
+        break;
+      }
+      if (first === -1) return {
+        statements: statements,
+        value: null
+      };
+      const value = tailExpression(statements, first);
+      if (value === null) return null;
+      return {
+        statements: statements.slice(0, first),
+        value: value
+      };
+    }
+    function tailExpression(list, i) {
+      if (i >= list.length) return null;
+      const statement = list[i];
+      if (statement.type === "ReturnStatement") {
+        if (i !== list.length - 1 || !statement.argument) return null;
+        return statement.argument;
+      }
+      if (statement.type !== "IfStatement") return null;
+      const consequent = branchExpression(statement.consequent);
+      if (consequent === null) return null;
+      let alternate;
+      if (statement.alternate) {
+        if (i !== list.length - 1) return null;
+        alternate = branchExpression(statement.alternate);
+      } else alternate = tailExpression(list, i + 1);
+      if (alternate === null) return null;
+      if (!isBranchSafe(consequent) || !isBranchSafe(alternate)) return null;
+      return stampSynthetic({
+        type: "ConditionalExpression",
+        test: statement.test,
+        consequent: consequent,
+        alternate: alternate
+      }, statement);
+    }
+    function branchExpression(branch) {
+      if (!branch) return null;
+      return tailExpression(branch.type === "BlockStatement" ? branch.body : [ branch ], 0);
+    }
+    function containsReturn(ast) {
+      let found = false;
+      walk(ast, node => {
+        if (node.type === "ReturnStatement") found = true;
+      });
+      return found;
+    }
+    function isBranchSafe(ast) {
+      let safe = true;
+      walk(ast, node => {
+        if (node.type === "CallExpression" && !isPureMathCall(node)) safe = false;
+      });
+      return safe;
+    }
+    function buildInlinePlan(builder) {
+      const entries = new Map;
+      const kernel = builder.kernel || {};
+      const allowedFree = new Set([ "Math", "Infinity" ]);
+      if (kernel.constants) for (const name in kernel.constants) allowedFree.add(name);
+      for (let i = 0; i < builder.nativeFunctionNames.length; i++) allowedFree.add(builder.nativeFunctionNames[i]);
+      for (const name in builder.functionMap) {
+        const node = builder.functionMap[name];
+        if (!node) continue;
+        let ast = null;
+        try {
+          ast = node.getRawAST();
+        } catch (e) {
+          ast = null;
+        }
+        if (!ast || !ast.body || ast.body.type !== "BlockStatement") continue;
+        const shadowed = builder.nativeFunctionNames.indexOf(name) > -1;
+        const kind = node.isRootKernel ? "root" : node.isSubKernel || shadowed ? "subKernel" : "helper";
+        registerPlanEntry(entries, name, ast, kind, allowedFree);
+      }
+      for (const entry of entries.values()) allowedFree.add(entry.name);
+      for (const entry of entries.values()) analyzePlanEntry(entry, allowedFree);
+      markRecursive(entries);
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const entry of entries.values()) entry.sites = [];
+        const blocked = new Set;
+        for (const entry of entries.values()) scanPlanEntry(entries, entry, blocked);
+        for (const name of blocked) {
+          const entry = entries.get(name);
+          if (entry && entry.inlinable) {
+            entry.inlinable = false;
+            changed = true;
+          }
+        }
+        if (!changed && applyInlineBudget(entries)) changed = true;
+      }
+      const plan = new Map;
+      for (const entry of entries.values()) {
+        if (!entry.inlinable) continue;
+        plan.set(entry.name, {
+          params: entry.params,
+          body: entry.body,
+          assignedParams: entry.assignedParams,
+          localNames: entry.localNames,
+          returnsValue: entry.returnsValue
+        });
+      }
+      return plan;
+    }
+    function registerPlanEntry(entries, name, ast, kind, allowedFree) {
+      if (!entries.has(name)) entries.set(name, {
+        name: name,
+        ast: ast,
+        kind: kind,
+        params: (ast.params || []).map(param => param.type === "Identifier" ? param.name : null),
+        body: ast.body.body,
+        assignedParams: new Set,
+        localNames: new Set,
+        returnsValue: false,
+        inlinable: kind === "helper",
+        recursive: false,
+        calls: [],
+        sites: [],
+        selfSize: 0,
+        expandedSize: 0
+      });
+      const nested = [];
+      walk(ast.body, node => {
+        if (node.type === "FunctionDeclaration" && node.id && node.id.name) nested.push(node);
+      });
+      for (let i = 0; i < nested.length; i++) registerPlanEntry(entries, nested[i].id.name, nested[i], "helper", allowedFree);
+    }
+    function analyzePlanEntry(entry, allowedFree) {
+      entry.selfSize = nodeCount(entry.body);
+      const declared = new Set;
+      const assigned = new Set;
+      const free = new Set;
+      let rejected = false;
+      const visit = node => {
+        if (!node || typeof node !== "object") return;
+        if (Array.isArray(node)) {
+          for (let i = 0; i < node.length; i++) visit(node[i]);
+          return;
+        }
+        if (typeof node.type !== "string") return;
+        switch (node.type) {
+         case "LabeledStatement":
+          rejected = true;
+          return;
+
+         case "FunctionDeclaration":
+         case "FunctionExpression":
+         case "ArrowFunctionExpression":
+          rejected = true;
+          return;
+
+         case "VariableDeclarator":
+          if (node.id && node.id.type === "Identifier") declared.add(node.id.name);
+          break;
+
+         case "AssignmentExpression":
+          if (node.left.type === "Identifier") assigned.add(node.left.name);
+          break;
+
+         case "UpdateExpression":
+          if (node.argument.type === "Identifier") assigned.add(node.argument.name);
+          break;
+
+         case "Identifier":
+          free.add(node.name);
+          break;
+
+         case "MemberExpression":
+          visit(node.object);
+          if (node.computed) visit(node.property);
+          return;
+        }
+        for (const key in node) {
+          if (key === "loc" || key === "range" || key === "parent") continue;
+          const child = node[key];
+          if (child && typeof child === "object") visit(child);
+        }
+      };
+      visit(entry.body);
+      for (let i = 0; i < entry.params.length; i++) if (entry.params[i] === null) rejected = true;
+      if (rejected) {
+        entry.inlinable = false;
+        return;
+      }
+      for (const name of free) {
+        if (declared.has(name) || entry.params.indexOf(name) > -1 || allowedFree.has(name)) continue;
+        entry.inlinable = false;
+        return;
+      }
+      entry.localNames = declared;
+      for (let i = 0; i < entry.params.length; i++) if (assigned.has(entry.params[i])) entry.assignedParams.add(entry.params[i]);
+      const reduced = reduceReturns(entry.body);
+      if (!reduced) {
+        entry.inlinable = false;
+        return;
+      }
+      entry.returnsValue = reduced.value !== null;
+      if (entry.selfSize > INLINE_MAX_HELPER_NODES) entry.inlinable = false;
+    }
+    function scanPlanEntry(entries, entry, blocked) {
+      const candidates = name => {
+        const target = entries.get(name);
+        return target && target.inlinable && !target.recursive ? target : null;
+      };
+      const hoisted = new Set;
+      const scan = {
+        candidates: candidates,
+        sites: [],
+        clean: true
+      };
+      const walkStatements = list => {
+        for (let i = 0; i < list.length; i++) walkStatement(list[i]);
+      };
+      const walkStatement = statement => {
+        if (!statement || typeof statement.type !== "string") return;
+        if (statement.type === "FunctionDeclaration") return;
+        scan.clean = true;
+        scan.sites = [];
+        const roots = statementValueRoots(statement);
+        for (let i = 0; i < roots.length; i++) scanValue(roots[i].parent, roots[i].key, scan, Boolean(roots[i].statementPosition));
+        for (let i = 0; i < scan.sites.length; i++) {
+          hoisted.add(scan.sites[i].node);
+          entry.sites.push(scan.sites[i]);
+        }
+        switch (statement.type) {
+         case "BlockStatement":
+          walkStatements(statement.body);
+          return;
+
+         case "IfStatement":
+          walkStatement(statement.consequent);
+          if (statement.alternate) walkStatement(statement.alternate);
+          return;
+
+         case "ForStatement":
+         case "WhileStatement":
+         case "DoWhileStatement":
+          walkStatement(statement.body);
+          return;
+
+         case "SwitchStatement":
+          for (let i = 0; i < statement.cases.length; i++) walkStatements(statement.cases[i].consequent);
+          return;
+        }
+      };
+      walkStatements(entry.body);
+      walkOwn(entry.body, node => {
+        if (node.type !== "CallExpression" || hoisted.has(node)) return;
+        const name = inlineCalleeName(node);
+        if (name && entries.has(name)) blocked.add(name);
+      });
+      for (let i = 0; i < entry.sites.length; i++) {
+        const site = entry.sites[i];
+        if (site.node.arguments.length < site.entry.params.length) blocked.add(site.entry.name);
+        for (let j = 0; j < site.node.arguments.length; j++) if (site.node.arguments[j].type === "SpreadElement") blocked.add(site.entry.name);
+      }
+    }
+    function markRecursive(entries) {
+      const edges = new Map;
+      for (const entry of entries.values()) {
+        const out = new Set;
+        walkOwn(entry.body, node => {
+          if (node.type !== "CallExpression") return;
+          const name = inlineCalleeName(node);
+          if (name && entries.has(name)) out.add(name);
+        });
+        edges.set(entry.name, out);
+      }
+      const state = new Map;
+      const onStack = [];
+      const visit = name => {
+        if (state.get(name) === "done") return;
+        if (state.get(name) === "open") {
+          for (let i = onStack.lastIndexOf(name); i < onStack.length; i++) {
+            entries.get(onStack[i]).recursive = true;
+            entries.get(onStack[i]).inlinable = false;
+          }
+          return;
+        }
+        state.set(name, "open");
+        onStack.push(name);
+        for (const next of edges.get(name) || []) visit(next);
+        onStack.pop();
+        state.set(name, "done");
+      };
+      for (const name of entries.keys()) visit(name);
+    }
+    function applyInlineBudget(entries) {
+      let bounded = false;
+      let shed = false;
+      while (!bounded) {
+        computeExpandedSizes(entries);
+        for (const entry of entries.values()) if (entry.inlinable && entry.expandedSize > INLINE_MAX_HELPER_NODES) {
+          entry.inlinable = false;
+          shed = true;
+        }
+        bounded = true;
+        let worst = null;
+        let worstAdded = INLINE_MAX_ADDED_NODES;
+        for (const entry of entries.values()) {
+          let added = 0;
+          for (let i = 0; i < entry.sites.length; i++) {
+            const callee = entries.get(entry.sites[i].entry.name);
+            if (callee && callee.inlinable) added += callee.expandedSize;
+          }
+          if (added > worstAdded) {
+            worstAdded = added;
+            worst = entry;
+          }
+        }
+        if (!worst) break;
+        let victim = null;
+        for (let i = 0; i < worst.sites.length; i++) {
+          const callee = entries.get(worst.sites[i].entry.name);
+          if (!callee || !callee.inlinable) continue;
+          if (!victim || callee.expandedSize > victim.expandedSize || callee.expandedSize === victim.expandedSize && callee.name < victim.name) victim = callee;
+        }
+        if (!victim) break;
+        victim.inlinable = false;
+        shed = true;
+        bounded = false;
+      }
+      return shed;
+    }
+    function computeExpandedSizes(entries) {
+      const pending = new Set(entries.keys());
+      for (const entry of entries.values()) entry.expandedSize = entry.selfSize;
+      for (let round = 0; round < pending.size + 1; round++) {
+        let changed = false;
+        for (const entry of entries.values()) {
+          let size = entry.selfSize;
+          for (let i = 0; i < entry.sites.length; i++) {
+            const callee = entries.get(entry.sites[i].entry.name);
+            if (callee && callee.inlinable) size += callee.expandedSize;
+          }
+          if (size !== entry.expandedSize) {
+            entry.expandedSize = size;
+            changed = true;
+          }
+        }
+        if (!changed) break;
+      }
+    }
+    function nodeCount(ast) {
+      let count = 0;
+      walk(ast, () => {
+        count++;
+      });
+      return count;
+    }
+    function unrollBlock(context, block) {
+      block.body = unrollList(context, block.body);
+    }
+    function unrollList(context, list) {
+      const result = [];
+      for (let i = 0; i < list.length; i++) {
+        const replacement = unrollStatement(context, list[i]);
+        if (replacement === null) {
+          result.push(list[i]);
+          continue;
+        }
+        for (let j = 0; j < replacement.length; j++) result.push(replacement[j]);
+      }
+      return result;
+    }
+    function unrollStatement(context, statement) {
+      switch (statement.type) {
+       case "BlockStatement":
+        unrollBlock(context, statement);
+        return null;
+
+       case "IfStatement":
+        statement.consequent = unrollBranch(context, statement.consequent);
+        if (statement.alternate) statement.alternate = unrollBranch(context, statement.alternate);
+        return null;
+
+       case "SwitchStatement":
+        for (let i = 0; i < statement.cases.length; i++) statement.cases[i].consequent = unrollList(context, statement.cases[i].consequent);
+        return null;
+
+       case "WhileStatement":
+       case "DoWhileStatement":
+        statement.body = unrollBranch(context, statement.body);
+        return null;
+
+       case "ForStatement":
+        statement.body = unrollBranch(context, statement.body);
+        return unrollLoop(context, statement);
+
+       default:
+        return null;
+      }
+    }
+    function unrollBranch(context, branch) {
+      if (!branch) return branch;
+      if (branch.type === "BlockStatement") {
+        unrollBlock(context, branch);
+        return branch;
+      }
+      const replacement = unrollStatement(context, branch);
+      if (replacement === null) return branch;
+      return stampSynthetic({
+        type: "BlockStatement",
+        body: replacement
+      }, branch);
+    }
+    function unrollLoop(context, loop) {
+      if (!(context.loopUnrollLimit > 0)) return null;
+      if (loop.type !== "ForStatement") return null;
+      const induction = inductionVariable(context, loop);
+      if (!induction) return null;
+      const values = tripValues(loop, induction, context.loopUnrollLimit);
+      if (!values) return null;
+      const body = loop.body ? loop.body.type === "BlockStatement" ? loop.body.body : [ loop.body ] : [];
+      if (!bodyIsUnrollable(body, induction.name)) return null;
+      const result = [];
+      for (let i = 0; i < values.length; i++) result.push(stampSynthetic({
+        type: "BlockStatement",
+        body: cloneNodes(context, body, induction.name, values[i])
+      }, loop));
+      return result;
+    }
+    function inductionVariable(context, loop) {
+      const {init: init} = loop;
+      if (!init || init.type !== "VariableDeclaration") return null;
+      if (init.declarations.length !== 1) return null;
+      const declaration = init.declarations[0];
+      if (!declaration.id || declaration.id.type !== "Identifier") return null;
+      const start = integerLiteral(declaration.init);
+      if (start === null) return null;
+      if (init.kind === "var" && nameUsedOutside(context, loop, declaration.id.name)) return null;
+      return {
+        name: declaration.id.name,
+        start: start
+      };
+    }
+    const comparators = {
+      "<": (value, bound) => value < bound,
+      "<=": (value, bound) => value <= bound,
+      ">": (value, bound) => value > bound,
+      ">=": (value, bound) => value >= bound,
+      "!==": (value, bound) => value !== bound,
+      "!=": (value, bound) => value !== bound
+    };
+    function tripValues(loop, induction, limit) {
+      const {test: test, update: update} = loop;
+      if (!test || test.type !== "BinaryExpression") return null;
+      if (!test.left || test.left.type !== "Identifier" || test.left.name !== induction.name) return null;
+      const bound = integerLiteral(test.right);
+      if (bound === null) return null;
+      const compare = comparators[test.operator];
+      if (!compare) return null;
+      const step = inductionStep(update, induction.name);
+      if (step === null) return null;
+      const values = [];
+      let value = induction.start;
+      while (compare(value, bound)) {
+        if (values.length >= limit) return null;
+        values.push(value);
+        value += step;
+      }
+      return values;
+    }
+    function inductionStep(update, name) {
+      if (!update) return null;
+      if (update.type === "UpdateExpression") {
+        if (!update.argument || update.argument.type !== "Identifier" || update.argument.name !== name) return null;
+        return update.operator === "++" ? 1 : update.operator === "--" ? -1 : null;
+      }
+      if (update.type !== "AssignmentExpression") return null;
+      if (!update.left || update.left.type !== "Identifier" || update.left.name !== name) return null;
+      switch (update.operator) {
+       case "+=":
+        {
+          const step = integerLiteral(update.right);
+          return step === 0 ? null : step;
+        }
+
+       case "-=":
+        {
+          const step = integerLiteral(update.right);
+          return step === null || step === 0 ? null : -step;
+        }
+
+       case "=":
+        {
+          const {right: right} = update;
+          if (!right || right.type !== "BinaryExpression") return null;
+          const leftIsCounter = right.left.type === "Identifier" && right.left.name === name;
+          const rightIsCounter = right.right.type === "Identifier" && right.right.name === name;
+          if (right.operator === "+") {
+            const step = leftIsCounter ? integerLiteral(right.right) : rightIsCounter ? integerLiteral(right.left) : null;
+            return step === 0 ? null : step;
+          }
+          if (right.operator === "-" && leftIsCounter) {
+            const step = integerLiteral(right.right);
+            return step === null || step === 0 ? null : -step;
+          }
+          return null;
+        }
+
+       default:
+        return null;
+      }
+    }
+    function integerLiteral(ast) {
+      const value = literalNumber(ast);
+      return value === null || !Number.isInteger(value) ? null : value;
+    }
+    function nameUsedOutside(context, loop, name) {
+      let found = false;
+      const visit = node => {
+        if (found || !node || typeof node !== "object") return;
+        if (Array.isArray(node)) {
+          for (let i = 0; i < node.length; i++) visit(node[i]);
+          return;
+        }
+        if (typeof node.type !== "string" || node === loop) return;
+        if (node.type === "Identifier" && node.name === name) {
+          found = true;
+          return;
+        }
+        for (const key in node) {
+          if (key === "loc" || key === "range" || key === "parent") continue;
+          const child = node[key];
+          if (child && typeof child === "object") visit(child);
+        }
+      };
+      visit(context.ast);
+      return found;
+    }
+    function bodyIsUnrollable(body, name) {
+      let ok = true;
+      const reject = () => {
+        ok = false;
+      };
+      const visit = (node, inBreakable, inContinuable) => {
+        if (!ok || !node || typeof node !== "object") return;
+        if (Array.isArray(node)) {
+          for (let i = 0; i < node.length; i++) visit(node[i], inBreakable, inContinuable);
+          return;
+        }
+        if (typeof node.type !== "string") return;
+        switch (node.type) {
+         case "AssignmentExpression":
+          if (node.left.type === "Identifier" && node.left.name === name) return reject();
+          break;
+
+         case "UpdateExpression":
+          if (node.argument.type === "Identifier" && node.argument.name === name) return reject();
+          break;
+
+         case "VariableDeclarator":
+          if (node.id.type === "Identifier" && node.id.name === name) return reject();
+          break;
+
+         case "BreakStatement":
+          if (node.label || !inBreakable) return reject();
+          return;
+
+         case "ContinueStatement":
+          if (node.label || !inContinuable) return reject();
+          return;
+
+         case "LabeledStatement":
+          return reject();
+
+         case "CallExpression":
+          if (isMathRandom(node)) return reject();
+          break;
+
+         case "FunctionDeclaration":
+         case "FunctionExpression":
+         case "ArrowFunctionExpression":
+          return reject();
+
+         case "ForStatement":
+         case "WhileStatement":
+         case "DoWhileStatement":
+          visit(node.init, true, true);
+          visit(node.test, true, true);
+          visit(node.update, true, true);
+          visit(node.body, true, true);
+          return;
+
+         case "SwitchStatement":
+          visit(node.discriminant, inBreakable, inContinuable);
+          visit(node.cases, true, inContinuable);
+          return;
+
+         case "MemberExpression":
+          visit(node.object, inBreakable, inContinuable);
+          if (node.computed) visit(node.property, inBreakable, inContinuable);
+          return;
+        }
+        for (const key in node) {
+          if (key === "loc" || key === "range" || key === "parent") continue;
+          const child = node[key];
+          if (child && typeof child === "object") visit(child, inBreakable, inContinuable);
+        }
+      };
+      visit(body, false, false);
+      return ok;
+    }
+    function numberNode(value, source) {
+      const literal = stampSynthetic({
+        type: "Literal",
+        value: Math.abs(value),
+        raw: `${Math.abs(value)}`
+      }, source);
+      if (value >= 0) return literal;
+      return stampSynthetic({
+        type: "UnaryExpression",
+        operator: "-",
+        prefix: true,
+        argument: literal
+      }, source);
+    }
+    function isMathRandom(ast) {
+      const {callee: callee} = ast;
+      return Boolean(callee) && callee.type === "MemberExpression" && !callee.computed && callee.object.type === "Identifier" && callee.object.name === "Math" && callee.property.name === "random";
+    }
+    function cloneNodes(context, nodes, name, value) {
+      const result = new Array(nodes.length);
+      for (let i = 0; i < nodes.length; i++) result[i] = cloneNode(context, nodes[i], name, value);
+      return result;
+    }
+    function cloneNode(context, node, name, value) {
+      if (!node || typeof node !== "object") return node;
+      if (Array.isArray(node)) return cloneNodes(context, node, name, value);
+      if (typeof node.type !== "string") return node;
+      if (name !== null && node.type === "Identifier" && node.name === name) return numberNode(value, node);
+      const copy = {};
+      const verbatimProperty = node.type === "MemberExpression" && !node.computed;
+      for (const key in node) {
+        if (key === "start" || key === "end") continue;
+        if (key === "loc" || key === "range" || key === "parent") {
+          copy[key] = node[key];
+          continue;
+        }
+        copy[key] = cloneNode(context, node[key], verbatimProperty && key === "property" ? null : name, value);
+      }
+      return stampSynthetic(copy, node);
+    }
+    function threadLocalName(functionNode, name) {
+      if (functionNode.optimizerDisabled || !functionNode.isRootKernel) return null;
+      const {output: output} = functionNode;
+      if (!output || !output.length) return null;
+      switch (name) {
+       case "x":
+        return "x";
+
+       case "y":
+        return output.length > 1 ? "y" : "0";
+
+       case "z":
+        return output.length > 2 ? "z" : "0";
+
+       default:
+        return null;
+      }
+    }
+    module.exports = {
+      optimize: optimize,
+      buildInlinePlan: buildInlinePlan,
+      threadLocalName: threadLocalName
+    };
+  });
   var require_function_builder = __commonJSMin((exports, module) => {
+    const {buildInlinePlan: buildInlinePlan} = require_optimizer();
     module.exports = {
       FunctionBuilder: class FunctionBuilder {
         static fromKernel(kernel, FunctionNode, extraNodeOptions) {
           const {kernelArguments: kernelArguments, kernelConstants: kernelConstants, argumentNames: argumentNames, argumentSizes: argumentSizes, argumentBitRatios: argumentBitRatios, constants: constants, constantBitRatios: constantBitRatios, debug: debug, loopMaxIterations: loopMaxIterations, nativeFunctions: nativeFunctions, output: output, optimizeFloatMemory: optimizeFloatMemory, precision: precision, plugins: plugins, source: source, subKernels: subKernels, functions: functions, leadingReturnStatement: leadingReturnStatement, followingReturnStatement: followingReturnStatement, dynamicArguments: dynamicArguments, dynamicOutput: dynamicOutput, loopUnrollLimit: loopUnrollLimit} = kernel;
           const optimizerDisabled = Boolean(kernel._optimizerDisabled);
+          const inliningDisabled = Boolean(kernel._inliningDisabled);
           const argumentTypes = new Array(kernelArguments.length);
           const constantTypes = {};
           for (let i = 0; i < kernelArguments.length; i++) argumentTypes[i] = kernelArguments[i].type;
@@ -1566,6 +3183,7 @@
           const onFunctionCall = (functionName, calleeFunctionName, args) => {
             functionBuilder.trackFunctionCall(functionName, calleeFunctionName, args);
           };
+          const lookupInlineTarget = inliningDisabled ? null : functionName => functionBuilder.lookupInlineTarget(functionName);
           const onNestedFunction = (ast, source) => {
             const argumentNames = [];
             for (let i = 0; i < ast.params.length; i++) argumentNames.push(ast.params[i].name);
@@ -1611,7 +3229,8 @@
             dynamicArguments: dynamicArguments,
             dynamicOutput: dynamicOutput,
             optimizerDisabled: optimizerDisabled,
-            loopUnrollLimit: loopUnrollLimit
+            loopUnrollLimit: loopUnrollLimit,
+            lookupInlineTarget: lookupInlineTarget
           }, extraNodeOptions || {});
           const rootNodeOptions = Object.assign({}, nodeOptions, {
             isRootKernel: true,
@@ -1648,7 +3267,8 @@
             onFunctionCall: onFunctionCall,
             onNestedFunction: onNestedFunction,
             optimizerDisabled: optimizerDisabled,
-            loopUnrollLimit: loopUnrollLimit
+            loopUnrollLimit: loopUnrollLimit,
+            lookupInlineTarget: lookupInlineTarget
           }));
           let subKernelNodes = null;
           if (subKernels) subKernelNodes = subKernels.map(subKernel => {
@@ -1680,6 +3300,7 @@
           this.lookupChain = [];
           this.functionNodeDependencies = {};
           this.functionCalls = {};
+          this._inlinePlan = null;
           if (this.rootNode) this.functionMap["kernel"] = this.rootNode;
           if (this.functionNodes) for (let i = 0; i < this.functionNodes.length; i++) this.functionMap[this.functionNodes[i].name] = this.functionNodes[i];
           if (this.subKernelNodes) for (let i = 0; i < this.subKernelNodes.length; i++) this.functionMap[this.subKernelNodes[i].name] = this.subKernelNodes[i];
@@ -1687,6 +3308,10 @@
             const nativeFunction = this.nativeFunctions[i];
             this.nativeFunctionNames.push(nativeFunction.name);
           }
+        }
+        lookupInlineTarget(functionName) {
+          if (!this._inlinePlan) this._inlinePlan = buildInlinePlan(this);
+          return this._inlinePlan.get(functionName) || null;
         }
         addFunctionNode(functionNode) {
           if (!functionNode.name) throw new Error("functionNode.name needs set");
@@ -2176,880 +3801,6 @@
       FunctionTracer: FunctionTracer
     };
   });
-  var require_optimizer = __commonJSMin((exports, module) => {
-    let syntheticNodeId = 1610612736;
-    function stampSynthetic(node, source) {
-      node.start = syntheticNodeId++;
-      node.end = syntheticNodeId++;
-      if (source && source.loc) node.loc = source.loc;
-      return node;
-    }
-    const scalarTypes = [ "Number", "Float", "Integer" ];
-    const thisWrite = "@this";
-    const indexedReadSignatures = [ "value[]", "value[][]", "value[][][]", "value[][][][]", "this.constants.value[]", "this.constants.value[][]", "this.constants.value[][][]", "this.constants.value[][][][]" ];
-    function optimize(functionNode, ast, settings) {
-      if (!ast || !ast.body || ast.body.type !== "BlockStatement") return ast;
-      const context = new OptimizerContext(functionNode, ast, settings || {});
-      processBlock(context, ast.body);
-      unrollBlock(context, ast.body);
-      return ast;
-    }
-    var OptimizerContext = class {
-      constructor(functionNode, ast, settings) {
-        this.functionNode = functionNode;
-        this.ast = ast;
-        this.loopUnrollLimit = typeof settings.loopUnrollLimit === "number" ? settings.loopUnrollLimit : 8;
-        this.mutatedNames = collectMutatedNames(ast.body);
-        this.usedNames = collectUsedNames(ast);
-        this.hoistCount = 0;
-      }
-      freshName() {
-        let name;
-        do {
-          name = `optHoist${this.hoistCount++}`;
-        } while (this.usedNames.has(name));
-        this.usedNames.add(name);
-        return name;
-      }
-      isImmutableArrayRoot(name) {
-        if (this.mutatedNames.has(name)) return false;
-        const {argumentNames: argumentNames} = this.functionNode;
-        return Boolean(argumentNames) && argumentNames.indexOf(name) > -1;
-      }
-      readElementType(ast, signature) {
-        const rootType = this.readRootType(ast, signature);
-        if (!rootType) return null;
-        try {
-          return this.functionNode.getLookupType(rootType);
-        } catch (e) {
-          return null;
-        }
-      }
-      readRootType(ast, signature) {
-        const {functionNode: functionNode} = this;
-        if (signature.indexOf("this.constants.") === 0) {
-          if (this.mutatedNames.has(thisWrite)) return null;
-          const name = constantReadName(ast, signature);
-          if (!name) return null;
-          const type = functionNode.constantTypes ? functionNode.constantTypes[name] : null;
-          return type === "Float" ? "Number" : type || null;
-        }
-        const root = memberRoot(ast);
-        if (!root || root.type !== "Identifier") return null;
-        if (!this.isImmutableArrayRoot(root.name)) return null;
-        const index = functionNode.argumentNames.indexOf(root.name);
-        return (functionNode.argumentTypes ? functionNode.argumentTypes[index] : null) || null;
-      }
-    };
-    function walk(node, visit) {
-      if (!node || typeof node !== "object") return;
-      if (Array.isArray(node)) {
-        for (let i = 0; i < node.length; i++) walk(node[i], visit);
-        return;
-      }
-      if (typeof node.type !== "string") return;
-      visit(node);
-      for (const key in node) {
-        if (key === "loc" || key === "range" || key === "parent") continue;
-        const child = node[key];
-        if (child && typeof child === "object") walk(child, visit);
-      }
-    }
-    function collectMutatedNames(ast) {
-      const names = new Set;
-      const addTarget = target => {
-        let node = target;
-        while (node && node.type === "MemberExpression") node = node.object;
-        if (node && node.type === "Identifier") names.add(node.name);
-        if (node && node.type === "ThisExpression") names.add(thisWrite);
-      };
-      walk(ast, node => {
-        switch (node.type) {
-         case "AssignmentExpression":
-          addTarget(node.left);
-          break;
-
-         case "UpdateExpression":
-          addTarget(node.argument);
-          break;
-
-         case "VariableDeclarator":
-          if (node.id && node.id.type === "Identifier") names.add(node.id.name);
-          break;
-
-         case "FunctionDeclaration":
-         case "FunctionExpression":
-         case "ArrowFunctionExpression":
-          if (node.id && node.id.name) names.add(node.id.name);
-          for (let i = 0; i < node.params.length; i++) if (node.params[i].type === "Identifier") names.add(node.params[i].name);
-          break;
-        }
-      });
-      return names;
-    }
-    function collectUsedNames(ast) {
-      const names = new Set;
-      walk(ast, node => {
-        if (node.type === "Identifier") names.add(node.name);
-      });
-      return names;
-    }
-    function memberRoot(ast) {
-      let node = ast;
-      while (node && node.type === "MemberExpression") node = node.object;
-      return node;
-    }
-    function constantReadName(ast, signature) {
-      let depth = (signature.match(/\[\]/g) || []).length;
-      let node = ast;
-      while (depth-- > 0) {
-        if (!node || node.type !== "MemberExpression") return null;
-        node = node.object;
-      }
-      return node && node.property && node.property.name ? node.property.name : null;
-    }
-    function processBlock(context, block) {
-      const body = block.body;
-      for (let i = 0; i < body.length; i++) {
-        const prefix = processStatement(context, body[i]);
-        if (prefix && prefix.length > 0) {
-          body.splice(i, 0, ...prefix);
-          i += prefix.length;
-        }
-      }
-    }
-    function processStatement(context, statement) {
-      switch (statement.type) {
-       case "BlockStatement":
-        processBlock(context, statement);
-        return null;
-
-       case "IfStatement":
-        processBranch(context, statement, "consequent");
-        processBranch(context, statement, "alternate");
-        return null;
-
-       case "SwitchStatement":
-        for (let i = 0; i < statement.cases.length; i++) {
-          const block = {
-            type: "BlockStatement",
-            body: statement.cases[i].consequent
-          };
-          processBlock(context, block);
-          statement.cases[i].consequent = block.body;
-        }
-        return null;
-
-       case "ForStatement":
-       case "WhileStatement":
-       case "DoWhileStatement":
-        processBranch(context, statement, "body");
-        return hoistFromLoop(context, statement);
-
-       default:
-        return null;
-      }
-    }
-    function processBranch(context, statement, key) {
-      const branch = statement[key];
-      if (!branch) return;
-      if (branch.type === "BlockStatement") {
-        processBlock(context, branch);
-        return;
-      }
-      const prefix = processStatement(context, branch);
-      if (prefix && prefix.length > 0) statement[key] = stampSynthetic({
-        type: "BlockStatement",
-        body: prefix.concat([ branch ])
-      }, branch);
-    }
-    function hoistFromLoop(context, loop) {
-      const varying = collectMutatedNames(loop);
-      const entries = [];
-      collectReachable(loop.body, entries);
-      if (entries.length === 0) return [];
-      const faultable = context.functionNode.readsCanFault && !loopIsAlwaysEntered(loop);
-      const hoisted = [];
-      const relocated = new Set;
-      const cache = new Map;
-      for (let i = 0; i < entries.length; i++) {
-        const {statement: statement} = entries[i];
-        if (statement.optimizerHoist && isInvariant(context, statement.declarations[0].init, varying) && !(faultable && canFault(context, statement.declarations[0].init))) {
-          const key = expressionKey(statement.declarations[0].init);
-          hoisted.push(statement);
-          relocated.add(statement);
-          if (key) cache.set(key, statement.declarations[0].id.name);
-          continue;
-        }
-        replaceInvariantReads(context, statement, varying, faultable, cache, hoisted);
-      }
-      if (relocated.size > 0) for (let i = 0; i < entries.length; i++) {
-        const {list: list} = entries[i];
-        if (!list.some(statement => relocated.has(statement))) continue;
-        const kept = list.filter(statement => !relocated.has(statement));
-        list.length = 0;
-        for (let j = 0; j < kept.length; j++) list.push(kept[j]);
-      }
-      return hoisted;
-    }
-    function collectReachableList(list, entries) {
-      for (let i = 0; i < list.length; i++) {
-        const statement = list[i];
-        switch (statement.type) {
-         case "ExpressionStatement":
-         case "VariableDeclaration":
-          entries.push({
-            list: list,
-            statement: statement
-          });
-          break;
-
-         case "EmptyStatement":
-         case "DebuggerStatement":
-          break;
-
-         case "BlockStatement":
-          if (!collectReachableList(statement.body, entries)) return false;
-          break;
-
-         case "IfStatement":
-         case "SwitchStatement":
-         case "ForStatement":
-         case "WhileStatement":
-         case "DoWhileStatement":
-          if (containsExit(statement)) return false;
-          break;
-
-         default:
-          return false;
-        }
-      }
-      return true;
-    }
-    function collectReachable(body, entries) {
-      if (!body) return false;
-      if (body.type === "BlockStatement") return collectReachableList(body.body, entries);
-      return collectReachableList([ body ], entries);
-    }
-    function containsExit(statement) {
-      let found = false;
-      const visit = (node, inBreakable, inContinuable) => {
-        if (!node || typeof node !== "object" || found) return;
-        if (Array.isArray(node)) {
-          for (let i = 0; i < node.length; i++) visit(node[i], inBreakable, inContinuable);
-          return;
-        }
-        if (typeof node.type !== "string") return;
-        switch (node.type) {
-         case "ReturnStatement":
-         case "ThrowStatement":
-          found = true;
-          return;
-
-         case "BreakStatement":
-          if (node.label || !inBreakable) found = true;
-          return;
-
-         case "ContinueStatement":
-          if (node.label || !inContinuable) found = true;
-          return;
-
-         case "ForStatement":
-         case "WhileStatement":
-         case "DoWhileStatement":
-          visit(node.init, true, true);
-          visit(node.test, true, true);
-          visit(node.update, true, true);
-          visit(node.body, true, true);
-          return;
-
-         case "SwitchStatement":
-          visit(node.discriminant, inBreakable, inContinuable);
-          visit(node.cases, true, inContinuable);
-          return;
-
-         case "FunctionDeclaration":
-         case "FunctionExpression":
-         case "ArrowFunctionExpression":
-          return;
-        }
-        for (const key in node) {
-          if (key === "loc" || key === "range" || key === "parent") continue;
-          const child = node[key];
-          if (child && typeof child === "object") visit(child, inBreakable, inContinuable);
-        }
-      };
-      visit(statement, false, false);
-      return found;
-    }
-    function replaceInvariantReads(context, statement, varying, faultable, cache, hoisted) {
-      const visit = (node, key) => {
-        const child = node[key];
-        if (!child || typeof child !== "object") return;
-        if (Array.isArray(child)) {
-          for (let i = 0; i < child.length; i++) visit(child, i);
-          return;
-        }
-        if (typeof child.type !== "string") return;
-        switch (child.type) {
-         case "FunctionDeclaration":
-         case "FunctionExpression":
-         case "ArrowFunctionExpression":
-          return;
-
-         case "ConditionalExpression":
-          visit(child, "test");
-          return;
-
-         case "LogicalExpression":
-          visit(child, "left");
-          return;
-
-         case "MemberExpression":
-          if (isHoistableRead(context, child, varying) && !(faultable && canFault(context, child))) {
-            node[key] = referenceFor(context, child, cache, hoisted);
-            return;
-          }
-          if (child.computed) visit(child, "property");
-          if (child.object && child.object.type !== "MemberExpression") visit(child, "object");
-          return;
-        }
-        for (const childKey in child) {
-          if (childKey === "loc" || childKey === "range" || childKey === "parent") continue;
-          const grandChild = child[childKey];
-          if (grandChild && typeof grandChild === "object") visit(child, childKey);
-        }
-      };
-      visit({
-        statement: statement
-      }, "statement");
-    }
-    function referenceFor(context, read, cache, hoisted) {
-      const key = expressionKey(read);
-      if (key && cache.has(key)) return stampSynthetic({
-        type: "Identifier",
-        name: cache.get(key)
-      }, read);
-      const name = context.freshName();
-      const declaration = stampSynthetic({
-        type: "VariableDeclaration",
-        kind: "const",
-        declarations: [ stampSynthetic({
-          type: "VariableDeclarator",
-          id: stampSynthetic({
-            type: "Identifier",
-            name: name
-          }, read),
-          init: read
-        }, read) ]
-      }, read);
-      declaration.optimizerHoist = true;
-      hoisted.push(declaration);
-      if (key) cache.set(key, name);
-      return stampSynthetic({
-        type: "Identifier",
-        name: name
-      }, read);
-    }
-    function canFault(context, ast) {
-      let found = false;
-      walk(ast, node => {
-        if (found || node.type !== "MemberExpression") return;
-        const signature = context.functionNode.getVariableSignature(node);
-        if (!signature || indexedReadSignatures.indexOf(signature) === -1) return;
-        if ((signature.match(/\[\]/g) || []).length < 2) return;
-        if (context.readRootType(node, signature) === "Input") return;
-        found = true;
-      });
-      return found;
-    }
-    function loopIsAlwaysEntered(loop) {
-      if (loop.type === "DoWhileStatement") return true;
-      if (loop.type !== "ForStatement") return false;
-      if (!loop.test) return true;
-      const {test: test} = loop;
-      if (test.type !== "BinaryExpression" || test.left.type !== "Identifier") return false;
-      const limit = literalNumber(test.right);
-      if (limit === null) return false;
-      const start = initialNumber(loop.init, test.left.name);
-      if (start === null) return false;
-      switch (test.operator) {
-       case "<":
-        return start < limit;
-
-       case "<=":
-        return start <= limit;
-
-       case ">":
-        return start > limit;
-
-       case ">=":
-        return start >= limit;
-
-       case "!==":
-       case "!=":
-        return start !== limit;
-
-       default:
-        return false;
-      }
-    }
-    function literalNumber(ast) {
-      if (!ast) return null;
-      if (ast.type === "Literal" && typeof ast.value === "number") return ast.value;
-      if (ast.type === "UnaryExpression" && ast.operator === "-") {
-        const value = literalNumber(ast.argument);
-        return value === null ? null : -value;
-      }
-      return null;
-    }
-    function initialNumber(init, name) {
-      if (!init) return null;
-      if (init.type === "VariableDeclaration") {
-        for (let i = 0; i < init.declarations.length; i++) {
-          const declaration = init.declarations[i];
-          if (declaration.id.type === "Identifier" && declaration.id.name === name) return literalNumber(declaration.init);
-        }
-        return null;
-      }
-      if (init.type === "AssignmentExpression" && init.operator === "=" && init.left.type === "Identifier" && init.left.name === name) return literalNumber(init.right);
-      return null;
-    }
-    function isHoistableRead(context, ast, varying) {
-      const signature = context.functionNode.getVariableSignature(ast);
-      if (!signature || indexedReadSignatures.indexOf(signature) === -1) return false;
-      const elementType = context.readElementType(ast, signature);
-      if (!elementType || scalarTypes.indexOf(elementType) === -1) return false;
-      return isInvariant(context, ast, varying);
-    }
-    function isInvariant(context, ast, varying) {
-      if (!ast || typeof ast !== "object") return false;
-      switch (ast.type) {
-       case "Literal":
-        return true;
-
-       case "ThisExpression":
-        return true;
-
-       case "Identifier":
-        return !varying.has(ast.name);
-
-       case "UnaryExpression":
-        return ast.operator !== "delete" && ast.operator !== "typeof" && isInvariant(context, ast.argument, varying);
-
-       case "BinaryExpression":
-       case "LogicalExpression":
-        return isInvariant(context, ast.left, varying) && isInvariant(context, ast.right, varying);
-
-       case "ConditionalExpression":
-        return isInvariant(context, ast.test, varying) && isInvariant(context, ast.consequent, varying) && isInvariant(context, ast.alternate, varying);
-
-       case "MemberExpression":
-        return isInvariantMember(context, ast, varying);
-
-       default:
-        return false;
-      }
-    }
-    function isInvariantMember(context, ast, varying) {
-      const signature = context.functionNode.getVariableSignature(ast);
-      if (!signature) return false;
-      switch (signature) {
-       case "this.thread.value":
-       case "this.output.value":
-        return true;
-
-       case "this.constants.value":
-        return !context.mutatedNames.has(thisWrite);
-
-       case "value.value":
-        return context.functionNode.isAstMathVariable(ast);
-
-       case "value[]":
-       case "value[][]":
-       case "value[][][]":
-       case "value[][][][]":
-        {
-          const root = memberRoot(ast);
-          if (!root || root.type !== "Identifier" || !context.isImmutableArrayRoot(root.name)) return false;
-          return everySubscriptInvariant(context, ast, varying);
-        }
-
-       case "this.constants.value[]":
-       case "this.constants.value[][]":
-       case "this.constants.value[][][]":
-       case "this.constants.value[][][][]":
-        if (context.mutatedNames.has(thisWrite)) return false;
-        return everySubscriptInvariant(context, ast, varying);
-
-       default:
-        return false;
-      }
-    }
-    function everySubscriptInvariant(context, ast, varying) {
-      let node = ast;
-      while (node && node.type === "MemberExpression") {
-        if (node.computed && !isInvariant(context, node.property, varying)) return false;
-        node = node.object;
-      }
-      return true;
-    }
-    function expressionKey(ast) {
-      if (!ast || typeof ast !== "object") return null;
-      switch (ast.type) {
-       case "Literal":
-        return `L${typeof ast.value}:${ast.value}`;
-
-       case "ThisExpression":
-        return "this";
-
-       case "Identifier":
-        return `#${ast.name}`;
-
-       case "MemberExpression":
-        {
-          const object = expressionKey(ast.object);
-          const property = expressionKey(ast.property);
-          if (object === null || property === null) return null;
-          return `M${ast.computed ? "[" : "."}(${object},${property})`;
-        }
-
-       case "UnaryExpression":
-        {
-          const argument = expressionKey(ast.argument);
-          return argument === null ? null : `U${ast.operator}(${argument})`;
-        }
-
-       case "BinaryExpression":
-       case "LogicalExpression":
-        {
-          const left = expressionKey(ast.left);
-          const right = expressionKey(ast.right);
-          if (left === null || right === null) return null;
-          return `B${ast.operator}(${left},${right})`;
-        }
-
-       default:
-        return null;
-      }
-    }
-    function unrollBlock(context, block) {
-      block.body = unrollList(context, block.body);
-    }
-    function unrollList(context, list) {
-      const result = [];
-      for (let i = 0; i < list.length; i++) {
-        const replacement = unrollStatement(context, list[i]);
-        if (replacement === null) {
-          result.push(list[i]);
-          continue;
-        }
-        for (let j = 0; j < replacement.length; j++) result.push(replacement[j]);
-      }
-      return result;
-    }
-    function unrollStatement(context, statement) {
-      switch (statement.type) {
-       case "BlockStatement":
-        unrollBlock(context, statement);
-        return null;
-
-       case "IfStatement":
-        statement.consequent = unrollBranch(context, statement.consequent);
-        if (statement.alternate) statement.alternate = unrollBranch(context, statement.alternate);
-        return null;
-
-       case "SwitchStatement":
-        for (let i = 0; i < statement.cases.length; i++) statement.cases[i].consequent = unrollList(context, statement.cases[i].consequent);
-        return null;
-
-       case "WhileStatement":
-       case "DoWhileStatement":
-        statement.body = unrollBranch(context, statement.body);
-        return null;
-
-       case "ForStatement":
-        statement.body = unrollBranch(context, statement.body);
-        return unrollLoop(context, statement);
-
-       default:
-        return null;
-      }
-    }
-    function unrollBranch(context, branch) {
-      if (!branch) return branch;
-      if (branch.type === "BlockStatement") {
-        unrollBlock(context, branch);
-        return branch;
-      }
-      const replacement = unrollStatement(context, branch);
-      if (replacement === null) return branch;
-      return stampSynthetic({
-        type: "BlockStatement",
-        body: replacement
-      }, branch);
-    }
-    function unrollLoop(context, loop) {
-      if (!(context.loopUnrollLimit > 0)) return null;
-      if (loop.type !== "ForStatement") return null;
-      const induction = inductionVariable(context, loop);
-      if (!induction) return null;
-      const values = tripValues(loop, induction, context.loopUnrollLimit);
-      if (!values) return null;
-      const body = loop.body ? loop.body.type === "BlockStatement" ? loop.body.body : [ loop.body ] : [];
-      if (!bodyIsUnrollable(body, induction.name)) return null;
-      const result = [];
-      for (let i = 0; i < values.length; i++) result.push(stampSynthetic({
-        type: "BlockStatement",
-        body: cloneNodes(context, body, induction.name, values[i])
-      }, loop));
-      return result;
-    }
-    function inductionVariable(context, loop) {
-      const {init: init} = loop;
-      if (!init || init.type !== "VariableDeclaration") return null;
-      if (init.declarations.length !== 1) return null;
-      const declaration = init.declarations[0];
-      if (!declaration.id || declaration.id.type !== "Identifier") return null;
-      const start = integerLiteral(declaration.init);
-      if (start === null) return null;
-      if (init.kind === "var" && nameUsedOutside(context, loop, declaration.id.name)) return null;
-      return {
-        name: declaration.id.name,
-        start: start
-      };
-    }
-    const comparators = {
-      "<": (value, bound) => value < bound,
-      "<=": (value, bound) => value <= bound,
-      ">": (value, bound) => value > bound,
-      ">=": (value, bound) => value >= bound,
-      "!==": (value, bound) => value !== bound,
-      "!=": (value, bound) => value !== bound
-    };
-    function tripValues(loop, induction, limit) {
-      const {test: test, update: update} = loop;
-      if (!test || test.type !== "BinaryExpression") return null;
-      if (!test.left || test.left.type !== "Identifier" || test.left.name !== induction.name) return null;
-      const bound = integerLiteral(test.right);
-      if (bound === null) return null;
-      const compare = comparators[test.operator];
-      if (!compare) return null;
-      const step = inductionStep(update, induction.name);
-      if (step === null) return null;
-      const values = [];
-      let value = induction.start;
-      while (compare(value, bound)) {
-        if (values.length >= limit) return null;
-        values.push(value);
-        value += step;
-      }
-      return values;
-    }
-    function inductionStep(update, name) {
-      if (!update) return null;
-      if (update.type === "UpdateExpression") {
-        if (!update.argument || update.argument.type !== "Identifier" || update.argument.name !== name) return null;
-        return update.operator === "++" ? 1 : update.operator === "--" ? -1 : null;
-      }
-      if (update.type !== "AssignmentExpression") return null;
-      if (!update.left || update.left.type !== "Identifier" || update.left.name !== name) return null;
-      switch (update.operator) {
-       case "+=":
-        {
-          const step = integerLiteral(update.right);
-          return step === 0 ? null : step;
-        }
-
-       case "-=":
-        {
-          const step = integerLiteral(update.right);
-          return step === null || step === 0 ? null : -step;
-        }
-
-       case "=":
-        {
-          const {right: right} = update;
-          if (!right || right.type !== "BinaryExpression") return null;
-          const leftIsCounter = right.left.type === "Identifier" && right.left.name === name;
-          const rightIsCounter = right.right.type === "Identifier" && right.right.name === name;
-          if (right.operator === "+") {
-            const step = leftIsCounter ? integerLiteral(right.right) : rightIsCounter ? integerLiteral(right.left) : null;
-            return step === 0 ? null : step;
-          }
-          if (right.operator === "-" && leftIsCounter) {
-            const step = integerLiteral(right.right);
-            return step === null || step === 0 ? null : -step;
-          }
-          return null;
-        }
-
-       default:
-        return null;
-      }
-    }
-    function integerLiteral(ast) {
-      const value = literalNumber(ast);
-      return value === null || !Number.isInteger(value) ? null : value;
-    }
-    function nameUsedOutside(context, loop, name) {
-      let found = false;
-      const visit = node => {
-        if (found || !node || typeof node !== "object") return;
-        if (Array.isArray(node)) {
-          for (let i = 0; i < node.length; i++) visit(node[i]);
-          return;
-        }
-        if (typeof node.type !== "string" || node === loop) return;
-        if (node.type === "Identifier" && node.name === name) {
-          found = true;
-          return;
-        }
-        for (const key in node) {
-          if (key === "loc" || key === "range" || key === "parent") continue;
-          const child = node[key];
-          if (child && typeof child === "object") visit(child);
-        }
-      };
-      visit(context.ast);
-      return found;
-    }
-    function bodyIsUnrollable(body, name) {
-      let ok = true;
-      const reject = () => {
-        ok = false;
-      };
-      const visit = (node, inBreakable, inContinuable) => {
-        if (!ok || !node || typeof node !== "object") return;
-        if (Array.isArray(node)) {
-          for (let i = 0; i < node.length; i++) visit(node[i], inBreakable, inContinuable);
-          return;
-        }
-        if (typeof node.type !== "string") return;
-        switch (node.type) {
-         case "AssignmentExpression":
-          if (node.left.type === "Identifier" && node.left.name === name) return reject();
-          break;
-
-         case "UpdateExpression":
-          if (node.argument.type === "Identifier" && node.argument.name === name) return reject();
-          break;
-
-         case "VariableDeclarator":
-          if (node.id.type === "Identifier" && node.id.name === name) return reject();
-          break;
-
-         case "BreakStatement":
-          if (node.label || !inBreakable) return reject();
-          return;
-
-         case "ContinueStatement":
-          if (node.label || !inContinuable) return reject();
-          return;
-
-         case "LabeledStatement":
-          return reject();
-
-         case "CallExpression":
-          if (isMathRandom(node)) return reject();
-          break;
-
-         case "FunctionDeclaration":
-         case "FunctionExpression":
-         case "ArrowFunctionExpression":
-          return reject();
-
-         case "ForStatement":
-         case "WhileStatement":
-         case "DoWhileStatement":
-          visit(node.init, true, true);
-          visit(node.test, true, true);
-          visit(node.update, true, true);
-          visit(node.body, true, true);
-          return;
-
-         case "SwitchStatement":
-          visit(node.discriminant, inBreakable, inContinuable);
-          visit(node.cases, true, inContinuable);
-          return;
-
-         case "MemberExpression":
-          visit(node.object, inBreakable, inContinuable);
-          if (node.computed) visit(node.property, inBreakable, inContinuable);
-          return;
-        }
-        for (const key in node) {
-          if (key === "loc" || key === "range" || key === "parent") continue;
-          const child = node[key];
-          if (child && typeof child === "object") visit(child, inBreakable, inContinuable);
-        }
-      };
-      visit(body, false, false);
-      return ok;
-    }
-    function numberNode(value, source) {
-      const literal = stampSynthetic({
-        type: "Literal",
-        value: Math.abs(value),
-        raw: `${Math.abs(value)}`
-      }, source);
-      if (value >= 0) return literal;
-      return stampSynthetic({
-        type: "UnaryExpression",
-        operator: "-",
-        prefix: true,
-        argument: literal
-      }, source);
-    }
-    function isMathRandom(ast) {
-      const {callee: callee} = ast;
-      return Boolean(callee) && callee.type === "MemberExpression" && !callee.computed && callee.object.type === "Identifier" && callee.object.name === "Math" && callee.property.name === "random";
-    }
-    function cloneNodes(context, nodes, name, value) {
-      const result = new Array(nodes.length);
-      for (let i = 0; i < nodes.length; i++) result[i] = cloneNode(context, nodes[i], name, value);
-      return result;
-    }
-    function cloneNode(context, node, name, value) {
-      if (!node || typeof node !== "object") return node;
-      if (Array.isArray(node)) return cloneNodes(context, node, name, value);
-      if (typeof node.type !== "string") return node;
-      if (name !== null && node.type === "Identifier" && node.name === name) return numberNode(value, node);
-      const copy = {};
-      const verbatimProperty = node.type === "MemberExpression" && !node.computed;
-      for (const key in node) {
-        if (key === "start" || key === "end") continue;
-        if (key === "loc" || key === "range" || key === "parent") {
-          copy[key] = node[key];
-          continue;
-        }
-        copy[key] = cloneNode(context, node[key], verbatimProperty && key === "property" ? null : name, value);
-      }
-      return stampSynthetic(copy, node);
-    }
-    function threadLocalName(functionNode, name) {
-      if (functionNode.optimizerDisabled || !functionNode.isRootKernel) return null;
-      const {output: output} = functionNode;
-      if (!output || !output.length) return null;
-      switch (name) {
-       case "x":
-        return "x";
-
-       case "y":
-        return output.length > 1 ? "y" : "0";
-
-       case "z":
-        return output.length > 2 ? "z" : "0";
-
-       default:
-        return null;
-      }
-    }
-    module.exports = {
-      optimize: optimize,
-      threadLocalName: threadLocalName
-    };
-  });
   var require_function_node$5 = __commonJSMin((exports, module) => {
     const acorn = require_empty_module();
     const {utils: utils} = require_utils();
@@ -3104,6 +3855,7 @@
         this.fixIntegerDivisionAccuracy = null;
         this.optimizerDisabled = false;
         this.loopUnrollLimit = 8;
+        this.lookupInlineTarget = null;
         if (settings) for (const p in settings) {
           if (!settings.hasOwnProperty(p)) continue;
           if (!this.hasOwnProperty(p)) continue;
@@ -3111,6 +3863,7 @@
         }
         this.literalTypes = {};
         this.validate();
+        this._rawAST = null;
         this._string = null;
         this._internalVariableNames = {};
       }
@@ -3161,31 +3914,33 @@
       get readsCanFault() {
         return false;
       }
-      getJsAST(inParser) {
-        if (this.ast) return this.ast;
+      getRawAST(inParser) {
+        if (this._rawAST) return this._rawAST;
         if (typeof this.source === "object") {
           normalizeMinifiedStatements(this.source, this.requiresSequenceFreeForInit);
-          this.optimizeAST(this.source);
-          this.traceFunctionAST(this.source);
-          return this.ast = this.source;
+          return this._rawAST = this.source;
         }
         inParser = inParser || acorn;
         if (inParser === null) throw new Error("Missing JS to AST parser");
-        const ast = Object.freeze(inParser.parse(`const parser_${this.name} = ${this.source};`, {
+        const functionAST = Object.freeze(inParser.parse(`const parser_${this.name} = ${this.source};`, {
           locations: true,
           ecmaVersion: 2020
-        }));
-        const functionAST = ast.body[0].declarations[0].init;
+        })).body[0].declarations[0].init;
         normalizeMinifiedStatements(functionAST, this.requiresSequenceFreeForInit);
+        return this._rawAST = functionAST;
+      }
+      getJsAST(inParser) {
+        if (this.ast) return this.ast;
+        const functionAST = this.getRawAST(inParser);
         this.optimizeAST(functionAST);
         this.traceFunctionAST(functionAST);
-        if (!ast) throw new Error("Failed to parse JS code");
         return this.ast = functionAST;
       }
       optimizeAST(ast) {
         if (this.optimizerDisabled) return ast;
         return optimize(this, ast, {
-          loopUnrollLimit: this.loopUnrollLimit
+          loopUnrollLimit: this.loopUnrollLimit,
+          lookupInlineTarget: this.lookupInlineTarget
         });
       }
       getAssignedArguments() {
@@ -6700,7 +7455,7 @@
       astBinaryExpression(ast, retArr) {
         if (this.checkAndUpconvertOperator(ast, retArr)) return retArr;
         if (ast.operator === "/") {
-          const wrap = this.fixIntegerDivisionAccuracy;
+          const wrap = this.fixIntegerDivisionAccuracy && !this.divisionIsProvablyFractional(ast);
           retArr.push(wrap ? "divWithIntCheck(" : "(");
           this.pushState("building-float");
           switch (this.getType(ast.left)) {
@@ -6872,6 +7627,9 @@
         }
         retArr.push(")");
         return retArr;
+      }
+      divisionIsProvablyFractional(ast) {
+        return isFractionalLiteral(ast.left) || isFractionalLiteral(ast.right);
       }
       checkAndUpconvertOperator(ast, retArr) {
         const bitwiseResult = this.checkAndUpconvertBitwiseOperators(ast, retArr);
@@ -8498,6 +9256,11 @@
       "===": "==",
       "!==": "!="
     };
+    function isFractionalLiteral(ast) {
+      if (!ast) return false;
+      if (ast.type === "UnaryExpression" && (ast.operator === "-" || ast.operator === "+")) return isFractionalLiteral(ast.argument);
+      return ast.type === "Literal" && typeof ast.value === "number" && !Number.isInteger(ast.value);
+    }
     module.exports = {
       WebGLFunctionNode: WebGLFunctionNode
     };
@@ -10346,13 +11109,23 @@
         };
         return this.canvas.getContext("webgl", settings) || this.canvas.getContext("experimental-webgl", settings);
       }
+      pluginMatchSource() {
+        if (typeof this.source !== "string") return null;
+        if (!this.functions || this.functions.length < 1) return this.source;
+        const sources = [ this.source ];
+        for (let i = 0; i < this.functions.length; i++) {
+          const source = this.functions[i] ? this.functions[i].source : null;
+          if (typeof source === "string") sources.push(source);
+        }
+        return sources.join("\n");
+      }
       initPlugins(settings) {
         const pluginsToUse = [];
-        const {source: source} = this;
+        const source = this.pluginMatchSource();
         if (typeof source === "string") for (let i = 0; i < plugins.length; i++) {
           const plugin = plugins[i];
           if (source.match(plugin.functionMatch)) pluginsToUse.push(plugin);
-        } else if (typeof source === "object") {
+        } else if (typeof this.source === "object") {
           if (settings.pluginNames) for (let i = 0; i < plugins.length; i++) {
             const plugin = plugins[i];
             if (settings.pluginNames.some(pluginName => pluginName === plugin.name)) pluginsToUse.push(plugin);
@@ -10880,7 +11653,9 @@
       }
       _getPluginsString() {
         if (!this.plugins) return "\n";
-        return this.plugins.map(plugin => plugin.source && this.source.match(plugin.functionMatch) ? plugin.source : "").join("\n");
+        const source = this.pluginMatchSource();
+        if (typeof source !== "string") return "\n";
+        return this.plugins.map(plugin => plugin.source && source.match(plugin.functionMatch) ? plugin.source : "").join("\n");
       }
       _getConstantsString() {
         const result = [];

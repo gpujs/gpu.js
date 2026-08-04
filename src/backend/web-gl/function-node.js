@@ -288,7 +288,7 @@ class WebGLFunctionNode extends FunctionNode {
     // truncates, and `this.thread.x / 64` comes out 0. Only the accuracy
     // wrapper is conditional; the casting is not.
     if (ast.operator === '/') {
-      const wrap = this.fixIntegerDivisionAccuracy;
+      const wrap = this.fixIntegerDivisionAccuracy && !this.divisionIsProvablyFractional(ast);
       retArr.push(wrap ? 'divWithIntCheck(' : '(');
       this.pushState('building-float');
       switch (this.getType(ast.left)) {
@@ -465,6 +465,22 @@ class WebGLFunctionNode extends FunctionNode {
     retArr.push(')');
 
     return retArr;
+  }
+
+  /**
+   * @desc Whether `divWithIntCheck` would provably take its fallback path, so
+   * the site can emit the plain operator instead of the emitted helper. The
+   * helper only does anything when BOTH operands are whole numbers -- it
+   * recovers the exact quotient of an integer division on hardware whose
+   * integer divide is inaccurate -- and returns `x / y` otherwise. A literal
+   * operand with a fraction in it settles that statically, so the call, the
+   * two floor comparisons and the branch all come out, on exactly the devices
+   * that turn the fix on.
+   * @param {Object} ast - a BinaryExpression with operator '/'
+   * @returns {Boolean}
+   */
+  divisionIsProvablyFractional(ast) {
+    return isFractionalLiteral(ast.left) || isFractionalLiteral(ast.right);
   }
 
   checkAndUpconvertOperator(ast, retArr) {
@@ -2551,6 +2567,20 @@ const operatorMap = {
   '===': '==',
   '!==': '!='
 };
+
+/**
+ * @param {Object} ast
+ * @returns {Boolean} whether an expression is a numeric literal that is not a
+ * whole number -- including a signed one, which parses as a unary minus over a
+ * positive literal
+ */
+function isFractionalLiteral(ast) {
+  if (!ast) return false;
+  if (ast.type === 'UnaryExpression' && (ast.operator === '-' || ast.operator === '+')) {
+    return isFractionalLiteral(ast.argument);
+  }
+  return ast.type === 'Literal' && typeof ast.value === 'number' && !Number.isInteger(ast.value);
+}
 
 module.exports = {
   WebGLFunctionNode

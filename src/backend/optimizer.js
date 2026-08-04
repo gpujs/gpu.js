@@ -60,10 +60,12 @@ const indexedReadSignatures = [
 function optimize(functionNode, ast, settings) {
   if (!ast || !ast.body || ast.body.type !== 'BlockStatement') return ast;
   const context = new OptimizerContext(functionNode, ast, settings || {});
-  // H before T3, as separate walks: hoisting has to see loops while they are
-  // still loops, and the temps it leaves behind are what the unroller then
-  // clones per iteration rather than re-deriving
+  // H then T2 then T3, as separate walks. Hoisting has to see loops while they
+  // are still loops and calls while they are still calls; inlining then
+  // exposes helper bodies to the unroller, which runs last so that a tiny
+  // loop an inlined body brought with it unrolls like any other.
   processBlock(context, ast.body);
+  inlineBlock(context, ast.body);
   unrollBlock(context, ast.body);
   return ast;
 }
@@ -73,6 +75,9 @@ class OptimizerContext {
     this.functionNode = functionNode;
     this.ast = ast;
     this.loopUnrollLimit = typeof settings.loopUnrollLimit === 'number' ? settings.loopUnrollLimit : 8;
+    this.lookupInlineTarget = settings.lookupInlineTarget || null;
+    this.inlineTargets = new Map();
+    this.inlineCount = 0;
     // a name assigned, updated, declared or bound as a nested function's
     // parameter ANYWHERE in this function stops counting as immutable,
     // wherever the write sits relative to the read. The BODY only: this
@@ -95,6 +100,41 @@ class OptimizerContext {
     } while (this.usedNames.has(name));
     this.usedNames.add(name);
     return name;
+  }
+
+  /**
+   * @param {String} suffix - the helper's own spelling, kept so an emitted
+   * shader still reads like the source it came from
+   * @returns {String} a name for an inlined binding. The emitters own the
+   * `user_` prefix -- nothing at AST level can land outside it -- so
+   * collision-freedom comes from the same used-name check `freshName` uses,
+   * not from a reserved namespace.
+   */
+  freshInlineName(suffix) {
+    let name;
+    do {
+      name = `optIn${ this.inlineCount++ }_${ suffix }`;
+    } while (this.usedNames.has(name));
+    this.usedNames.add(name);
+    return name;
+  }
+
+  /**
+   * @param {String} name
+   * @returns {Object|null} the call graph's verdict for a callee, cached per
+   * function so one build asks the builder once per name
+   */
+  inlineTarget(name) {
+    if (!this.lookupInlineTarget) return null;
+    if (this.inlineTargets.has(name)) return this.inlineTargets.get(name);
+    let entry = null;
+    try {
+      entry = this.lookupInlineTarget(name) || null;
+    } catch (e) {
+      entry = null;
+    }
+    this.inlineTargets.set(name, entry);
+    return entry;
   }
 
   /**
@@ -168,6 +208,28 @@ function walk(node, visit) {
     if (key === 'loc' || key === 'range' || key === 'parent') continue;
     const child = node[key];
     if (child && typeof child === 'object') walk(child, visit);
+  }
+}
+
+/**
+ * `walk` that stops at a function boundary. A nested function is its own
+ * emitted function and its own plan entry, so the enclosing one must not
+ * count what happens inside it as its own.
+ */
+function walkOwn(node, visit) {
+  if (!node || typeof node !== 'object') return;
+  if (Array.isArray(node)) {
+    for (let i = 0; i < node.length; i++) walkOwn(node[i], visit);
+    return;
+  }
+  if (typeof node.type !== 'string') return;
+  if (node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression' ||
+    node.type === 'ArrowFunctionExpression') return;
+  visit(node);
+  for (const key in node) {
+    if (key === 'loc' || key === 'range' || key === 'parent') continue;
+    const child = node[key];
+    if (child && typeof child === 'object') walkOwn(child, visit);
   }
 }
 
@@ -725,6 +787,896 @@ function expressionKey(ast) {
   }
 }
 
+// ----------------------------------------------------------- T2: inlining
+
+/**
+ * T2 -- helper inlining. A call to a user helper is replaced by the helper's
+ * body: its parameters bound as fresh declarations in source order, its locals
+ * renamed, and the expression it returned left where the call was.
+ *
+ * The win is largest on webasm and it is not call overhead. The SIMD emitter
+ * has no vector form for a helper call, so it lane-scalarizes one: thread
+ * state and PCG state swap per lane, the arguments are extracted lane by lane
+ * and the scalar function runs four times per quad. A helper in a hot loop
+ * therefore un-vectorizes the loop that contains it. Inlining restores the
+ * vector form, which is why this transform is worth its correctness surface.
+ *
+ * THE DECISION IS GLOBAL, not per site. A helper left with some call sites
+ * inlined and others not still gets emitted, and gpu.js fixes a helper's
+ * parameter types from whichever call site the emitter reaches FIRST --
+ * removing a site can change which one that is, and with it what the surviving
+ * sites coerce their arguments to. `buildInlinePlan` therefore decides
+ * inlinability for the whole call graph before any function node is optimized,
+ * all-or-nothing per helper; a site this pass cannot hoist disqualifies its
+ * helper everywhere rather than leaving a mixed build.
+ */
+
+// a single helper's expanded body, and the total a single function may gain.
+// The first keeps one bad helper from dominating a shader; the second keeps a
+// deep call graph from producing a megafunction (V8 stops inlining and
+// eventually deoptimizes; mobile shader compilers get slower superlinearly)
+const INLINE_MAX_HELPER_NODES = 320;
+const INLINE_MAX_ADDED_NODES = 6000;
+
+// an expansion is bounded by the plan's budgets, so a walk that keeps finding
+// work past this has a bug in it rather than a big kernel; the #868 contract
+// turns the throw into an un-optimized build
+const INLINE_MAX_STATEMENTS = 20000;
+
+function inlineBlock(context, block) {
+  if (!context.lookupInlineTarget) return;
+  block.body = inlineList(context, block.body);
+}
+
+/**
+ * Rewrites one statement list. An expansion is pushed back onto the pending
+ * queue rather than straight to the output, so a helper that calls a helper
+ * expands one level per pass until nothing inlinable is left -- the leaf-first
+ * order the plan already computed its budgets in.
+ */
+function inlineList(context, list) {
+  const out = [];
+  const pending = list.slice();
+  let guard = 0;
+  while (pending.length > 0) {
+    if (++guard > INLINE_MAX_STATEMENTS) {
+      throw new Error('optimizer: inlining did not converge');
+    }
+    const statement = pending.shift();
+    const prefix = [];
+    const expansion = inlineStatementOwn(context, statement, prefix);
+    if (expansion.expanded > 0) {
+      // re-queued rather than emitted: an expansion whose arguments were all
+      // atoms adds no statements at all, and its own calls still have to be
+      // seen
+      const replacement = expansion.consumed ?
+        stampSynthetic({ type: 'EmptyStatement' }, statement) : statement;
+      pending.unshift(...prefix, replacement);
+      continue;
+    }
+    inlineStatementChildren(context, statement);
+    out.push(statement);
+  }
+  return out;
+}
+
+function inlineStatementChildren(context, statement) {
+  switch (statement.type) {
+    case 'BlockStatement':
+      inlineBlock(context, statement);
+      return;
+    case 'IfStatement':
+      statement.consequent = inlineBranch(context, statement.consequent);
+      if (statement.alternate) statement.alternate = inlineBranch(context, statement.alternate);
+      return;
+    case 'ForStatement':
+    case 'WhileStatement':
+    case 'DoWhileStatement':
+      statement.body = inlineBranch(context, statement.body);
+      return;
+    case 'SwitchStatement':
+      for (let i = 0; i < statement.cases.length; i++) {
+        statement.cases[i].consequent = inlineList(context, statement.cases[i].consequent);
+      }
+      return;
+  }
+}
+
+/**
+ * A single-statement position that gains the statements of an expansion needs
+ * a block around them.
+ */
+function inlineBranch(context, branch) {
+  if (!branch) return branch;
+  if (branch.type === 'BlockStatement') {
+    inlineBlock(context, branch);
+    return branch;
+  }
+  const replacement = inlineList(context, [branch]);
+  if (replacement.length === 1 && replacement[0] === branch) return branch;
+  return stampSynthetic({ type: 'BlockStatement', body: replacement }, branch);
+}
+
+/**
+ * Expands every hoistable call in one statement's own expressions.
+ * @returns {{expanded: Number, consumed: Boolean}} how many calls were
+ * expanded, and whether the statement itself is now redundant -- a call that
+ * WAS the statement leaves its value in a declaration instead
+ */
+function inlineStatementOwn(context, statement, prefix) {
+  const sites = collectStatementSites(context, statement);
+  let consumed = false;
+  for (let i = 0; i < sites.length; i++) {
+    if (expandCall(context, sites[i], prefix)) consumed = true;
+  }
+  return { expanded: sites.length, consumed };
+}
+
+/**
+ * The call sites in one statement this pass may hoist, in evaluation order.
+ * Shared with the plan, which is what makes the plan's verdict and this walk
+ * agree about which sites exist.
+ */
+function collectStatementSites(context, statement) {
+  const scan = { candidates: name => context.inlineTarget(name), sites: [], clean: true };
+  const roots = statementValueRoots(statement);
+  for (let i = 0; i < roots.length; i++) {
+    scanValue(roots[i].parent, roots[i].key, scan, Boolean(roots[i].statementPosition));
+  }
+  return scan.sites;
+}
+
+/**
+ * The expression positions of a statement that run exactly once, in order.
+ * A loop's test and update run per iteration and a do-while's test runs after
+ * the body, so neither can be prefixed by anything; calls there keep their
+ * call.
+ */
+function statementValueRoots(statement) {
+  switch (statement.type) {
+    case 'ExpressionStatement':
+      return [{ parent: statement, key: 'expression', statementPosition: true }];
+    case 'ReturnStatement':
+      return statement.argument ? [{ parent: statement, key: 'argument' }] : [];
+    case 'IfStatement':
+      return [{ parent: statement, key: 'test' }];
+    case 'SwitchStatement':
+      return [{ parent: statement, key: 'discriminant' }];
+    case 'VariableDeclaration':
+      return declarationRoots(statement);
+    case 'ForStatement':
+      if (!statement.init) return [];
+      if (statement.init.type === 'VariableDeclaration') return declarationRoots(statement.init);
+      return [{ parent: statement, key: 'init' }];
+    default:
+      return [];
+  }
+}
+
+function declarationRoots(declaration) {
+  const roots = [];
+  for (let i = 0; i < declaration.declarations.length; i++) {
+    if (declaration.declarations[i].init) {
+      roots.push({ parent: declaration.declarations[i], key: 'init' });
+    }
+  }
+  return roots;
+}
+
+/**
+ * Walks an expression in EVALUATION order looking for calls to hoist. A call
+ * may only move to a statement before this one when everything the statement
+ * evaluates first has no effect of its own: hoisting past an assignment, an
+ * update or another call would reorder them, and a helper that draws
+ * Math.random reorders the seeded stream by moving at all.
+ *
+ * Conditionally evaluated operands -- a ternary's branches, a short circuit's
+ * right side -- are never descended into: a call there does not run every
+ * time, and there is nowhere unconditional to hoist it to.
+ */
+function scanValue(parent, key, scan, statementPosition, objectPosition) {
+  const node = parent[key];
+  if (!node || typeof node !== 'object' || typeof node.type !== 'string') return;
+  switch (node.type) {
+    case 'Literal':
+    case 'Identifier':
+    case 'ThisExpression':
+      return;
+    case 'MemberExpression':
+      // `fn()[...]` is a signature of its own on every backend -- an emitted
+      // helper does the indexing, because GLSL ES 1.00 will not subscript a
+      // matrix with a non-constant expression. Replacing the call with a
+      // binding takes a different path through the emitter, so the site is
+      // left alone.
+      scanValue(node, 'object', scan, false, node.object && node.object.type === 'CallExpression');
+      if (node.computed) scanValue(node, 'property', scan, false);
+      return;
+    case 'UnaryExpression':
+      scanValue(node, 'argument', scan, false);
+      return;
+    case 'BinaryExpression':
+      scanValue(node, 'left', scan, false);
+      scanValue(node, 'right', scan, false);
+      return;
+    case 'LogicalExpression':
+      scanValue(node, 'left', scan, false);
+      scanConditional(node.right, scan);
+      return;
+    case 'ConditionalExpression':
+      scanValue(node, 'test', scan, false);
+      scanConditional(node.consequent, scan);
+      scanConditional(node.alternate, scan);
+      return;
+    case 'ArrayExpression':
+      for (let i = 0; i < node.elements.length; i++) scanValue(node.elements, i, scan, false);
+      return;
+    case 'SequenceExpression':
+      for (let i = 0; i < node.expressions.length; i++) scanValue(node.expressions, i, scan, false);
+      return;
+    case 'AssignmentExpression':
+      // the target's own subscripts evaluate before the value; the write
+      // itself happens after
+      if (node.left.type === 'MemberExpression') scanValue(node, 'left', scan, false);
+      scanValue(node, 'right', scan, false);
+      scan.clean = false;
+      return;
+    case 'UpdateExpression':
+      scan.clean = false;
+      return;
+    case 'CallExpression': {
+      for (let i = 0; i < node.arguments.length; i++) scanValue(node.arguments, i, scan, false);
+      const name = inlineCalleeName(node);
+      const entry = name ? scan.candidates(name) : null;
+      if (entry && !objectPosition) {
+        // a helper that returns nothing has no value to leave behind, so it
+        // only inlines where the call WAS the statement
+        if (scan.clean && (entry.returnsValue || statementPosition)) {
+          scan.sites.push({ parent, key, node, entry, statementPosition });
+          return;
+        }
+        scan.clean = false;
+        return;
+      }
+      if (!isPureMathCall(node)) scan.clean = false;
+      return;
+    }
+    default:
+      // an unrecognized expression is opaque: nothing after it hoists
+      scan.clean = false;
+  }
+}
+
+/**
+ * A conditionally evaluated operand. Nothing inside it can hoist, and if it
+ * can do anything at all then nothing after it can hoist either.
+ */
+function scanConditional(node, scan) {
+  walk(node, child => {
+    if (child.type === 'CallExpression') {
+      if (!isPureMathCall(child)) scan.clean = false;
+      return;
+    }
+    if (child.type === 'AssignmentExpression' || child.type === 'UpdateExpression') scan.clean = false;
+  });
+}
+
+/**
+ * @returns {String|null} the helper name a call names directly. `Math.x()`,
+ * `this.x()` and a sub-kernel reached through a member expression all have a
+ * callee this pass does not inline.
+ */
+function inlineCalleeName(ast) {
+  return ast.callee && ast.callee.type === 'Identifier' ? ast.callee.name : null;
+}
+
+/**
+ * @returns {Boolean} whether a call is one of the Math functions that compute
+ * from their arguments alone. `Math.random` is the exception that matters: it
+ * carries generator state, so its position in the statement is observable.
+ */
+function isPureMathCall(ast) {
+  const { callee } = ast;
+  return Boolean(callee) && callee.type === 'MemberExpression' && !callee.computed &&
+    callee.object && callee.object.type === 'Identifier' && callee.object.name === 'Math' &&
+    callee.property && callee.property.name !== 'random';
+}
+
+/**
+ * Replaces one call with the helper's body.
+ * @returns {Boolean} whether the statement holding the call is now redundant
+ */
+function expandCall(context, site, prefix) {
+  const { node, entry, parent, key } = site;
+  const bindings = new Map();
+  // parameters bind in SOURCE ORDER, one binding per argument, each evaluated
+  // exactly once -- the order and the count a call would have had
+  for (let i = 0; i < entry.params.length; i++) {
+    const param = entry.params[i];
+    const argument = node.arguments[i];
+    if (!entry.assignedParams.has(param) && isInlineAtom(context, argument)) {
+      // an atom has no effect and cannot change while the body runs, so the
+      // body may read it in place as many times as it names the parameter
+      bindings.set(param, { atom: argument, name: null });
+      continue;
+    }
+    const name = context.freshInlineName(param);
+    prefix.push(inlineDeclaration(entry.assignedParams.has(param) ? 'let' : 'const', name, argument));
+    bindings.set(param, { atom: null, name });
+  }
+  // an argument the helper has no parameter for is still evaluated by a call
+  for (let i = entry.params.length; i < node.arguments.length; i++) {
+    prefix.push(inlineDeclaration('const', context.freshInlineName('arg'), node.arguments[i]));
+  }
+
+  const renames = new Map();
+  entry.localNames.forEach(local => {
+    renames.set(local, context.freshInlineName(local));
+  });
+
+  const body = cloneInlineNodes(context, entry.body, bindings, renames);
+  const reduced = reduceReturns(body);
+  if (!reduced) throw new Error(`optimizer: helper body no longer reduces`);
+  for (let i = 0; i < reduced.statements.length; i++) prefix.push(reduced.statements[i]);
+
+  if (site.statementPosition) {
+    // the value is discarded, but a call evaluated it -- keeping the
+    // declaration keeps every read and draw inside it happening
+    if (reduced.value !== null) {
+      prefix.push(inlineDeclaration('const', context.freshInlineName('ret'), reduced.value));
+    }
+    return true;
+  }
+  parent[key] = reduced.value;
+  return false;
+}
+
+function inlineDeclaration(kind, name, init) {
+  return stampSynthetic({
+    type: 'VariableDeclaration',
+    kind,
+    declarations: [stampSynthetic({
+      type: 'VariableDeclarator',
+      id: stampSynthetic({ type: 'Identifier', name }, init),
+      init,
+    }, init)],
+  }, init);
+}
+
+/**
+ * @returns {Boolean} whether an argument can simply be written wherever the
+ * body names its parameter: no effect to run twice, no value that can change
+ * while the body runs, and nothing that can fault.
+ */
+function isInlineAtom(context, ast) {
+  if (!ast || typeof ast !== 'object') return false;
+  switch (ast.type) {
+    case 'Literal':
+      return true;
+    case 'Identifier':
+      // a helper cannot see the caller's locals, so nothing the body does can
+      // change what this identifier reads
+      return true;
+    case 'UnaryExpression':
+      return (ast.operator === '-' || ast.operator === '+') && ast.argument.type === 'Literal';
+    case 'MemberExpression':
+      try {
+        switch (context.functionNode.getVariableSignature(ast)) {
+          case 'this.thread.value':
+          case 'this.output.value':
+            return true;
+          case 'this.constants.value':
+            return !context.mutatedNames.has(thisWrite);
+          case 'value.value':
+            return context.functionNode.isAstMathVariable(ast);
+          default:
+            return false;
+        }
+      } catch (e) {
+        return false;
+      }
+    default:
+      return false;
+  }
+}
+
+/**
+ * A deep copy of a helper body with its parameters bound and its locals
+ * renamed. Every node is stamped a fresh position: astKey and the literal-type
+ * cache are keyed by start/end, so two expansions of one helper sharing a
+ * position would share a type decision made for one of them.
+ */
+function cloneInlineNodes(context, nodes, bindings, renames) {
+  const result = new Array(nodes.length);
+  for (let i = 0; i < nodes.length; i++) result[i] = cloneInlineNode(context, nodes[i], bindings, renames);
+  return result;
+}
+
+function cloneInlineNode(context, node, bindings, renames) {
+  if (!node || typeof node !== 'object') return node;
+  if (Array.isArray(node)) return cloneInlineNodes(context, node, bindings, renames);
+  if (typeof node.type !== 'string') return node;
+  if (node.type === 'Identifier') {
+    const bound = bindings.get(node.name);
+    if (bound) {
+      return bound.atom ?
+        cloneNode(context, bound.atom, null, 0) :
+        stampSynthetic({ type: 'Identifier', name: bound.name }, node);
+    }
+    const renamed = renames.get(node.name);
+    return stampSynthetic({ type: 'Identifier', name: renamed || node.name }, node);
+  }
+  const copy = {};
+  // a non-computed member's property is a field name, not a variable
+  const verbatimProperty = node.type === 'MemberExpression' && !node.computed;
+  for (const key in node) {
+    if (key === 'start' || key === 'end') continue;
+    if (key === 'loc' || key === 'range' || key === 'parent') {
+      copy[key] = node[key];
+      continue;
+    }
+    copy[key] = verbatimProperty && key === 'property' ?
+      cloneNode(context, node[key], null, 0) :
+      cloneInlineNode(context, node[key], bindings, renames);
+  }
+  return stampSynthetic(copy, node);
+}
+
+/**
+ * Reduces a helper body to statements plus the one expression it returns.
+ *
+ * A body whose only return is its last statement needs nothing: the statements
+ * run, and the return's expression is what the call site gets. An EARLY return
+ * is folded instead of flagged -- `if (c) return A; return B;` becomes the
+ * conditional `c ? A : B`, which evaluates exactly the branch the function
+ * would have. The labeled-block idiom the cpu backend uses for the kernel body
+ * is deliberately not used here: GLSL has no labeled break, so it does not
+ * port to three of the four emitting tiers, and a result temp would have to
+ * declare a type this pass has no way to ask for (the optimizer runs before
+ * the tracer, so nothing is typed yet).
+ *
+ * @returns {{statements: Array, value: Object|null}|null} null when the body
+ * returns from somewhere this cannot fold
+ */
+function reduceReturns(statements) {
+  let first = -1;
+  for (let i = 0; i < statements.length; i++) {
+    if (containsReturn(statements[i])) {
+      first = i;
+      break;
+    }
+  }
+  if (first === -1) return { statements, value: null };
+  const value = tailExpression(statements, first);
+  if (value === null) return null;
+  return { statements: statements.slice(0, first), value };
+}
+
+function tailExpression(list, i) {
+  if (i >= list.length) return null;
+  const statement = list[i];
+  if (statement.type === 'ReturnStatement') {
+    // anything after a return is unreachable; rather than reason about what
+    // may be dropped, this shape is left alone
+    if (i !== list.length - 1 || !statement.argument) return null;
+    return statement.argument;
+  }
+  if (statement.type !== 'IfStatement') return null;
+  const consequent = branchExpression(statement.consequent);
+  if (consequent === null) return null;
+  let alternate;
+  if (statement.alternate) {
+    if (i !== list.length - 1) return null;
+    alternate = branchExpression(statement.alternate);
+  } else {
+    alternate = tailExpression(list, i + 1);
+  }
+  if (alternate === null) return null;
+  // the folded branches become operands of a conditional, and the webasm SIMD
+  // emitter evaluates both sides of one for every lane before selecting. A
+  // call in a branch would therefore run where the function never ran it --
+  // and for Math.random that is a different stream.
+  if (!isBranchSafe(consequent) || !isBranchSafe(alternate)) return null;
+  return stampSynthetic({
+    type: 'ConditionalExpression',
+    test: statement.test,
+    consequent,
+    alternate,
+  }, statement);
+}
+
+function branchExpression(branch) {
+  if (!branch) return null;
+  return tailExpression(branch.type === 'BlockStatement' ? branch.body : [branch], 0);
+}
+
+function containsReturn(ast) {
+  let found = false;
+  walk(ast, node => {
+    if (node.type === 'ReturnStatement') found = true;
+  });
+  return found;
+}
+
+function isBranchSafe(ast) {
+  let safe = true;
+  walk(ast, node => {
+    if (node.type === 'CallExpression' && !isPureMathCall(node)) safe = false;
+  });
+  return safe;
+}
+
+// --------------------------------------------------------- T2: the call graph
+
+/**
+ * Decides, for a whole FunctionBuilder at once, which helpers T2 may inline.
+ * Called once per build, before any function node is optimized.
+ *
+ * Everything here reads RAW ASTs -- parsed and de-minified, never optimized or
+ * traced. Tracing a helper early would resolve its argument types from a
+ * caller the un-optimized build resolves them from second, which is exactly
+ * the difference this pass exists not to make.
+ *
+ * @param {FunctionBuilder} builder
+ * @returns {Map<String, Object>} name -> plan entry, only for helpers every
+ * one of whose call sites will be inlined
+ */
+function buildInlinePlan(builder) {
+  const entries = new Map();
+  const kernel = builder.kernel || {};
+  const allowedFree = new Set(['Math', 'Infinity']);
+  if (kernel.constants) {
+    for (const name in kernel.constants) allowedFree.add(name);
+  }
+  for (let i = 0; i < builder.nativeFunctionNames.length; i++) {
+    allowedFree.add(builder.nativeFunctionNames[i]);
+  }
+
+  for (const name in builder.functionMap) {
+    const node = builder.functionMap[name];
+    if (!node) continue;
+    let ast = null;
+    try {
+      ast = node.getRawAST();
+    } catch (e) {
+      // a helper whose source will not parse fails loudly at emission, where
+      // the error names the function; it must not fail here instead
+      ast = null;
+    }
+    if (!ast || !ast.body || ast.body.type !== 'BlockStatement') continue;
+    // a native function of the same name WINS at emission, deliberately, so
+    // the JavaScript body registered under that name is not what the call
+    // site runs and must never be what it inlines
+    const shadowed = builder.nativeFunctionNames.indexOf(name) > -1;
+    const kind = node.isRootKernel ? 'root' : (node.isSubKernel || shadowed ? 'subKernel' : 'helper');
+    registerPlanEntry(entries, name, ast, kind, allowedFree);
+  }
+
+  for (const entry of entries.values()) allowedFree.add(entry.name);
+  for (const entry of entries.values()) analyzePlanEntry(entry, allowedFree);
+  markRecursive(entries);
+
+  // the site scan classifies a call by whether its callee is still a
+  // candidate, so disqualifying one can change how another site reads; the
+  // scan repeats until the candidate set stops shrinking
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const entry of entries.values()) entry.sites = [];
+    const blocked = new Set();
+    for (const entry of entries.values()) scanPlanEntry(entries, entry, blocked);
+    for (const name of blocked) {
+      const entry = entries.get(name);
+      if (entry && entry.inlinable) {
+        entry.inlinable = false;
+        changed = true;
+      }
+    }
+    // a helper the budget sheds keeps its call sites, and a surviving call is
+    // an effect the scan has to see -- so the budget runs inside the fixed
+    // point, not after it
+    if (!changed && applyInlineBudget(entries)) changed = true;
+  }
+
+  const plan = new Map();
+  for (const entry of entries.values()) {
+    if (!entry.inlinable) continue;
+    plan.set(entry.name, {
+      params: entry.params,
+      body: entry.body,
+      assignedParams: entry.assignedParams,
+      localNames: entry.localNames,
+      returnsValue: entry.returnsValue,
+    });
+  }
+  return plan;
+}
+
+function registerPlanEntry(entries, name, ast, kind, allowedFree) {
+  if (!entries.has(name)) {
+    entries.set(name, {
+      name,
+      ast,
+      kind,
+      params: (ast.params || []).map(param => (param.type === 'Identifier' ? param.name : null)),
+      body: ast.body.body,
+      assignedParams: new Set(),
+      localNames: new Set(),
+      returnsValue: false,
+      inlinable: kind === 'helper',
+      recursive: false,
+      calls: [],
+      sites: [],
+      selfSize: 0,
+      expandedSize: 0,
+    });
+  }
+  // a function declared inside another is its own emitted function; register
+  // it so its calls are graph edges, and refuse to inline the one that
+  // declares it (nested functions are registered by AST identity, so a clone
+  // would register the same helper twice)
+  const nested = [];
+  walk(ast.body, node => {
+    if (node.type === 'FunctionDeclaration' && node.id && node.id.name) nested.push(node);
+  });
+  for (let i = 0; i < nested.length; i++) {
+    registerPlanEntry(entries, nested[i].id.name, nested[i], 'helper', allowedFree);
+  }
+}
+
+/**
+ * The structural verdict on one helper, independent of its call sites.
+ */
+function analyzePlanEntry(entry, allowedFree) {
+  entry.selfSize = nodeCount(entry.body);
+  const declared = new Set();
+  const assigned = new Set();
+  const free = new Set();
+  let rejected = false;
+
+  const visit = node => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      for (let i = 0; i < node.length; i++) visit(node[i]);
+      return;
+    }
+    if (typeof node.type !== 'string') return;
+    switch (node.type) {
+      case 'LabeledStatement':
+        rejected = true;
+        return;
+      case 'FunctionDeclaration':
+      case 'FunctionExpression':
+      case 'ArrowFunctionExpression':
+        rejected = true;
+        return;
+      case 'VariableDeclarator':
+        if (node.id && node.id.type === 'Identifier') declared.add(node.id.name);
+        break;
+      case 'AssignmentExpression':
+        if (node.left.type === 'Identifier') assigned.add(node.left.name);
+        break;
+      case 'UpdateExpression':
+        if (node.argument.type === 'Identifier') assigned.add(node.argument.name);
+        break;
+      case 'Identifier':
+        free.add(node.name);
+        break;
+      case 'MemberExpression':
+        visit(node.object);
+        if (node.computed) visit(node.property);
+        return;
+    }
+    for (const key in node) {
+      if (key === 'loc' || key === 'range' || key === 'parent') continue;
+      const child = node[key];
+      if (child && typeof child === 'object') visit(child);
+    }
+  };
+  visit(entry.body);
+
+  for (let i = 0; i < entry.params.length; i++) {
+    if (entry.params[i] === null) rejected = true;
+  }
+  if (rejected) {
+    entry.inlinable = false;
+    return;
+  }
+  for (const name of free) {
+    if (declared.has(name) || entry.params.indexOf(name) > -1 || allowedFree.has(name)) continue;
+    // an identifier the helper does not declare would bind to whatever the
+    // caller happens to have named that -- capture, not inlining
+    entry.inlinable = false;
+    return;
+  }
+  entry.localNames = declared;
+  for (let i = 0; i < entry.params.length; i++) {
+    if (assigned.has(entry.params[i])) entry.assignedParams.add(entry.params[i]);
+  }
+  const reduced = reduceReturns(entry.body);
+  if (!reduced) {
+    entry.inlinable = false;
+    return;
+  }
+  entry.returnsValue = reduced.value !== null;
+  if (entry.selfSize > INLINE_MAX_HELPER_NODES) entry.inlinable = false;
+}
+
+/**
+ * Records the graph edges out of one function and blocks any callee whose call
+ * site this pass cannot hoist.
+ */
+function scanPlanEntry(entries, entry, blocked) {
+  const candidates = name => {
+    const target = entries.get(name);
+    return target && target.inlinable && !target.recursive ? target : null;
+  };
+  const hoisted = new Set();
+  const scan = { candidates, sites: [], clean: true };
+  const walkStatements = list => {
+    for (let i = 0; i < list.length; i++) walkStatement(list[i]);
+  };
+  const walkStatement = statement => {
+    if (!statement || typeof statement.type !== 'string') return;
+    if (statement.type === 'FunctionDeclaration') return;
+    scan.clean = true;
+    scan.sites = [];
+    const roots = statementValueRoots(statement);
+    for (let i = 0; i < roots.length; i++) {
+      scanValue(roots[i].parent, roots[i].key, scan, Boolean(roots[i].statementPosition));
+    }
+    for (let i = 0; i < scan.sites.length; i++) {
+      hoisted.add(scan.sites[i].node);
+      entry.sites.push(scan.sites[i]);
+    }
+    switch (statement.type) {
+      case 'BlockStatement':
+        walkStatements(statement.body);
+        return;
+      case 'IfStatement':
+        walkStatement(statement.consequent);
+        if (statement.alternate) walkStatement(statement.alternate);
+        return;
+      case 'ForStatement':
+      case 'WhileStatement':
+      case 'DoWhileStatement':
+        walkStatement(statement.body);
+        return;
+      case 'SwitchStatement':
+        for (let i = 0; i < statement.cases.length; i++) walkStatements(statement.cases[i].consequent);
+        return;
+    }
+  };
+  walkStatements(entry.body);
+
+  // EVERY call this walk did not claim -- in a conditional operand, behind an
+  // effect, in a loop test, inside a helper's own unreachable corner -- keeps
+  // its call, and a helper with one surviving call site is a helper the
+  // emitter still types from whichever site it reaches first. That is what
+  // makes inlining all-or-nothing rather than per site.
+  walkOwn(entry.body, node => {
+    if (node.type !== 'CallExpression' || hoisted.has(node)) return;
+    const name = inlineCalleeName(node);
+    if (name && entries.has(name)) blocked.add(name);
+  });
+  for (let i = 0; i < entry.sites.length; i++) {
+    const site = entry.sites[i];
+    if (site.node.arguments.length < site.entry.params.length) blocked.add(site.entry.name);
+    for (let j = 0; j < site.node.arguments.length; j++) {
+      if (site.node.arguments[j].type === 'SpreadElement') blocked.add(site.entry.name);
+    }
+  }
+}
+
+function markRecursive(entries) {
+  const edges = new Map();
+  for (const entry of entries.values()) {
+    const out = new Set();
+    walkOwn(entry.body, node => {
+      if (node.type !== 'CallExpression') return;
+      const name = inlineCalleeName(node);
+      if (name && entries.has(name)) out.add(name);
+    });
+    edges.set(entry.name, out);
+  }
+  const state = new Map();
+  const onStack = [];
+  const visit = name => {
+    if (state.get(name) === 'done') return;
+    if (state.get(name) === 'open') {
+      // everything from the repeat of `name` on the stack is one cycle
+      for (let i = onStack.lastIndexOf(name); i < onStack.length; i++) {
+        entries.get(onStack[i]).recursive = true;
+        entries.get(onStack[i]).inlinable = false;
+      }
+      return;
+    }
+    state.set(name, 'open');
+    onStack.push(name);
+    for (const next of edges.get(name) || []) visit(next);
+    onStack.pop();
+    state.set(name, 'done');
+  };
+  for (const name of entries.keys()) visit(name);
+}
+
+/**
+ * The emitted-size budget. Expanded sizes are computed leaf-first, then any
+ * caller that would gain more than the budget sheds its largest inlinable
+ * callee -- globally, since inlining is all-or-nothing per helper. Largest
+ * first, ties by name, so the outcome does not depend on map order.
+ */
+function applyInlineBudget(entries) {
+  let bounded = false;
+  let shed = false;
+  while (!bounded) {
+    computeExpandedSizes(entries);
+    for (const entry of entries.values()) {
+      if (entry.inlinable && entry.expandedSize > INLINE_MAX_HELPER_NODES) {
+        entry.inlinable = false;
+        shed = true;
+      }
+    }
+    bounded = true;
+    let worst = null;
+    let worstAdded = INLINE_MAX_ADDED_NODES;
+    for (const entry of entries.values()) {
+      let added = 0;
+      for (let i = 0; i < entry.sites.length; i++) {
+        const callee = entries.get(entry.sites[i].entry.name);
+        if (callee && callee.inlinable) added += callee.expandedSize;
+      }
+      if (added > worstAdded) {
+        worstAdded = added;
+        worst = entry;
+      }
+    }
+    if (!worst) break;
+    let victim = null;
+    for (let i = 0; i < worst.sites.length; i++) {
+      const callee = entries.get(worst.sites[i].entry.name);
+      if (!callee || !callee.inlinable) continue;
+      if (!victim || callee.expandedSize > victim.expandedSize ||
+        (callee.expandedSize === victim.expandedSize && callee.name < victim.name)) {
+        victim = callee;
+      }
+    }
+    if (!victim) break;
+    victim.inlinable = false;
+    shed = true;
+    bounded = false;
+  }
+  return shed;
+}
+
+function computeExpandedSizes(entries) {
+  const pending = new Set(entries.keys());
+  for (const entry of entries.values()) entry.expandedSize = entry.selfSize;
+  // acyclic among the inlinable, so a fixed number of relaxations settles it
+  for (let round = 0; round < pending.size + 1; round++) {
+    let changed = false;
+    for (const entry of entries.values()) {
+      let size = entry.selfSize;
+      for (let i = 0; i < entry.sites.length; i++) {
+        const callee = entries.get(entry.sites[i].entry.name);
+        if (callee && callee.inlinable) size += callee.expandedSize;
+      }
+      if (size !== entry.expandedSize) {
+        entry.expandedSize = size;
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+}
+
+function nodeCount(ast) {
+  let count = 0;
+  walk(ast, () => {
+    count++;
+  });
+  return count;
+}
+
 // ------------------------------------------------------- T3: literal unroll
 
 /**
@@ -1150,5 +2102,6 @@ function threadLocalName(functionNode, name) {
 
 module.exports = {
   optimize,
+  buildInlinePlan,
   threadLocalName
 };

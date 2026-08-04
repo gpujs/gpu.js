@@ -97,6 +97,8 @@ test('a helper named after a WGSL builtin keeps its definition', t => {
     argumentTypes: ['Array'],
     args: [[1, 2, 3, 4]],
     functions: [function cross(a, b) { return a * b; }],
+    // the subject is the mangler; T2 would inline the helper out of existence
+    _optimizerDisabled: true,
   });
   t.ok(/fn fn_cross\(/.test(wgsl), 'the mangled definition is present');
   t.ok(/fn_cross\(/.test(wgsl.split('fn fn_cross')[1] || ''), 'and the call site uses it');
@@ -111,6 +113,7 @@ test('helper argument types still infer through the original name', t => {
     argumentTypes: ['Array'],
     args: [[1, 2, 3, 4]],
     functions: [function cross(a, b) { return a * b; }],
+    _optimizerDisabled: true,
   });
   t.ok(/fn fn_cross\(user_a : f32, user_b : f32\)/.test(wgsl), 'both parameters typed f32');
 });
@@ -155,6 +158,7 @@ test('every user function name is mangled, reserved or not', t => {
       argumentTypes: ['Array'],
       args: [[1, 2, 3, 4]],
       functions: [`function ${ name }(x) { return x * 2; }`],
+      _optimizerDisabled: true,
     });
     t.ok(new RegExp(`fn fn_${ name }\\(`).test(wgsl), `${ name } definition is mangled`);
     t.notOk(new RegExp(`\\bfn ${ name }\\(`).test(wgsl), `${ name } never appears bare as a definition`);

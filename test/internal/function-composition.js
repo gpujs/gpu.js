@@ -88,7 +88,10 @@ function numberFunctionCompositionFunctionBuilder(FunctionNode) {
     kernelArguments: [],
     kernelConstants: [],
     output,
-    leadingReturnStatement: 'resultX[x] = '
+    leadingReturnStatement: 'resultX[x] = ',
+    // the subject here is composition emission: T2 would inline `inner` away,
+    // which its own suite asserts
+    _optimizerDisabled: true
   }, FunctionNode);
 
   return builder.getPrototypeString('kernel');
@@ -138,7 +141,10 @@ function array2FunctionCompositionFunctionBuilder(FunctionNode) {
     kernelArguments: [],
     kernelConstants: [],
     output,
-    leadingReturnStatement: 'resultX[x] = '
+    leadingReturnStatement: 'resultX[x] = ',
+    // the subject here is composition emission: T2 would inline `inner` away,
+    // which its own suite asserts
+    _optimizerDisabled: true
   }, FunctionNode);
 
   return builder.getPrototypeString('kernel');

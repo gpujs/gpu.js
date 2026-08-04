@@ -90,6 +90,19 @@ function poly(x) {
   return x * x * 0.5 + x * 0.25 - 0.125;
 }
 
+function scale(x, by) {
+  return poly(x) * by;
+}
+
+function outer(x) {
+  return scale(x, 2) + 1;
+}
+
+function clampish(x) {
+  if (x < 0) return 0;
+  return x * x * 0.25;
+}
+
 const WORKLOADS = [
   {
     // H's home ground: a read whose subscript never changes, inside a loop
@@ -121,7 +134,11 @@ const WORKLOADS = [
     inputs: [[makeMatrix(1)], [makeMatrix(2)]],
   },
   {
-    // T2's shape: a helper called from inside a hot loop
+    // T2's shape, and the one the design contract priced at 2.76x on webasm:
+    // a helper called from inside a hot loop. The SIMD emitter has no vector
+    // form for a call, so every iteration lane-scalarizes into four scalar
+    // calls with thread and PCG state swapped around each; inlining is what
+    // gives the loop back to the vectorizer
     name: 'helper in a hot loop, 1M cells',
     source: function (a) {
       let s = 0;
@@ -131,6 +148,27 @@ const WORKLOADS = [
     settings: { functions: [poly] },
     output: [N],
     inputs: [[makeVector(3)], [makeVector(4)]],
+  },
+  {
+    // T2 through depth: three helpers deep, expanded leaf-first
+    name: 'helper chain 3 deep, 1M cells',
+    source: function (a) {
+      return outer(a[this.thread.x]);
+    },
+    settings: { functions: [poly, scale, outer] },
+    output: [N],
+    inputs: [[makeVector(13)], [makeVector(14)]],
+  },
+  {
+    // a helper with an early return: folded to a conditional rather than left
+    // as a call, which is the shape most likely to cost more than it saves
+    name: 'branching helper per cell, 1M cells',
+    source: function (a) {
+      return clampish(a[this.thread.x]) + clampish(a[this.thread.x] * 2);
+    },
+    settings: { functions: [clampish] },
+    output: [N],
+    inputs: [[makeVector(15)], [makeVector(16)]],
   },
   {
     // T3's shape: a literal loop small enough to unroll whole
@@ -189,13 +227,18 @@ const WORKLOADS = [
   },
 ];
 
-// The three builds each workload is priced at. `loopUnrollLimit: 0` is the
-// only per-transform switch the pass exposes, and it is enough to split the
-// shipped total: everything minus unrolling is the middle build, so
-// disabled/partial prices H and T1 together and partial/optimized prices T3.
+// The four builds each workload is priced at, each turning one more transform
+// on: nothing, then H and T1, then T2, then T3. `loopUnrollLimit: 0` is the
+// public switch; `_inliningDisabled` is the internal one T2 needed, for the
+// same reason `_optimizerDisabled` exists -- a per-transform number cannot be
+// read off a build that has more than one transform in it. H and T1 still
+// share a column because neither has a switch of its own; on the loop
+// workloads that column is H, and on the coordinate-heavy one -- which has no
+// loop to hoist out of -- it is T1.
 const BUILDS = {
   disabled: { _optimizerDisabled: true },
-  partial: { loopUnrollLimit: 0 },
+  noInline: { _inliningDisabled: true, loopUnrollLimit: 0 },
+  noUnroll: { loopUnrollLimit: 0 },
   optimized: {},
 };
 
@@ -384,26 +427,25 @@ function main() {
         const result = row.modes[mode];
         process.stderr.write(
           `${ row.name } / ${ mode }: off ${ result.disabled } ms, ` +
-          `H+T1 ${ result.partial } ms, all ${ result.optimized } ms ` +
-          `(${ (result.disabled / result.optimized).toFixed(2) }x total, ` +
-          `${ (result.partial / result.optimized).toFixed(2) }x from T3)\n`);
+          `+H/T1 ${ result.noInline } ms, +T2 ${ result.noUnroll } ms, ` +
+          `+T3 ${ result.optimized } ms ` +
+          `(${ (result.disabled / result.optimized).toFixed(2) }x total)\n`);
       }
       report.optimizer.push(row);
     }
 
-    // H and T1 land in one column because `loopUnrollLimit` is the only
-    // per-transform switch the pass has: on the loop workloads that column is
-    // H, and on the coordinate-heavy one -- which has no loop to hoist out of
-    // -- it is T1.
+    // Each ratio prices exactly one transform, against the build with every
+    // earlier transform already on.
     for (const mode of modes) {
       console.log(`\n### ${ mode }`);
-      console.log('\n| Workload | off | H+T1 | all | H+T1 | T3 on top | total |');
-      console.log('|---|---|---|---|---|---|---|');
+      console.log('\n| Workload | off | +H/T1 | +T2 | +T3 | H+T1 | T2 | T3 | total |');
+      console.log('|---|---|---|---|---|---|---|---|---|');
       for (const row of report.optimizer) {
         const r = row.modes[mode];
         console.log(
-          `| ${ row.name } | ${ r.disabled } ms | ${ r.partial } ms | ${ r.optimized } ms | ` +
-          `${ (r.disabled / r.partial).toFixed(2) }× | ${ (r.partial / r.optimized).toFixed(2) }× | ` +
+          `| ${ row.name } | ${ r.disabled } ms | ${ r.noInline } ms | ${ r.noUnroll } ms | ` +
+          `${ r.optimized } ms | ${ (r.disabled / r.noInline).toFixed(2) }× | ` +
+          `${ (r.noInline / r.noUnroll).toFixed(2) }× | ${ (r.noUnroll / r.optimized).toFixed(2) }× | ` +
           `${ (r.disabled / r.optimized).toFixed(2) }× |`);
       }
     }
