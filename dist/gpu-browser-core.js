@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.23.0
- * @date Wed Aug 05 2026 03:35:18 GMT+0800 (Singapore Standard Time)
+ * @date Wed Aug 05 2026 04:48:18 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -1394,6 +1394,7 @@
         try {
           return work();
         } catch (e) {
+          if (!e || !e.isOptimizerFailure) throw e;
           this._optimizerDisabled = true;
           this.fallbackReason = `compiler optimizations disabled: ${e.message}`;
           console.warn(`gpu.js: compiling this kernel with compiler optimizations threw (${e.message}); rebuilding with them off. Please report this at https://github.com/gpujs/gpu.js/issues`);
@@ -1957,7 +1958,7 @@
         if (found || node.type !== "MemberExpression") return;
         const signature = context.functionNode.getVariableSignature(node);
         if (!signature || indexedReadSignatures.indexOf(signature) === -1) return;
-        if ((signature.match(/\[\]/g) || []).length < 2) return;
+        if (!context.functionNode.readsFaultAtOneLevel && (signature.match(/\[\]/g) || []).length < 2) return;
         if (context.readRootType(node, signature) === "Input") return;
         found = true;
       });
@@ -2135,6 +2136,7 @@
     }
     const INLINE_MAX_HELPER_NODES = 320;
     const INLINE_MAX_ADDED_NODES = 6e3;
+    const UNROLL_MAX_ADDED_NODES = 6e3;
     const INLINE_MAX_STATEMENTS = 2e4;
     function inlineBlock(context, block) {
       if (!context.lookupInlineTarget) return;
@@ -2331,6 +2333,7 @@
                 entry: entry,
                 statementPosition: statementPosition
               });
+              if (entry.hasEffects) scan.clean = false;
               return;
             }
             scan.clean = false;
@@ -2511,12 +2514,27 @@
       } else alternate = tailExpression(list, i + 1);
       if (alternate === null) return null;
       if (!isBranchSafe(consequent) || !isBranchSafe(alternate)) return null;
+      const consequentKind = branchLiteralKind(consequent);
+      const alternateKind = branchLiteralKind(alternate);
+      if (consequentKind !== "unknown" && alternateKind !== "unknown" && consequentKind !== alternateKind) return null;
       return stampSynthetic({
         type: "ConditionalExpression",
         test: statement.test,
         consequent: consequent,
         alternate: alternate
       }, statement);
+    }
+    function branchLiteralKind(ast) {
+      if (!ast) return "unknown";
+      if (ast.type === "Literal" && typeof ast.value === "number") return Number.isInteger(ast.value) ? "int" : "float";
+      if (ast.type === "BinaryExpression" && "+-*/".indexOf(ast.operator) > -1) {
+        const left = branchLiteralKind(ast.left);
+        const right = branchLiteralKind(ast.right);
+        if (left === "float" || right === "float") return "float";
+        if (left === "unknown" || right === "unknown") return "unknown";
+        return ast.operator === "/" ? "unknown" : "int";
+      }
+      return "unknown";
     }
     function branchExpression(branch) {
       if (!branch) return null;
@@ -2553,11 +2571,27 @@
         }
         if (!ast || !ast.body || ast.body.type !== "BlockStatement") continue;
         const shadowed = builder.nativeFunctionNames.indexOf(name) > -1;
-        const kind = node.isRootKernel ? "root" : node.isSubKernel || shadowed ? "subKernel" : "helper";
+        const declaredTypes = Boolean(node.hasDeclaredTypes);
+        const kind = node.isRootKernel ? "root" : node.isSubKernel || shadowed || declaredTypes ? "subKernel" : "helper";
         registerPlanEntry(entries, name, ast, kind, allowedFree);
       }
       for (const entry of entries.values()) allowedFree.add(entry.name);
       for (const entry of entries.values()) analyzePlanEntry(entry, allowedFree);
+      let effectsChanged = true;
+      while (effectsChanged) {
+        effectsChanged = false;
+        for (const entry of entries.values()) {
+          if (entry.hasEffects) continue;
+          for (let i = 0; i < entry.calls.length; i++) {
+            const callee = entries.get(entry.calls[i]);
+            if (callee && callee.hasEffects) {
+              entry.hasEffects = true;
+              effectsChanged = true;
+              break;
+            }
+          }
+        }
+      }
       markRecursive(entries);
       let changed = true;
       while (changed) {
@@ -2584,6 +2618,10 @@
           localNames: entry.localNames,
           returnsValue: entry.returnsValue
         });
+      }
+      for (const entry of entries.values()) if (entry.inlinable && entry.sites.length > 1) {
+        entry.inlinable = false;
+        entry.sites = [];
       }
       return plan;
     }
@@ -2616,6 +2654,10 @@
       const assigned = new Set;
       const free = new Set;
       let rejected = false;
+      let hasEffects = false;
+      walk(entry.body, node => {
+        if (node.type === "CallExpression" && node.callee && node.callee.type === "MemberExpression" && node.callee.object && node.callee.object.name === "Math" && node.callee.property && node.callee.property.name === "random") hasEffects = true;
+      });
       const visit = node => {
         if (!node || typeof node !== "object") return;
         if (Array.isArray(node)) {
@@ -2674,6 +2716,8 @@
       }
       entry.localNames = declared;
       for (let i = 0; i < entry.params.length; i++) if (assigned.has(entry.params[i])) entry.assignedParams.add(entry.params[i]);
+      for (const name of assigned) if (!declared.has(name) && entry.params.indexOf(name) === -1) hasEffects = true;
+      entry.hasEffects = hasEffects;
       const reduced = reduceReturns(entry.body);
       if (!reduced) {
         entry.inlinable = false;
@@ -2896,14 +2940,29 @@
       if (!induction) return null;
       const values = tripValues(loop, induction, context.loopUnrollLimit);
       if (!values) return null;
+      if (loop.init && loop.init.type === "VariableDeclaration" && loop.init.declarations[0].init.type !== "Literal") {
+        const cap = context.functionNode.loopMaxIterations || 1e3;
+        if (values.length > cap) return null;
+      }
       const body = loop.body ? loop.body.type === "BlockStatement" ? loop.body.body : [ loop.body ] : [];
       if (!bodyIsUnrollable(body, induction.name)) return null;
+      const added = countNodes(body) * (values.length - 1);
+      if (context.unrollAdded === void 0) context.unrollAdded = 0;
+      if (context.unrollAdded + added > UNROLL_MAX_ADDED_NODES) return null;
+      context.unrollAdded += added;
       const result = [];
       for (let i = 0; i < values.length; i++) result.push(stampSynthetic({
         type: "BlockStatement",
         body: cloneNodes(context, body, induction.name, values[i])
       }, loop));
       return result;
+    }
+    function countNodes(ast) {
+      let count = 0;
+      walk(ast, () => {
+        count++;
+      });
+      return count;
     }
     function inductionVariable(context, loop) {
       const {init: init} = loop;
@@ -3249,6 +3308,7 @@
             name: fn.name || void 0,
             returnType: fn.returnType,
             argumentTypes: fn.argumentTypes,
+            hasDeclaredTypes: Boolean(fn.returnType) || (Array.isArray(fn.argumentTypes) ? fn.argumentTypes.some(type => Boolean(type)) : Boolean(fn.argumentTypes && Object.keys(fn.argumentTypes).length > 0)),
             output: output,
             plugins: plugins,
             constants: constants,
@@ -3856,6 +3916,7 @@
         this.optimizerDisabled = false;
         this.loopUnrollLimit = 8;
         this.lookupInlineTarget = null;
+        this.hasDeclaredTypes = false;
         if (settings) for (const p in settings) {
           if (!settings.hasOwnProperty(p)) continue;
           if (!this.hasOwnProperty(p)) continue;
@@ -3914,6 +3975,9 @@
       get readsCanFault() {
         return false;
       }
+      get readsFaultAtOneLevel() {
+        return false;
+      }
       getRawAST(inParser) {
         if (this._rawAST) return this._rawAST;
         if (typeof this.source === "object") {
@@ -3932,7 +3996,12 @@
       getJsAST(inParser) {
         if (this.ast) return this.ast;
         const functionAST = this.getRawAST(inParser);
-        this.optimizeAST(functionAST);
+        try {
+          this.optimizeAST(functionAST);
+        } catch (e) {
+          if (e && typeof e === "object") e.isOptimizerFailure = true;
+          throw e;
+        }
         this.traceFunctionAST(functionAST);
         return this.ast = functionAST;
       }
@@ -16146,6 +16215,12 @@
       }
     }
     var WebAssemblyFunctionNode = class extends FunctionNode {
+      get readsCanFault() {
+        return true;
+      }
+      get readsFaultAtOneLevel() {
+        return true;
+      }
       constructor(source, settings) {
         super(source, settings);
         this.assembler = null;
@@ -22275,7 +22350,7 @@
           immutable: true,
           dynamicArguments: true
         }, overrides || {});
-        const optional = [ "constants", "constantTypes", "precision", "loopMaxIterations", "strictIntegers", "fixIntegerDivisionAccuracy", "optimizeFloatMemory", "tactic", "functions", "nativeFunctions", "injectedNative", "debug", "randomSeed", "returnType" ];
+        const optional = [ "constants", "constantTypes", "precision", "loopMaxIterations", "strictIntegers", "fixIntegerDivisionAccuracy", "optimizeFloatMemory", "tactic", "functions", "nativeFunctions", "injectedNative", "debug", "randomSeed", "returnType", "loopUnrollLimit", "_optimizerDisabled" ];
         if (kernel.declaredArgumentTypes) settings.argumentTypes = kernel.declaredArgumentTypes.slice();
         for (let i = 0; i < optional.length; i++) {
           const name = optional[i];

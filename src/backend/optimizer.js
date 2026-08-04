@@ -594,7 +594,7 @@ function canFault(context, ast) {
     if (found || node.type !== 'MemberExpression') return;
     const signature = context.functionNode.getVariableSignature(node);
     if (!signature || indexedReadSignatures.indexOf(signature) === -1) return;
-    if ((signature.match(/\[\]/g) || []).length < 2) return;
+    if (!context.functionNode.readsFaultAtOneLevel && (signature.match(/\[\]/g) || []).length < 2) return;
     if (context.readRootType(node, signature) === 'Input') return;
     found = true;
   });
@@ -818,6 +818,12 @@ function expressionKey(ast) {
 const INLINE_MAX_HELPER_NODES = 320;
 const INLINE_MAX_ADDED_NODES = 6000;
 
+// unrolling nests multiplicatively -- depth d costs limit^d copies -- so the
+// per-loop trip count is not a bound on the emitted size. The cumulative cap
+// is T2's, for the same reason: past it, cpu deoptimizes and GL shader
+// compilation grows superlinearly (#8 of the build review).
+const UNROLL_MAX_ADDED_NODES = 6000;
+
 // an expansion is bounded by the plan's budgets, so a walk that keeps finding
 // work past this has a bug in it rather than a big kernel; the #868 contract
 // turns the throw into an un-optimized build
@@ -1032,6 +1038,13 @@ function scanValue(parent, key, scan, statementPosition, objectPosition) {
         // only inlines where the call WAS the statement
         if (scan.clean && (entry.returnsValue || statementPosition)) {
           scan.sites.push({ parent, key, node, entry, statementPosition });
+          // expanding a site lifts its body into the shared prefix ahead of
+          // the statement, so a SECOND site in the same statement runs its
+          // body before this site's returned expression is used. Harmless for
+          // a pure helper (bindings and an expression, reordered invisibly),
+          // but for one that DRAWS RANDOM it permutes the seeded stream --
+          // and for one that assigns outward it reorders the writes (#6).
+          if (entry.hasEffects) scan.clean = false;
           return;
         }
         scan.clean = false;
@@ -1276,12 +1289,41 @@ function tailExpression(list, i) {
   // call in a branch would therefore run where the function never ran it --
   // and for Math.random that is a different stream.
   if (!isBranchSafe(consequent) || !isBranchSafe(alternate)) return null;
+  // GLSL has no implicit int/float conversion, so a fold whose branches
+  // resolve to different types emits `cond ? int : float` and fails to
+  // compile (#3 of the build review). The types are not known until tracing,
+  // so the conservative proxy is literal shape: an integer literal on one
+  // side and a fractional one on the other is exactly the failing case.
+  const consequentKind = branchLiteralKind(consequent);
+  const alternateKind = branchLiteralKind(alternate);
+  if (consequentKind !== 'unknown' && alternateKind !== 'unknown' &&
+    consequentKind !== alternateKind) return null;
   return stampSynthetic({
     type: 'ConditionalExpression',
     test: statement.test,
     consequent,
     alternate,
   }, statement);
+}
+
+/**
+ * @returns {String} 'int' | 'float' | 'unknown' -- the literal shape a folded
+ * branch would carry into a ternary. Only a definite disagreement blocks the
+ * fold; 'unknown' matches anything, since the emitter resolves those itself.
+ */
+function branchLiteralKind(ast) {
+  if (!ast) return 'unknown';
+  if (ast.type === 'Literal' && typeof ast.value === 'number') {
+    return Number.isInteger(ast.value) ? 'int' : 'float';
+  }
+  if (ast.type === 'BinaryExpression' && '+-*/'.indexOf(ast.operator) > -1) {
+    const left = branchLiteralKind(ast.left);
+    const right = branchLiteralKind(ast.right);
+    if (left === 'float' || right === 'float') return 'float';
+    if (left === 'unknown' || right === 'unknown') return 'unknown';
+    return ast.operator === '/' ? 'unknown' : 'int';
+  }
+  return 'unknown';
 }
 
 function branchExpression(branch) {
@@ -1347,12 +1389,41 @@ function buildInlinePlan(builder) {
     // the JavaScript body registered under that name is not what the call
     // site runs and must never be what it inlines
     const shadowed = builder.nativeFunctionNames.indexOf(name) > -1;
-    const kind = node.isRootKernel ? 'root' : (node.isSubKernel || shadowed ? 'subKernel' : 'helper');
+    // addFunction's declared returnType/argumentTypes are coercions the
+    // emitter applies at the call boundary; inlining deletes the boundary and
+    // with it the coercion, so a declared helper keeps its call
+    const declaredTypes = Boolean(node.hasDeclaredTypes);
+    const kind = node.isRootKernel ? 'root' :
+      (node.isSubKernel || shadowed || declaredTypes ? 'subKernel' : 'helper');
     registerPlanEntry(entries, name, ast, kind, allowedFree);
   }
 
+  // gpu.js fixes a helper's parameter types from the FIRST call site the
+  // emitter reaches, and every later site is coerced into them. Inlining
+  // gives each site its own types, so a helper called with `Integer` at one
+  // site and `Number` at another computes differently once inlined (#2 of
+  // the build review). Multi-site helpers therefore keep their calls unless
+  // every site passes arguments of the same shape -- which the plan cannot
+  // know before tracing, so the conservative rule is: one site inlines.
   for (const entry of entries.values()) allowedFree.add(entry.name);
   for (const entry of entries.values()) analyzePlanEntry(entry, allowedFree);
+  // effects propagate along the call graph: a pure-looking helper that calls
+  // a drawing one is effectful at ITS call sites too
+  let effectsChanged = true;
+  while (effectsChanged) {
+    effectsChanged = false;
+    for (const entry of entries.values()) {
+      if (entry.hasEffects) continue;
+      for (let i = 0; i < entry.calls.length; i++) {
+        const callee = entries.get(entry.calls[i]);
+        if (callee && callee.hasEffects) {
+          entry.hasEffects = true;
+          effectsChanged = true;
+          break;
+        }
+      }
+    }
+  }
   markRecursive(entries);
 
   // the site scan classifies a call by whether its callee is still a
@@ -1388,6 +1459,15 @@ function buildInlinePlan(builder) {
       returnsValue: entry.returnsValue,
     });
   }
+  // multi-site helpers keep their calls: the emitter's first-site parameter
+  // type fixing is a coercion inlining would delete (#2)
+  for (const entry of entries.values()) {
+    if (entry.inlinable && entry.sites.length > 1) {
+      entry.inlinable = false;
+      entry.sites = [];
+    }
+  }
+
   return plan;
 }
 
@@ -1432,6 +1512,16 @@ function analyzePlanEntry(entry, allowedFree) {
   const assigned = new Set();
   const free = new Set();
   let rejected = false;
+  // a draw advances a seeded stream, so its POSITION is observable
+  let hasEffects = false;
+  walk(entry.body, node => {
+    if (node.type === 'CallExpression' && node.callee &&
+      node.callee.type === 'MemberExpression' && node.callee.object &&
+      node.callee.object.name === 'Math' && node.callee.property &&
+      node.callee.property.name === 'random') {
+      hasEffects = true;
+    }
+  });
 
   const visit = node => {
     if (!node || typeof node !== 'object') return;
@@ -1492,6 +1582,12 @@ function analyzePlanEntry(entry, allowedFree) {
   for (let i = 0; i < entry.params.length; i++) {
     if (assigned.has(entry.params[i])) entry.assignedParams.add(entry.params[i]);
   }
+  // a write to anything the helper did not declare itself escapes the
+  // expansion, so its position relative to a sibling site is observable
+  for (const name of assigned) {
+    if (!declared.has(name) && entry.params.indexOf(name) === -1) hasEffects = true;
+  }
+  entry.hasEffects = hasEffects;
   const reduced = reduceReturns(entry.body);
   if (!reduced) {
     entry.inlinable = false;
@@ -1768,9 +1864,30 @@ function unrollLoop(context, loop) {
   if (!induction) return null;
   const values = tripValues(loop, induction, context.loopUnrollLimit);
   if (!values) return null;
+  // A non-literal init (`let i = -2` is a UnaryExpression) falls outside the
+  // emitters' canonical-loop rule, so they wrap it in the LOOP_MAX safety
+  // form. Unrolling deletes that wrapper, which changes results whenever the
+  // trip count exceeds the cap (#4 of the build review) -- so unroll such a
+  // loop only when every iteration would have run anyway.
+  if (loop.init && loop.init.type === 'VariableDeclaration' &&
+    loop.init.declarations[0].init.type !== 'Literal') {
+    // unset means the emitters' own default, not zero
+    const cap = context.functionNode.loopMaxIterations || 1000;
+    if (values.length > cap) return null;
+  }
   const body = loop.body ?
     (loop.body.type === 'BlockStatement' ? loop.body.body : [loop.body]) : [];
   if (!bodyIsUnrollable(body, induction.name)) return null;
+
+  // the cumulative guard: unrollStatement descends before it unrolls, so an
+  // inner loop is unrolled once and then CLONED by every outer iteration.
+  // Counting the copies this expansion adds against a running total is what
+  // keeps a 3-deep nest from emitting 8^3 bodies (#8).
+  const bodyNodes = countNodes(body);
+  const added = bodyNodes * (values.length - 1);
+  if (context.unrollAdded === undefined) context.unrollAdded = 0;
+  if (context.unrollAdded + added > UNROLL_MAX_ADDED_NODES) return null;
+  context.unrollAdded += added;
 
   const result = [];
   for (let i = 0; i < values.length; i++) {
@@ -1780,6 +1897,12 @@ function unrollLoop(context, loop) {
     }, loop));
   }
   return result;
+}
+
+function countNodes(ast) {
+  let count = 0;
+  walk(ast, () => { count++; });
+  return count;
 }
 
 /**

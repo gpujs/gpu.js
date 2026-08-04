@@ -182,6 +182,21 @@ function scalarWasmType(type) {
 }
 
 class WebAssemblyFunctionNode extends FunctionNode {
+  /**
+   * Array reads compile to raw `load`s from linear memory: an out-of-range
+   * address traps rather than yielding a clamped texel, so a read moved to
+   * a place the un-optimized build never reaches is a new crash. Unlike cpu
+   * even a ONE-level read faults here, which is why canFault's
+   * two-subscript shortcut does not apply (see optimizer.readsFaultAtOneLevel).
+   */
+  get readsCanFault() {
+    return true;
+  }
+
+  get readsFaultAtOneLevel() {
+    return true;
+  }
+
   constructor(source, settings) {
     super(source, settings);
     this.assembler = null;

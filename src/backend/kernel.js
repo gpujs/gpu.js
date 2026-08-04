@@ -861,6 +861,10 @@ class Kernel {
     try {
       return work();
     } catch (e) {
+      // the emitter's own errors (unsupported constructs, bad types) are the
+      // user's to see: rethrowing keeps the message honest and avoids
+      // compiling a doomed kernel twice
+      if (!e || !e.isOptimizerFailure) throw e;
       this._optimizerDisabled = true;
       this.fallbackReason = `compiler optimizations disabled: ${ e.message }`;
       console.warn(

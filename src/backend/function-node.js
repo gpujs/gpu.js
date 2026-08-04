@@ -133,6 +133,12 @@ class FunctionNode {
     this.optimizerDisabled = false;
     this.loopUnrollLimit = 8;
     this.lookupInlineTarget = null;
+    /**
+     * Types the USER declared through addFunction (distinct from types a
+     * build inferred). The emitter applies them as coercions at the call
+     * boundary, so such a helper must keep its call rather than inline.
+     */
+    this.hasDeclaredTypes = false;
 
     if (settings) {
       for (const p in settings) {
@@ -286,6 +292,16 @@ class FunctionNode {
   }
 
   /**
+   * @desc Whether a SINGLE-subscript read can fault. On cpu `a[y]` past the
+   * end is `undefined` (only `a[y][x]` throws); on webasm every read is a
+   * raw load and one level is enough.
+   * @returns {Boolean}
+   */
+  get readsFaultAtOneLevel() {
+    return false;
+  }
+
+  /**
    * @desc The parsed, de-minified AST -- everything getJsAST does BEFORE the
    * optimizer and the tracer. T2's call-graph plan reads helpers through this
    * rather than through getJsAST: optimizing a helper early would run its
@@ -325,7 +341,15 @@ class FunctionNode {
       return this.ast;
     }
     const functionAST = this.getRawAST(inParser);
-    this.optimizeAST(functionAST);
+    // tagged so buildWithOptimizer retries only OUR failures: an
+    // unsupported-construct error from the emitter must reach the user
+    // unchanged, not be blamed on the optimizer and compiled twice
+    try {
+      this.optimizeAST(functionAST);
+    } catch (e) {
+      if (e && typeof e === 'object') e.isOptimizerFailure = true;
+      throw e;
+    }
     this.traceFunctionAST(functionAST);
     return this.ast = functionAST;
   }
@@ -348,6 +372,7 @@ class FunctionNode {
       lookupInlineTarget: this.lookupInlineTarget,
     });
   }
+
 
   /**
    * @desc Argument names the function body assigns to. Backends whose

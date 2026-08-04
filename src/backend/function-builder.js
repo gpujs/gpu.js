@@ -173,6 +173,12 @@ class FunctionBuilder {
         name: fn.name || undefined,
         returnType: fn.returnType,
         argumentTypes: fn.argumentTypes,
+        // types the USER declared through addFunction, distinct from types a
+        // build inferred: the emitter applies them as coercions at the call
+        // boundary, which inlining would delete (#1 of the build review)
+        hasDeclaredTypes: Boolean(fn.returnType) || (Array.isArray(fn.argumentTypes) ?
+          fn.argumentTypes.some(type => Boolean(type)) :
+          Boolean(fn.argumentTypes && Object.keys(fn.argumentTypes).length > 0)),
         output,
         plugins,
         constants,
