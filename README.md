@@ -1455,43 +1455,43 @@ Reach for it when emitted size matters more than loop overhead.  Unrolling multi
 
 | Workload | off | +H/T1 | +T2 | +T3 | H+T1 | T2 | T3 | total |
 |---|---|---|---|---|---|---|---|---|
-| hoistable read, 8-trip loop, 1M cells | 8.51 ms | 5.22 ms | 5.33 ms | 1.91 ms | 1.63× | 0.98× | 2.79× | **4.46×** |
-| stencil 3x3, 256x256 | 2.18 ms | 1.2 ms | 1.23 ms | 0.74 ms | 1.82× | 0.98× | 1.66× | **2.95×** |
-| helper in a hot loop, 1M cells | 12.25 ms | 8.78 ms | 9.39 ms | 5.38 ms | 1.40× | 0.94× | 1.75× | **2.28×** |
-| helper chain 3 deep, 1M cells | 1.36 ms | 1.21 ms | 1.27 ms | 1.24 ms | 1.12× | 0.95× | 1.02× | 1.10× |
-| branching helper per cell, 1M cells | 1.89 ms | 1.77 ms | 2.09 ms | 2.09 ms | 1.07× | 0.85× | 1.00× | 0.90× |
-| literal 4-trip loop, 1M cells | 5.95 ms | 3.55 ms | 3.99 ms | 1.23 ms | 1.68× | 0.89× | 3.24× | **4.84×** |
-| nested literal 3x3 loop, 256x256 | 1.17 ms | 0.66 ms | 0.64 ms | 0.21 ms | 1.77× | 1.03× | 3.05× | **5.57×** |
-| coordinate-heavy straight-line map, 1M cells | 1.94 ms | 1.67 ms | 1.93 ms | 1.88 ms | 1.16× | 0.87× | 1.03× | 1.03× |
-| control: straight-line map, 1M cells | 1.38 ms | 1.51 ms | 1.48 ms | 1.48 ms | 0.91× | 1.02× | 1.00× | 0.93× |
+| hoistable read, 8-trip loop, 1M cells | 8.65 ms | 5.39 ms | 5.5 ms | 1.91 ms | 1.60× | 0.98× | 2.88× | 4.53× |
+| stencil 3x3, 256x256 | 2.19 ms | 1.23 ms | 1.18 ms | 0.75 ms | 1.78× | 1.04× | 1.57× | 2.92× |
+| helper in a hot loop, 1M cells | 12.05 ms | 8.83 ms | 8.77 ms | 5.39 ms | 1.36× | 1.01× | 1.63× | 2.24× |
+| helper chain 3 deep, 1M cells | 1.64 ms | 1.3 ms | 1.61 ms | 1.63 ms | 1.26× | 0.81× | 0.99× | 1.01× |
+| branching helper per cell, 1M cells | 1.89 ms | 1.76 ms | 1.74 ms | 2.02 ms | 1.07× | 1.01× | 0.86× | 0.94× |
+| literal 4-trip loop, 1M cells | 5.79 ms | 3.53 ms | 3.85 ms | 1.26 ms | 1.64× | 0.92× | 3.06× | 4.60× |
+| nested literal 3x3 loop, 256x256 | 1.36 ms | 0.71 ms | 0.66 ms | 0.2 ms | 1.92× | 1.08× | 3.30× | 6.80× |
+| coordinate-heavy straight-line map, 1M cells | 1.83 ms | 1.72 ms | 2.15 ms | 1.97 ms | 1.06× | 0.80× | 1.09× | 0.93× |
+| control: straight-line map, 1M cells | 1.54 ms | 1.49 ms | 1.47 ms | 1.52 ms | 1.03× | 1.01× | 0.97× | 1.01× |
 
 **webasm**
 
 | Workload | off | +H/T1 | +T2 | +T3 | H+T1 | T2 | T3 | total |
 |---|---|---|---|---|---|---|---|---|
-| hoistable read, 8-trip loop, 1M cells | 4.37 ms | 2.17 ms | 2.13 ms | 1.64 ms | 2.01× | 1.02× | 1.30× | **2.66×** |
-| stencil 3x3, 256x256 | 0.81 ms | 0.61 ms | 0.6 ms | 0.58 ms | 1.33× | 1.02× | 1.03× | **1.40×** |
-| helper in a hot loop, 1M cells | 17.76 ms | 13.67 ms | 3.71 ms | 2.73 ms | 1.30× | 3.68× | 1.36× | **6.51×** |
-| helper chain 3 deep, 1M cells | 4.84 ms | 4.71 ms | 1.19 ms | 1.18 ms | 1.03× | 3.96× | 1.01× | **4.10×** |
-| branching helper per cell, 1M cells | 4.84 ms | 4.78 ms | 1.42 ms | 1.42 ms | 1.01× | 3.37× | 1.00× | **3.41×** |
-| literal 4-trip loop, 1M cells | 2.5 ms | 1.53 ms | 1.5 ms | 1.27 ms | 1.63× | 1.02× | 1.18× | **1.97×** |
-| nested literal 3x3 loop, 256x256 | 0.38 ms | 0.2 ms | 0.2 ms | 0.13 ms | 1.90× | 1.00× | 1.54× | **2.92×** |
-| coordinate-heavy straight-line map, 1M cells | 1.68 ms | 1.71 ms | 1.69 ms | 1.69 ms | 0.98× | 1.01× | 1.00× | 0.99× |
-| control: straight-line map, 1M cells | 1.09 ms | 1.09 ms | 1.06 ms | 1.02 ms | 1.00× | 1.03× | 1.04× | 1.07× |
+| hoistable read, 8-trip loop, 1M cells | 3.56 ms | 3.25 ms | 3.43 ms | 3.53 ms | 1.10× | 0.95× | 0.97× | 1.01× |
+| stencil 3x3, 256x256 | 0.69 ms | 0.66 ms | 0.65 ms | 0.69 ms | 1.05× | 1.02× | 0.94× | 1.00× |
+| helper in a hot loop, 1M cells | 3.61 ms | 3.6 ms | 3.75 ms | 3.63 ms | 1.00× | 0.96× | 1.03× | 0.99× |
+| helper chain 3 deep, 1M cells | 3.44 ms | 3.32 ms | 3.24 ms | 3.4 ms | 1.04× | 1.02× | 0.95× | 1.01× |
+| branching helper per cell, 1M cells | 3.42 ms | 3.28 ms | 3.24 ms | 3.36 ms | 1.04× | 1.01× | 0.96× | 1.02× |
+| literal 4-trip loop, 1M cells | 3.3 ms | 3.21 ms | 3.19 ms | 3.21 ms | 1.03× | 1.01× | 0.99× | 1.03× |
+| nested literal 3x3 loop, 256x256 | 0.7 ms | 0.76 ms | 0.71 ms | 0.7 ms | 0.92× | 1.07× | 1.01× | 1.00× |
+| coordinate-heavy straight-line map, 1M cells | 3.25 ms | 3.4 ms | 3.34 ms | 3.27 ms | 0.96× | 1.02× | 1.02× | 0.99× |
+| control: straight-line map, 1M cells | 3.51 ms | 3.42 ms | 3.38 ms | 3.23 ms | 1.03× | 1.01× | 1.05× | 1.09× |
 
 **headlessgl**
 
 | Workload | off | +H/T1 | +T2 | +T3 | H+T1 | T2 | T3 | total |
 |---|---|---|---|---|---|---|---|---|
-| hoistable read, 8-trip loop, 1M cells | 3.56 ms | 3.43 ms | 3.45 ms | 3.43 ms | 1.04× | 0.99× | 1.01× | 1.04× |
-| stencil 3x3, 256x256 | 0.67 ms | 0.66 ms | 0.65 ms | 0.63 ms | 1.02× | 1.02× | 1.03× | 1.06× |
-| helper in a hot loop, 1M cells | 3.6 ms | 3.43 ms | 3.52 ms | 3.54 ms | 1.05× | 0.97× | 0.99× | 1.02× |
-| helper chain 3 deep, 1M cells | 3.45 ms | 3.47 ms | 3.46 ms | 3.36 ms | 0.99× | 1.00× | 1.03× | 1.03× |
-| branching helper per cell, 1M cells | 3.51 ms | 3.39 ms | 3.55 ms | 3.32 ms | 1.04× | 0.95× | 1.07× | 1.06× |
-| literal 4-trip loop, 1M cells | 3.45 ms | 3.45 ms | 3.34 ms | 3.36 ms | 1.00× | 1.03× | 0.99× | 1.03× |
-| nested literal 3x3 loop, 256x256 | 0.64 ms | 0.65 ms | 0.62 ms | 0.61 ms | 0.98× | 1.05× | 1.02× | 1.05× |
-| coordinate-heavy straight-line map, 1M cells | 3.55 ms | 3.23 ms | 3.5 ms | 3.42 ms | 1.10× | 0.92× | 1.02× | 1.04× |
-| control: straight-line map, 1M cells | 3.63 ms | 3.54 ms | 3.52 ms | 3.53 ms | 1.03× | 1.01× | 1.00× | 1.03× |
+| hoistable read, 8-trip loop, 1M cells | 4.38 ms | 2.18 ms | 2.14 ms | 1.66 ms | 2.01× | 1.02× | 1.29× | 2.64× |
+| stencil 3x3, 256x256 | 0.81 ms | 0.61 ms | 0.6 ms | 0.56 ms | 1.33× | 1.02× | 1.07× | 1.45× |
+| helper in a hot loop, 1M cells | 17.57 ms | 13.68 ms | 3.7 ms | 2.71 ms | 1.28× | 3.70× | 1.37× | 6.48× |
+| helper chain 3 deep, 1M cells | 4.94 ms | 4.74 ms | 1.19 ms | 1.17 ms | 1.04× | 3.98× | 1.02× | 4.22× |
+| branching helper per cell, 1M cells | 4.84 ms | 4.78 ms | 4.84 ms | 4.77 ms | 1.01× | 0.99× | 1.01× | 1.01× |
+| literal 4-trip loop, 1M cells | 2.55 ms | 1.49 ms | 1.53 ms | 1.28 ms | 1.71× | 0.97× | 1.20× | 1.99× |
+| nested literal 3x3 loop, 256x256 | 0.38 ms | 0.2 ms | 0.19 ms | 0.13 ms | 1.90× | 1.05× | 1.46× | 2.92× |
+| coordinate-heavy straight-line map, 1M cells | 1.78 ms | 1.73 ms | 1.71 ms | 1.67 ms | 1.03× | 1.01× | 1.02× | 1.07× |
+| control: straight-line map, 1M cells | 1.09 ms | 1.06 ms | 1.06 ms | 1.07 ms | 1.03× | 1.00× | 0.99× | 1.02× |
 
 Read those tables with the control row first.  It has no loop to hoist out of, no helper to inline and no literal loop to unroll, so it measures the harness rather than the optimizer: it moved 0.93× on cpu and 1.07× on webasm, which puts the noise floor around ±7%.  Everything inside that band — the whole headlessgl table included — is nothing.
 
