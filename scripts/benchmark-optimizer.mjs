@@ -12,7 +12,13 @@
 // - every workload is cross-checked optimized-against-disabled BEFORE any
 //   timing; a mismatch beyond one f32 ULP aborts the run
 // - timed runs ping-pong between two input sets so no cache can elide work
-// - median of >= 7 runs, warmup excluded; cpu capped when a run is slow
+// - median of >= 7 runs, warmup excluded
+// - each workload is built three ways -- optimizer off, `loopUnrollLimit: 0`,
+//   and everything on -- so the shipped total splits into what the unroller
+//   contributes and what the rest do. All three are built and warmed before
+//   any is timed, and the timed rounds interleave
+// - each workload runs in a process of its own, so one workload's V8 state
+//   cannot decide another's answer
 //
 // The attribution block answers the one question the design contract left
 // open: the hand-written probe that measured T3's 3.27x on cpu ALSO hoisted
@@ -22,9 +28,12 @@
 // so the two transforms can be priced separately.
 
 import { createRequire } from 'node:module';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 const { GPU } = require('../src');
 
+const scriptPath = fileURLToPath(import.meta.url);
 const MEDIAN_RUNS = 7;
 
 function median(times) {
@@ -32,27 +41,25 @@ function median(times) {
   return sorted[Math.floor(sorted.length / 2)];
 }
 
-function flatten(result) {
-  const out = [];
-  const push = value => {
-    if (typeof value === 'number') {
-      out.push(value);
-      return;
-    }
-    for (let i = 0; i < value.length; i++) push(value[i]);
-  };
-  push(result);
-  return out;
-}
-
+/**
+ * The worst relative disagreement between two results, walked in place.
+ * Copying a million cells into a plain array first -- which is what the
+ * obvious flatten-then-compare does -- allocates 8MB per build and moves the
+ * numbers it is supposed to be checking: the coordinate-heavy workload read
+ * 1.06x that way and 1.82x without, reproducibly. A cross-check has to be
+ * free, so this one allocates nothing.
+ */
 function relativeError(a, b) {
-  let worst = 0;
-  for (let i = 0; i < a.length; i++) {
+  if (typeof a === 'number') {
     // scale floored at 1: these workloads sum terms that cancel, and a
     // relative error against a near-zero total measures the cancellation,
     // not the disagreement
-    const denominator = Math.max(Math.abs(a[i]), Math.abs(b[i]), 1);
-    worst = Math.max(worst, Math.abs(a[i] - b[i]) / denominator);
+    return Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b), 1);
+  }
+  let worst = 0;
+  for (let i = 0; i < a.length; i++) {
+    const error = relativeError(a[i], b[i]);
+    if (error > worst) worst = error;
   }
   return worst;
 }
@@ -137,9 +144,41 @@ const WORKLOADS = [
     inputs: [[makeVector(5)], [makeVector(6)]],
   },
   {
+    // T3 at its best: literal bounds nested two deep, so the whole 3x3 sweep
+    // becomes nine copies with no counters left
+    name: 'nested literal 3x3 loop, 256x256',
+    source: function (a) {
+      let s = 0;
+      for (let dy = 0; dy < 3; dy++) {
+        for (let dx = 0; dx < 3; dx++) {
+          s += a[this.thread.y][this.thread.x] * (dy * 3 + dx);
+        }
+      }
+      return s;
+    },
+    output: [SIZE, SIZE],
+    inputs: [[makeMatrix(9)], [makeMatrix(10)]],
+  },
+  {
+    // T1's home ground: no loop to hoist out of or unroll, just coordinates
+    // read over and over. On cpu each read is a property lookup on a shared
+    // mutable object; every other backend already holds them in something
+    // local, so this doubles as their control
+    name: 'coordinate-heavy straight-line map, 1M cells',
+    source: function (a) {
+      const x = this.thread.x;
+      const y = this.thread.y;
+      const z = this.thread.z;
+      return a[x] * 0.5 + x * 0.25 + y + z +
+        (x + y) * (x - z) * 1e-9 + a[this.thread.x] * this.thread.x * 1e-9;
+    },
+    output: [N],
+    inputs: [[makeVector(11)], [makeVector(12)]],
+  },
+  {
     // the control: no loop for H to hoist out of, no helper to inline, no
-    // literal loop to unroll. Any movement here is noise, and says how much
-    // of the rest is signal
+    // literal loop to unroll, one coordinate read. Any movement here is
+    // noise, and says how much of the rest is signal
     name: 'control: straight-line map, 1M cells',
     source: function (a) {
       const x = a[this.thread.x];
@@ -150,48 +189,66 @@ const WORKLOADS = [
   },
 ];
 
-function buildKernel(mode, workload, disabled, gpus) {
+// The three builds each workload is priced at. `loopUnrollLimit: 0` is the
+// only per-transform switch the pass exposes, and it is enough to split the
+// shipped total: everything minus unrolling is the middle build, so
+// disabled/partial prices H and T1 together and partial/optimized prices T3.
+const BUILDS = {
+  disabled: { _optimizerDisabled: true },
+  partial: { loopUnrollLimit: 0 },
+  optimized: {},
+};
+
+function buildKernel(mode, workload, build, gpus) {
   const gpu = new GPU({ mode });
   gpus.push(gpu);
   return gpu.createKernel(workload.source, Object.assign({
     output: workload.output,
     loopMaxIterations: workload.loopMaxIterations || 1000,
-    _optimizerDisabled: disabled,
-  }, workload.settings || {}));
+  }, workload.settings || {}, BUILDS[build]));
 }
 
-function timeKernel(kernel, workload, runs) {
-  kernel.apply(null, workload.inputs[0]);
-  kernel.apply(null, workload.inputs[1]);
-  const times = [];
-  for (let i = 0; i < runs; i++) {
-    const inputs = workload.inputs[i % 2];
-    const start = process.hrtime.bigint();
-    kernel.apply(null, inputs);
-    times.push(Number(process.hrtime.bigint() - start) / 1e6);
-  }
-  return median(times);
-}
-
+/**
+ * Every build is constructed and warmed before any of them is timed, and the
+ * timed rounds interleave. Timing them one after another instead moved the
+ * answer by 30%: each is a separate emitted function, and whichever one V8
+ * meets first pays for the tier-up.
+ */
 function measure(mode, workload) {
   const gpus = [];
+  const names = Object.keys(BUILDS);
   try {
-    const optimized = buildKernel(mode, workload, false, gpus);
-    const disabled = buildKernel(mode, workload, true, gpus);
-
-    const optimizedResult = flatten(optimized.apply(null, workload.inputs[0]));
-    const disabledResult = flatten(disabled.apply(null, workload.inputs[0]));
-    const error = relativeError(optimizedResult, disabledResult);
-    if (!(error <= CROSS_CHECK_TOLERANCE)) {
-      throw new Error(`RESULT MISMATCH in ${ workload.name } (${ mode }): relative error ${ error }`);
+    const kernels = {};
+    const samples = {};
+    let reference = null;
+    let error = 0;
+    for (const name of names) {
+      const kernel = buildKernel(mode, workload, name, gpus);
+      const result = kernel.apply(null, workload.inputs[0]);
+      if (reference === null) {
+        reference = result;
+      } else {
+        error = Math.max(error, relativeError(reference, result));
+        if (!(error <= CROSS_CHECK_TOLERANCE)) {
+          throw new Error(`RESULT MISMATCH in ${ workload.name } (${ mode }/${ name }): relative error ${ error }`);
+        }
+      }
+      for (let i = 0; i < 4; i++) kernel.apply(null, workload.inputs[i % 2]);
+      kernels[name] = kernel;
+      samples[name] = [];
     }
-
-    const runs = mode === 'cpu' ? 5 : MEDIAN_RUNS;
-    return {
-      optimized: +timeKernel(optimized, workload, runs).toFixed(2),
-      disabled: +timeKernel(disabled, workload, runs).toFixed(2),
-      error,
-    };
+    const runs = mode === 'cpu' ? MEDIAN_RUNS : MEDIAN_RUNS + 4;
+    for (let round = 0; round < runs; round++) {
+      const inputs = workload.inputs[round % 2];
+      for (const name of names) {
+        const start = process.hrtime.bigint();
+        kernels[name].apply(null, inputs);
+        samples[name].push(Number(process.hrtime.bigint() - start) / 1e6);
+      }
+    }
+    const result = { error };
+    for (const name of names) result[name] = +median(samples[name]).toFixed(2);
+    return result;
   } finally {
     for (const gpu of gpus) gpu.destroy();
   }
@@ -253,7 +310,7 @@ function measureAttribution(mode) {
         output: ATTRIBUTION.output,
         _optimizerDisabled: disabled,
       });
-      const result = flatten(kernel.apply(null, ATTRIBUTION.inputs[0]));
+      const result = kernel.apply(null, ATTRIBUTION.inputs[0]);
       if (reference === null) {
         reference = result;
       } else {
@@ -291,31 +348,64 @@ const MODES = [
   ['webasm', () => GPU.isWebAssemblySupported],
 ];
 
+// Each workload is measured in a process of its own. Interleaving the three
+// builds is enough to keep them honest against each other WITHIN a workload,
+// but not across workloads: running the coordinate-heavy shape after six
+// others once had V8 hand its un-optimized build a 2x tier-up the other two
+// did not get, which read as the transform costing 11% when it is worth 1.8x
+// measured alone. A fresh process per workload is what makes the table
+// reproducible rather than order-dependent.
+function measureWorkloadInChild(index) {
+  const output = execFileSync(process.execPath, [scriptPath, `--workload=${ index }`], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'inherit'],
+  });
+  return JSON.parse(output);
+}
+
 function main() {
   const attributionOnly = process.argv.includes('--attribution');
   const modes = MODES.filter(([, supported]) => supported()).map(([mode]) => mode);
   const report = { optimizer: [], attribution: {} };
 
+  const child = process.argv.find(argument => argument.startsWith('--workload='));
+  if (child) {
+    const workload = WORKLOADS[Number(child.split('=')[1])];
+    const row = { name: workload.name, modes: {} };
+    for (const mode of modes) row.modes[mode] = measure(mode, workload);
+    process.stdout.write(JSON.stringify(row));
+    return;
+  }
+
   if (!attributionOnly) {
-    for (const workload of WORKLOADS) {
-      const row = { name: workload.name, modes: {} };
+    for (let i = 0; i < WORKLOADS.length; i++) {
+      const row = measureWorkloadInChild(i);
       for (const mode of modes) {
-        const result = measure(mode, workload);
-        row.modes[mode] = result;
+        const result = row.modes[mode];
         process.stderr.write(
-          `${ workload.name } / ${ mode }: optimized ${ result.optimized } ms, ` +
-          `disabled ${ result.disabled } ms (${ (result.disabled / result.optimized).toFixed(2) }x)\n`);
+          `${ row.name } / ${ mode }: off ${ result.disabled } ms, ` +
+          `H+T1 ${ result.partial } ms, all ${ result.optimized } ms ` +
+          `(${ (result.disabled / result.optimized).toFixed(2) }x total, ` +
+          `${ (result.partial / result.optimized).toFixed(2) }x from T3)\n`);
       }
       report.optimizer.push(row);
     }
 
-    console.log(`\n| Workload | ${ modes.map(m => `${ m } off | ${ m } on | ${ m } gain`).join(' | ') } |`);
-    console.log(`|---|${ modes.map(() => '---|---|---').join('|') }|`);
-    for (const row of report.optimizer) {
-      console.log(`| ${ row.name } | ${ modes.map(mode => {
-        const result = row.modes[mode];
-        return `${ result.disabled } ms | ${ result.optimized } ms | ${ (result.disabled / result.optimized).toFixed(2) }×`;
-      }).join(' | ') } |`);
+    // H and T1 land in one column because `loopUnrollLimit` is the only
+    // per-transform switch the pass has: on the loop workloads that column is
+    // H, and on the coordinate-heavy one -- which has no loop to hoist out of
+    // -- it is T1.
+    for (const mode of modes) {
+      console.log(`\n### ${ mode }`);
+      console.log('\n| Workload | off | H+T1 | all | H+T1 | T3 on top | total |');
+      console.log('|---|---|---|---|---|---|---|');
+      for (const row of report.optimizer) {
+        const r = row.modes[mode];
+        console.log(
+          `| ${ row.name } | ${ r.disabled } ms | ${ r.partial } ms | ${ r.optimized } ms | ` +
+          `${ (r.disabled / r.partial).toFixed(2) }× | ${ (r.partial / r.optimized).toFixed(2) }× | ` +
+          `${ (r.disabled / r.optimized).toFixed(2) }× |`);
+      }
     }
   }
 

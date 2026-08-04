@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.23.0
- * @date Wed Aug 05 2026 01:15:00 GMT+0800 (Singapore Standard Time)
+ * @date Wed Aug 05 2026 02:31:25 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -1264,6 +1264,10 @@
         this.loopMaxIterations = max;
         return this;
       }
+      setLoopUnrollLimit(limit) {
+        this.loopUnrollLimit = limit;
+        return this;
+      }
       setConstants(constants) {
         this.constants = constants;
         return this;
@@ -2185,12 +2189,15 @@
     const indexedReadSignatures = [ "value[]", "value[][]", "value[][][]", "value[][][][]", "this.constants.value[]", "this.constants.value[][]", "this.constants.value[][][]", "this.constants.value[][][][]" ];
     function optimize(functionNode, ast, settings) {
       if (!ast || !ast.body || ast.body.type !== "BlockStatement") return ast;
-      processBlock(new OptimizerContext(functionNode, ast, settings || {}), ast.body);
+      const context = new OptimizerContext(functionNode, ast, settings || {});
+      processBlock(context, ast.body);
+      unrollBlock(context, ast.body);
       return ast;
     }
     var OptimizerContext = class {
       constructor(functionNode, ast, settings) {
         this.functionNode = functionNode;
+        this.ast = ast;
         this.loopUnrollLimit = typeof settings.loopUnrollLimit === "number" ? settings.loopUnrollLimit : 8;
         this.mutatedNames = collectMutatedNames(ast.body);
         this.usedNames = collectUsedNames(ast);
@@ -2726,8 +2733,321 @@
         return null;
       }
     }
+    function unrollBlock(context, block) {
+      block.body = unrollList(context, block.body);
+    }
+    function unrollList(context, list) {
+      const result = [];
+      for (let i = 0; i < list.length; i++) {
+        const replacement = unrollStatement(context, list[i]);
+        if (replacement === null) {
+          result.push(list[i]);
+          continue;
+        }
+        for (let j = 0; j < replacement.length; j++) result.push(replacement[j]);
+      }
+      return result;
+    }
+    function unrollStatement(context, statement) {
+      switch (statement.type) {
+       case "BlockStatement":
+        unrollBlock(context, statement);
+        return null;
+
+       case "IfStatement":
+        statement.consequent = unrollBranch(context, statement.consequent);
+        if (statement.alternate) statement.alternate = unrollBranch(context, statement.alternate);
+        return null;
+
+       case "SwitchStatement":
+        for (let i = 0; i < statement.cases.length; i++) statement.cases[i].consequent = unrollList(context, statement.cases[i].consequent);
+        return null;
+
+       case "WhileStatement":
+       case "DoWhileStatement":
+        statement.body = unrollBranch(context, statement.body);
+        return null;
+
+       case "ForStatement":
+        statement.body = unrollBranch(context, statement.body);
+        return unrollLoop(context, statement);
+
+       default:
+        return null;
+      }
+    }
+    function unrollBranch(context, branch) {
+      if (!branch) return branch;
+      if (branch.type === "BlockStatement") {
+        unrollBlock(context, branch);
+        return branch;
+      }
+      const replacement = unrollStatement(context, branch);
+      if (replacement === null) return branch;
+      return stampSynthetic({
+        type: "BlockStatement",
+        body: replacement
+      }, branch);
+    }
+    function unrollLoop(context, loop) {
+      if (!(context.loopUnrollLimit > 0)) return null;
+      if (loop.type !== "ForStatement") return null;
+      const induction = inductionVariable(context, loop);
+      if (!induction) return null;
+      const values = tripValues(loop, induction, context.loopUnrollLimit);
+      if (!values) return null;
+      const body = loop.body ? loop.body.type === "BlockStatement" ? loop.body.body : [ loop.body ] : [];
+      if (!bodyIsUnrollable(body, induction.name)) return null;
+      const result = [];
+      for (let i = 0; i < values.length; i++) result.push(stampSynthetic({
+        type: "BlockStatement",
+        body: cloneNodes(context, body, induction.name, values[i])
+      }, loop));
+      return result;
+    }
+    function inductionVariable(context, loop) {
+      const {init: init} = loop;
+      if (!init || init.type !== "VariableDeclaration") return null;
+      if (init.declarations.length !== 1) return null;
+      const declaration = init.declarations[0];
+      if (!declaration.id || declaration.id.type !== "Identifier") return null;
+      const start = integerLiteral(declaration.init);
+      if (start === null) return null;
+      if (init.kind === "var" && nameUsedOutside(context, loop, declaration.id.name)) return null;
+      return {
+        name: declaration.id.name,
+        start: start
+      };
+    }
+    const comparators = {
+      "<": (value, bound) => value < bound,
+      "<=": (value, bound) => value <= bound,
+      ">": (value, bound) => value > bound,
+      ">=": (value, bound) => value >= bound,
+      "!==": (value, bound) => value !== bound,
+      "!=": (value, bound) => value !== bound
+    };
+    function tripValues(loop, induction, limit) {
+      const {test: test, update: update} = loop;
+      if (!test || test.type !== "BinaryExpression") return null;
+      if (!test.left || test.left.type !== "Identifier" || test.left.name !== induction.name) return null;
+      const bound = integerLiteral(test.right);
+      if (bound === null) return null;
+      const compare = comparators[test.operator];
+      if (!compare) return null;
+      const step = inductionStep(update, induction.name);
+      if (step === null) return null;
+      const values = [];
+      let value = induction.start;
+      while (compare(value, bound)) {
+        if (values.length >= limit) return null;
+        values.push(value);
+        value += step;
+      }
+      return values;
+    }
+    function inductionStep(update, name) {
+      if (!update) return null;
+      if (update.type === "UpdateExpression") {
+        if (!update.argument || update.argument.type !== "Identifier" || update.argument.name !== name) return null;
+        return update.operator === "++" ? 1 : update.operator === "--" ? -1 : null;
+      }
+      if (update.type !== "AssignmentExpression") return null;
+      if (!update.left || update.left.type !== "Identifier" || update.left.name !== name) return null;
+      switch (update.operator) {
+       case "+=":
+        {
+          const step = integerLiteral(update.right);
+          return step === 0 ? null : step;
+        }
+
+       case "-=":
+        {
+          const step = integerLiteral(update.right);
+          return step === null || step === 0 ? null : -step;
+        }
+
+       case "=":
+        {
+          const {right: right} = update;
+          if (!right || right.type !== "BinaryExpression") return null;
+          const leftIsCounter = right.left.type === "Identifier" && right.left.name === name;
+          const rightIsCounter = right.right.type === "Identifier" && right.right.name === name;
+          if (right.operator === "+") {
+            const step = leftIsCounter ? integerLiteral(right.right) : rightIsCounter ? integerLiteral(right.left) : null;
+            return step === 0 ? null : step;
+          }
+          if (right.operator === "-" && leftIsCounter) {
+            const step = integerLiteral(right.right);
+            return step === null || step === 0 ? null : -step;
+          }
+          return null;
+        }
+
+       default:
+        return null;
+      }
+    }
+    function integerLiteral(ast) {
+      const value = literalNumber(ast);
+      return value === null || !Number.isInteger(value) ? null : value;
+    }
+    function nameUsedOutside(context, loop, name) {
+      let found = false;
+      const visit = node => {
+        if (found || !node || typeof node !== "object") return;
+        if (Array.isArray(node)) {
+          for (let i = 0; i < node.length; i++) visit(node[i]);
+          return;
+        }
+        if (typeof node.type !== "string" || node === loop) return;
+        if (node.type === "Identifier" && node.name === name) {
+          found = true;
+          return;
+        }
+        for (const key in node) {
+          if (key === "loc" || key === "range" || key === "parent") continue;
+          const child = node[key];
+          if (child && typeof child === "object") visit(child);
+        }
+      };
+      visit(context.ast);
+      return found;
+    }
+    function bodyIsUnrollable(body, name) {
+      let ok = true;
+      const reject = () => {
+        ok = false;
+      };
+      const visit = (node, inBreakable, inContinuable) => {
+        if (!ok || !node || typeof node !== "object") return;
+        if (Array.isArray(node)) {
+          for (let i = 0; i < node.length; i++) visit(node[i], inBreakable, inContinuable);
+          return;
+        }
+        if (typeof node.type !== "string") return;
+        switch (node.type) {
+         case "AssignmentExpression":
+          if (node.left.type === "Identifier" && node.left.name === name) return reject();
+          break;
+
+         case "UpdateExpression":
+          if (node.argument.type === "Identifier" && node.argument.name === name) return reject();
+          break;
+
+         case "VariableDeclarator":
+          if (node.id.type === "Identifier" && node.id.name === name) return reject();
+          break;
+
+         case "BreakStatement":
+          if (node.label || !inBreakable) return reject();
+          return;
+
+         case "ContinueStatement":
+          if (node.label || !inContinuable) return reject();
+          return;
+
+         case "LabeledStatement":
+          return reject();
+
+         case "CallExpression":
+          if (isMathRandom(node)) return reject();
+          break;
+
+         case "FunctionDeclaration":
+         case "FunctionExpression":
+         case "ArrowFunctionExpression":
+          return reject();
+
+         case "ForStatement":
+         case "WhileStatement":
+         case "DoWhileStatement":
+          visit(node.init, true, true);
+          visit(node.test, true, true);
+          visit(node.update, true, true);
+          visit(node.body, true, true);
+          return;
+
+         case "SwitchStatement":
+          visit(node.discriminant, inBreakable, inContinuable);
+          visit(node.cases, true, inContinuable);
+          return;
+
+         case "MemberExpression":
+          visit(node.object, inBreakable, inContinuable);
+          if (node.computed) visit(node.property, inBreakable, inContinuable);
+          return;
+        }
+        for (const key in node) {
+          if (key === "loc" || key === "range" || key === "parent") continue;
+          const child = node[key];
+          if (child && typeof child === "object") visit(child, inBreakable, inContinuable);
+        }
+      };
+      visit(body, false, false);
+      return ok;
+    }
+    function numberNode(value, source) {
+      const literal = stampSynthetic({
+        type: "Literal",
+        value: Math.abs(value),
+        raw: `${Math.abs(value)}`
+      }, source);
+      if (value >= 0) return literal;
+      return stampSynthetic({
+        type: "UnaryExpression",
+        operator: "-",
+        prefix: true,
+        argument: literal
+      }, source);
+    }
+    function isMathRandom(ast) {
+      const {callee: callee} = ast;
+      return Boolean(callee) && callee.type === "MemberExpression" && !callee.computed && callee.object.type === "Identifier" && callee.object.name === "Math" && callee.property.name === "random";
+    }
+    function cloneNodes(context, nodes, name, value) {
+      const result = new Array(nodes.length);
+      for (let i = 0; i < nodes.length; i++) result[i] = cloneNode(context, nodes[i], name, value);
+      return result;
+    }
+    function cloneNode(context, node, name, value) {
+      if (!node || typeof node !== "object") return node;
+      if (Array.isArray(node)) return cloneNodes(context, node, name, value);
+      if (typeof node.type !== "string") return node;
+      if (name !== null && node.type === "Identifier" && node.name === name) return numberNode(value, node);
+      const copy = {};
+      const verbatimProperty = node.type === "MemberExpression" && !node.computed;
+      for (const key in node) {
+        if (key === "start" || key === "end") continue;
+        if (key === "loc" || key === "range" || key === "parent") {
+          copy[key] = node[key];
+          continue;
+        }
+        copy[key] = cloneNode(context, node[key], verbatimProperty && key === "property" ? null : name, value);
+      }
+      return stampSynthetic(copy, node);
+    }
+    function threadLocalName(functionNode, name) {
+      if (functionNode.optimizerDisabled || !functionNode.isRootKernel) return null;
+      const {output: output} = functionNode;
+      if (!output || !output.length) return null;
+      switch (name) {
+       case "x":
+        return "x";
+
+       case "y":
+        return output.length > 1 ? "y" : "0";
+
+       case "z":
+        return output.length > 2 ? "z" : "0";
+
+       default:
+        return null;
+      }
+    }
     module.exports = {
-      optimize: optimize
+      optimize: optimize,
+      threadLocalName: threadLocalName
     };
   });
   var require_function_node$5 = __commonJSMin((exports, module) => {
@@ -3567,8 +3887,11 @@
       astUnaryExpression(uNode, retArr) {
         if (this.checkAndUpconvertBitwiseUnary(uNode, retArr)) return retArr;
         if (uNode.prefix) {
+          const collides = uNode.operator === "-" || uNode.operator === "+";
+          if (collides) retArr.push("(");
           retArr.push(uNode.operator);
           this.astGeneric(uNode.argument, retArr);
+          if (collides) retArr.push(")");
         } else {
           this.astGeneric(uNode.argument, retArr);
           retArr.push(uNode.operator);
@@ -4059,6 +4382,7 @@
   });
   var require_function_node$4 = __commonJSMin((exports, module) => {
     const {FunctionNode: FunctionNode} = require_function_node$5();
+    const {threadLocalName: threadLocalName} = require_optimizer();
     var CPUFunctionNode = class extends FunctionNode {
       get readsCanFault() {
         return true;
@@ -4285,8 +4609,11 @@
         const {signature: signature, type: type, property: property, xProperty: xProperty, yProperty: yProperty, zProperty: zProperty, name: name, origin: origin} = this.getMemberExpressionDetails(mNode);
         switch (signature) {
          case "this.thread.value":
-          retArr.push(`_this.thread.${name}`);
-          return retArr;
+          {
+            const local = threadLocalName(this, name);
+            retArr.push(local === null ? `_this.thread.${name}` : local);
+            return retArr;
+          }
 
          case "this.output.value":
           switch (name) {
@@ -7504,7 +7831,8 @@
       astSwitchStatement(ast, retArr) {
         if (ast.type !== "SwitchStatement") throw this.astErrorOutput("Invalid switch statement", ast);
         const {discriminant: discriminant, cases: cases} = ast;
-        const type = this.getType(discriminant);
+        const literalDiscriminant = this.getType(discriminant) === "LiteralInteger";
+        const type = literalDiscriminant ? "Integer" : this.getType(discriminant);
         const varName = `switchDiscriminant${this.astKey(ast, "_")}`;
         switch (type) {
          case "Float":
@@ -7516,7 +7844,7 @@
 
          case "Integer":
           retArr.push(`int ${varName} = `);
-          this.astGeneric(discriminant, retArr);
+          if (literalDiscriminant) this.castLiteralToInteger(discriminant, retArr); else this.astGeneric(discriminant, retArr);
           retArr.push(";\n");
           break;
         }
@@ -7925,7 +8253,9 @@
                 retArr.push(")");
                 continue;
               } else if (targetType === "Integer") {
+                this.pushState("building-integer");
                 this.astGeneric(argument, retArr);
+                this.popState("building-integer");
                 continue;
               }
               break;
@@ -8019,6 +8349,12 @@
 
          case "LiteralInteger":
           this.castLiteralToInteger(property, result);
+          break;
+
+         case "Integer":
+          this.pushState("building-integer");
+          this.astGeneric(property, result);
+          this.popState("building-integer");
           break;
 
          default:
@@ -12868,7 +13204,8 @@
       astSwitchStatement(ast, retArr) {
         if (ast.type !== "SwitchStatement") throw this.astErrorOutput("Invalid switch statement", ast);
         const {discriminant: discriminant, cases: cases} = ast;
-        const type = this.getType(discriminant);
+        const literalDiscriminant = this.getType(discriminant) === "LiteralInteger";
+        const type = literalDiscriminant ? "Integer" : this.getType(discriminant);
         const varName = `switchDiscriminant${this.astKey(ast, "_")}`;
         switch (type) {
          case "Float":
@@ -12880,7 +13217,7 @@
 
          case "Integer":
           retArr.push(`var ${varName} : i32 = `);
-          this.astGeneric(discriminant, retArr);
+          if (literalDiscriminant) this.castLiteralToInteger(discriminant, retArr); else this.astGeneric(discriminant, retArr);
           retArr.push(";\n");
           break;
 
@@ -13198,7 +13535,9 @@
                 retArr.push(")");
                 continue;
               } else if (targetType === "Integer") {
+                this.pushState("building-integer");
                 this.astGeneric(argument, retArr);
+                this.popState("building-integer");
                 continue;
               }
               break;
@@ -15767,6 +16106,13 @@
           this.em.localSet(dLocal);
           break;
 
+         case "LiteralInteger":
+          dIsInt = true;
+          dLocal = this.em.addLocal("i32");
+          this.castLiteralToInteger(discriminant);
+          this.em.localSet(dLocal);
+          break;
+
          default:
           throw this.astErrorOutput(`Unhandled switch discriminant type "${type}"`, ast);
         }
@@ -17828,6 +18174,13 @@
             em.localSet(dLocal);
             break;
 
+           case "LiteralInteger":
+            dIsInt = true;
+            dLocal = em.addLocal("i32");
+            this.castLiteralToInteger(discriminant);
+            em.localSet(dLocal);
+            break;
+
            default:
             throw this.astErrorOutput(`Unhandled switch discriminant type "${type}"`, ast);
           }
@@ -17871,6 +18224,7 @@
           break;
 
          case "Integer":
+         case "LiteralInteger":
           dIsInt = true;
           dLocal = em.addLocal("v128");
           this.vCoerce(this.vexpr(discriminant), "vi32");

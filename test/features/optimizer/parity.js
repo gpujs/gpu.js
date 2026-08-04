@@ -414,6 +414,251 @@ const CASES = [
     calls: [{ args: [VECTOR] }],
   },
   {
+    name: 'T3: exactly at the unroll limit',
+    kernel: function (a) {
+      let s = 0;
+      for (let i = 0; i < 8; i++) s += a[i] * (i + 1);
+      return s;
+    },
+    output: [16],
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T3: one trip past the unroll limit',
+    kernel: function (a) {
+      let s = 0;
+      for (let i = 0; i < 9; i++) s += a[i] * (i + 1);
+      return s;
+    },
+    output: [16],
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T3: a raised unroll limit',
+    kernel: function (a) {
+      let s = 0;
+      for (let i = 0; i < 9; i++) s += a[i] * (i + 1);
+      return s;
+    },
+    output: [16],
+    settings: { loopUnrollLimit: 16 },
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T3: unrolling turned off',
+    kernel: function (a) {
+      let s = 0;
+      for (let i = 0; i < 4; i++) s += a[i] * (i + 1);
+      return s;
+    },
+    output: [16],
+    settings: { loopUnrollLimit: 0 },
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T3: nested literal loops',
+    kernel: function (a) {
+      let s = 0;
+      for (let y = 0; y < 3; y++) {
+        for (let x = 0; x < 3; x++) {
+          s += a[y][x] * (y + 1) - x * 0.25;
+        }
+      }
+      return s;
+    },
+    output: [8, 8],
+    calls: [{ args: [MATRIX] }],
+  },
+  {
+    name: 'T3: a literal loop inside a helper',
+    kernel: function (a) {
+      return rowSum(a, this.thread.y) + a[this.thread.y][this.thread.x];
+    },
+    output: [8, 8],
+    settings: {
+      functions: [function rowSum(m, y) {
+        let s = 0;
+        for (let i = 0; i < 4; i++) s += m[y][i] * (i + 1);
+        return s;
+      }],
+    },
+    calls: [{ args: [MATRIX] }],
+  },
+  {
+    name: 'T3: a counter counting down',
+    kernel: function (a) {
+      let s = 0;
+      for (let i = 3; i > 0; i--) s += a[i] * i;
+      return s;
+    },
+    output: [16],
+    calls: [{ args: [VECTOR] }],
+    // a decrementing counter does not compile on webgpu with the optimizer
+    // OFF: the loop variable decays to `f32` and WGSL allows `--` only on an
+    // integer scalar. Unrolling deletes the loop and the kernel then runs,
+    // which is a difference in whether the shape builds at all -- a
+    // pre-existing webgpu defect the optimizer happens to route around
+    modes: ['cpu', 'webgl', 'webgl2', 'headlessgl', 'webasm'],
+  },
+  {
+    // the subscript is arithmetic on the counter, so unrolling leaves an index
+    // made only of numbers -- an integer context whose operands no longer say
+    // so on their own
+    name: 'T3: a negative counter, offset into the subscript',
+    kernel: function (a) {
+      let s = 0;
+      for (let i = -2; i < 2; i++) s += a[i + 2] * i + a[2 - i] * 0.5;
+      return s;
+    },
+    output: [16],
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T3: a counter stepping by two',
+    kernel: function (a) {
+      let s = 0;
+      for (let j = 0; j < 8; j += 2) s += a[j] * 0.5;
+      return s;
+    },
+    output: [16],
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T3: a switch on the counter',
+    kernel: function (a) {
+      let s = 0;
+      for (let i = 0; i < 3; i++) {
+        switch (i) {
+          case 0:
+            s += a[this.thread.x];
+            break;
+          case 1:
+            s += a[this.thread.x] * 2;
+            break;
+          default:
+            s -= 0.5;
+        }
+      }
+      return s;
+    },
+    output: [16],
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T3: an early return out of an unrolled iteration (#865)',
+    kernel: function (a) {
+      for (let i = 0; i < 4; i++) {
+        if (a[i] > 0) return i * 10 + a[i];
+      }
+      return -1;
+    },
+    output: [16],
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T3 bail: a break in the body',
+    kernel: function (a) {
+      let s = 0;
+      for (let i = 0; i < 4; i++) {
+        if (a[i] > 0.5) break;
+        s += a[i];
+      }
+      return s;
+    },
+    output: [16],
+    settings: { loopMaxIterations: 20 },
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T3 bail: a body that writes the counter',
+    kernel: function (a) {
+      let s = 0;
+      for (let i = 0; i < 6; i++) {
+        s += a[i];
+        if (a[i] < 0) i++;
+      }
+      return s;
+    },
+    output: [16],
+    settings: { loopMaxIterations: 20 },
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T3 bail: an inner loop shadowing the counter',
+    kernel: function (a, n) {
+      let s = 0;
+      for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < n; i++) {
+          s += a[i] * 0.5;
+        }
+      }
+      return s;
+    },
+    output: [16],
+    settings: { loopMaxIterations: 20, argumentTypes: ['Array', 'Integer'] },
+    calls: [{ args: [VECTOR, 4] }],
+  },
+  {
+    // `this.thread.x` names `x` as a FIELD, not as a variable; a substitution
+    // that walks into a non-computed member's property rewrites it
+    name: 'T3: a counter named for a coordinate',
+    kernel: function (a) {
+      let s = 0;
+      for (let x = 0; x < 3; x++) {
+        s += a[x] * this.thread.x + this.thread.y;
+      }
+      return s;
+    },
+    output: [8, 8],
+    calls: [{ args: [MATRIX[0]] }],
+  },
+  {
+    name: 'T3 bail: a fractional counter',
+    kernel: function (a) {
+      let s = 0;
+      for (let t = 0; t < 1; t += 0.25) s += a[this.thread.x] * t;
+      return s;
+    },
+    output: [16],
+    settings: { loopMaxIterations: 20 },
+    calls: [{ args: [VECTOR] }],
+  },
+  {
+    name: 'T1: every coordinate read, on every rank',
+    kernel: function (a) {
+      return a[this.thread.z][this.thread.y][this.thread.x] * 2 +
+        this.thread.x - this.thread.y * 0.5 + this.thread.z * 0.25;
+    },
+    output: [4, 4, 2],
+    calls: [{ args: [[MATRIX.slice(0, 4), MATRIX.slice(4, 8)]] }],
+  },
+  {
+    name: 'T1: a coordinate read inside a helper and in the body',
+    kernel: function (a) {
+      return column(a) + this.thread.x * 0.5;
+    },
+    output: [8, 8],
+    settings: {
+      functions: [function column(m) {
+        return m[this.thread.y][this.thread.x];
+      }],
+    },
+    calls: [{ args: [MATRIX] }],
+  },
+  {
+    name: 'T1: coordinates, constants and output together',
+    kernel: function (a) {
+      let s = 0;
+      for (let i = 0; i < 3; i++) {
+        s += a[this.thread.y][this.thread.x] * this.constants.k[i] + this.output.x - this.thread.y;
+      }
+      return s;
+    },
+    output: [8, 8],
+    settings: { constants: { k: [0.25, 0.5, 0.75] } },
+    calls: [{ args: [MATRIX] }],
+  },
+  {
     name: 'stencil 3x3',
     kernel: function (a) {
       let s = 0;
@@ -537,6 +782,24 @@ const CASES = [
     calls: [{ args: [VECTOR] }],
     // cpu's Math.random is unseeded by design, so two cpu builds cannot agree
     // on a random stream and the row would be testing the RNG, not the pass
+    modes: ['webgl', 'webgl2', 'headlessgl', 'webasm', 'webgpu'],
+  },
+  {
+    // the same shape below the unroll limit, which is where the unroller would
+    // reach it. The draw sequence is preserved either way -- same count, same
+    // order -- but the GL lowering of Math.random is
+    // `fract(sin(dot(...)) * 43758.5453)`, which turns one ULP of compiler
+    // reassociation into a different number entirely. Measured 4.5e-4 apart on
+    // ANGLE/Metal before the unroller learned to leave these loops alone.
+    name: 'seeded random in a tiny literal loop',
+    kernel: function (a) {
+      let s = 0;
+      for (let i = 0; i < 3; i++) s += Math.random() * a[this.thread.x] + i;
+      return s;
+    },
+    output: [16],
+    settings: { randomSeed: 11 },
+    calls: [{ args: [VECTOR] }],
     modes: ['webgl', 'webgl2', 'headlessgl', 'webasm', 'webgpu'],
   },
   {

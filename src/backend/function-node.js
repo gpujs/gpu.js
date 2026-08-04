@@ -1268,8 +1268,15 @@ class FunctionNode {
     }
 
     if (uNode.prefix) {
+      // a leading sign needs parentheses of its own: the binary emitter puts
+      // no space around its operator, so `2 - -2` came out `2--2`, which is a
+      // syntax error in JavaScript and an l-value error in GLSL. `!` and `~`
+      // cannot collide with an adjacent operator and stay bare.
+      const collides = uNode.operator === '-' || uNode.operator === '+';
+      if (collides) retArr.push('(');
       retArr.push(uNode.operator);
       this.astGeneric(uNode.argument, retArr);
+      if (collides) retArr.push(')');
     } else {
       this.astGeneric(uNode.argument, retArr);
       retArr.push(uNode.operator);

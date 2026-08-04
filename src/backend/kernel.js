@@ -253,8 +253,10 @@ class Kernel {
     this._optimizerDisabled = false;
 
     /**
-     * Trip-count threshold above which a literal loop is left as a loop; `0`
-     * turns the unroller off.
+     * Trip-count threshold above which a loop with literal bounds is left as
+     * a loop rather than unrolled; `0` turns unrolling off. The knob to reach
+     * for when emitted size matters more than the loop overhead -- a mobile
+     * shader compiler charges for every copy.
      * @type {Number}
      */
     this.loopUnrollLimit = 8;
@@ -550,6 +552,17 @@ class Kernel {
    */
   setLoopMaxIterations(max) {
     this.loopMaxIterations = max;
+    return this;
+  }
+
+  /**
+   * @desc Set the largest trip count a literal loop is unrolled at; `0`
+   * leaves every loop as written
+   * @param {number} limit - trip count threshold
+   * @return {this}
+   */
+  setLoopUnrollLimit(limit) {
+    this.loopUnrollLimit = limit;
     return this;
   }
 

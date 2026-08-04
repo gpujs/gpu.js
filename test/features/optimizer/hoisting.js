@@ -11,21 +11,37 @@ describe('features: optimizer hoisting');
 
 const GL_MODE = GPU.isHeadlessGLSupported ? 'headlessgl' : (GPU.isWebGLSupported ? 'webgl' : null);
 
-function cpuSource(kernelSource, settings, args) {
+// Every shape here is about hoisting, so the unroller is off throughout: with
+// it on, the loops these kernels hoist out of are gone by the time the text is
+// read, and the file would be asserting T3's behavior under H's name.
+const H_ONLY = { output: [4], loopUnrollLimit: 0 };
+
+/**
+ * The emitted source, plus whether the build stayed optimized. A bail row
+ * asserts that the optimized text equals the un-optimized text, and a
+ * build-time throw degrades to exactly that text (#868) -- so without the
+ * second half, a bail that broke badly enough to crash the pass would still
+ * read as a clean skip.
+ */
+function cpuBuild(kernelSource, settings, args) {
   const gpu = new GPU({ mode: 'cpu' });
   try {
-    const kernel = gpu.createKernel(kernelSource, Object.assign({ output: [4] }, settings));
+    const kernel = gpu.createKernel(kernelSource, Object.assign({}, H_ONLY, settings));
     kernel.apply(null, args || [[1, 2, 3, 4]]);
-    return kernel.kernel.kernelString;
+    return { source: kernel.kernel.kernelString, optimized: !kernel.kernel._optimizerDisabled };
   } finally {
     gpu.destroy();
   }
 }
 
+function cpuSource(kernelSource, settings, args) {
+  return cpuBuild(kernelSource, settings, args).source;
+}
+
 function glSource(kernelSource, settings, args) {
   const gpu = new GPU({ mode: GL_MODE });
   try {
-    const kernel = gpu.createKernel(kernelSource, Object.assign({ output: [4] }, settings));
+    const kernel = gpu.createKernel(kernelSource, Object.assign({}, H_ONLY, settings));
     kernel.apply(null, args || [[1, 2, 3, 4]]);
     return kernel.kernel.translatedSource;
   } finally {
@@ -57,7 +73,7 @@ test('cpu: an invariant read leaves the loop body', () => {
   const optimized = cpuSource(HOT_LOOP);
   const disabled = cpuSource(HOT_LOOP, { _optimizerDisabled: true });
 
-  assert.ok(/const user_optHoist0\s*=\s*user_a\[_this\.thread\.x\]/.test(beforeFirstLoop(optimized)),
+  assert.ok(/const user_optHoist0\s*=\s*user_a\[x\]/.test(beforeFirstLoop(optimized)),
     'optimized: the read is a const ahead of the loop');
   assert.notOk(/user_a\[/.test(afterFirstLoop(optimized)),
     'optimized: no array read is left inside the loop');
@@ -113,16 +129,23 @@ test('cpu: a read invariant to a whole nest leaves both loops', () => {
 // Every bail below asserts the strongest thing available: the optimized text
 // is the un-optimized text, character for character. A bail rule that stops
 // working shows up here as a diff, wherever in the pass it broke.
+//
+// None of them reads `this.thread`, and that is deliberate rather than
+// incidental: coordinate localization (T1) rewrites those reads on cpu, so a
+// kernel containing one cannot be compared character for character against a
+// build with the whole optimizer off. Subscripts come from an argument
+// instead, which hoists on exactly the same terms.
 const BAILS = [
   {
     name: 'a read under a conditional',
-    kernel: function (a) {
+    kernel: function (a, n) {
       let s = 0;
       for (let i = 0; i < 8; i++) {
-        if (i > this.thread.x) s += a[this.thread.x];
+        if (i > n) s += a[n];
       }
       return s;
     },
+    args: [[1, 2, 3, 4], 2],
   },
   {
     name: 'a subscript assigned in the body',
@@ -138,43 +161,46 @@ const BAILS = [
   },
   {
     name: 'a subscript containing a call',
-    kernel: function (a) {
+    kernel: function (a, n) {
       let s = 0;
-      for (let i = 0; i < 4; i++) s += a[Math.round(this.thread.x * 0.5)];
+      for (let i = 0; i < 4; i++) s += a[Math.round(n * 0.5)];
       return s;
     },
+    args: [[1, 2, 3, 4], 2],
   },
   {
     name: 'a reassigned array argument',
-    kernel: function (b, a) {
+    kernel: function (b, a, n) {
       a = b;
       let s = 0;
-      for (let i = 0; i < 4; i++) s += a[this.thread.x];
+      for (let i = 0; i < 4; i++) s += a[n];
       return s;
     },
-    args: [[1, 2, 3, 4], [4, 3, 2, 1]],
+    args: [[1, 2, 3, 4], [4, 3, 2, 1], 2],
   },
   {
     name: 'a read after a conditional break',
-    kernel: function (a) {
+    kernel: function (a, n) {
       let s = 0;
       for (let i = 0; i < 8; i++) {
-        if (i > this.thread.x) break;
-        s += a[this.thread.x];
+        if (i > n) break;
+        s += a[n];
       }
       return s;
     },
+    args: [[1, 2, 3, 4], 2],
   },
   {
     name: 'a read after a conditional return',
-    kernel: function (a) {
+    kernel: function (a, n) {
       let s = 0;
       for (let i = 0; i < 8; i++) {
         if (i > 6) return s;
-        s += a[this.thread.x];
+        s += a[n];
       }
       return s;
     },
+    args: [[1, 2, 3, 4], 2],
   },
   {
     name: 'a local array, which the kernel may write',
@@ -191,10 +217,11 @@ for (let i = 0; i < BAILS.length; i++) {
   const bail = BAILS[i];
   test(`cpu bail: ${ bail.name }`, () => {
     const settings = { loopMaxIterations: 20 };
-    const optimized = cpuSource(bail.kernel, settings, bail.args);
+    const built = cpuBuild(bail.kernel, settings, bail.args);
     const disabled = cpuSource(bail.kernel, Object.assign({ _optimizerDisabled: true }, settings), bail.args);
-    assert.notOk(/optHoist/.test(optimized), `${ bail.name }: nothing hoisted`);
-    assert.equal(optimized, disabled, `${ bail.name }: emission is unchanged`);
+    assert.ok(built.optimized, `${ bail.name }: the optimized build stayed optimized`);
+    assert.notOk(/optHoist/.test(built.source), `${ bail.name }: nothing hoisted`);
+    assert.equal(built.source, disabled, `${ bail.name }: emission is unchanged`);
   });
 }
 

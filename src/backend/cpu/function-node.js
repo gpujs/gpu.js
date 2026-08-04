@@ -1,4 +1,5 @@
 const { FunctionNode } = require('../function-node');
+const { threadLocalName } = require('../optimizer');
 
 /**
  * @desc [INTERNAL] Represents a single function, inside JS
@@ -492,9 +493,14 @@ class CPUFunctionNode extends FunctionNode {
       origin
     } = this.getMemberExpressionDetails(mNode);
     switch (signature) {
-      case 'this.thread.value':
-        retArr.push(`_this.thread.${ name }`);
+      case 'this.thread.value': {
+        // T1: inside the generated cell loop the coordinate IS the loop's own
+        // counter, so the root body names it instead of re-reading a property
+        // off the shared thread object
+        const local = threadLocalName(this, name);
+        retArr.push(local === null ? `_this.thread.${ name }` : local);
         return retArr;
+      }
       case 'this.output.value':
         switch (name) {
           case 'x':

@@ -1009,7 +1009,11 @@ class WGSLFunctionNode extends FunctionNode {
       throw this.astErrorOutput('Invalid switch statement', ast);
     }
     const { discriminant, cases } = ast;
-    const type = this.getType(discriminant);
+    // a discriminant whose role was still open until it landed here -- a
+    // hand-written `switch (1)`, or a loop counter the unroller replaced with
+    // its value -- is decided by the case tests, which compare as integers
+    const literalDiscriminant = this.getType(discriminant) === 'LiteralInteger';
+    const type = literalDiscriminant ? 'Integer' : this.getType(discriminant);
     const varName = `switchDiscriminant${ this.astKey(ast, '_') }`;
     switch (type) {
       case 'Float':
@@ -1020,7 +1024,11 @@ class WGSLFunctionNode extends FunctionNode {
         break;
       case 'Integer':
         retArr.push(`var ${ varName } : i32 = `);
-        this.astGeneric(discriminant, retArr);
+        if (literalDiscriminant) {
+          this.castLiteralToInteger(discriminant, retArr);
+        } else {
+          this.astGeneric(discriminant, retArr);
+        }
         retArr.push(';\n');
         break;
       default:
@@ -1423,7 +1431,13 @@ class WGSLFunctionNode extends FunctionNode {
               retArr.push(')');
               continue;
             } else if (targetType === 'Integer') {
+              // the parameter's declared type IS the context. An Integer-typed
+              // expression made only of numbers -- `f(1 + 1)`, or a loop
+              // counter the unroller replaced with its value -- has nothing
+              // else to tell it which way to emit.
+              this.pushState('building-integer');
               this.astGeneric(argument, retArr);
+              this.popState('building-integer');
               continue;
             }
             break;

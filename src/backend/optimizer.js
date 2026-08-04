@@ -60,13 +60,18 @@ const indexedReadSignatures = [
 function optimize(functionNode, ast, settings) {
   if (!ast || !ast.body || ast.body.type !== 'BlockStatement') return ast;
   const context = new OptimizerContext(functionNode, ast, settings || {});
+  // H before T3, as separate walks: hoisting has to see loops while they are
+  // still loops, and the temps it leaves behind are what the unroller then
+  // clones per iteration rather than re-deriving
   processBlock(context, ast.body);
+  unrollBlock(context, ast.body);
   return ast;
 }
 
 class OptimizerContext {
   constructor(functionNode, ast, settings) {
     this.functionNode = functionNode;
+    this.ast = ast;
     this.loopUnrollLimit = typeof settings.loopUnrollLimit === 'number' ? settings.loopUnrollLimit : 8;
     // a name assigned, updated, declared or bound as a nested function's
     // parameter ANYWHERE in this function stops counting as immutable,
@@ -720,6 +725,430 @@ function expressionKey(ast) {
   }
 }
 
+// ------------------------------------------------------- T3: literal unroll
+
+/**
+ * T3 -- tiny literal-loop unrolling. A `for` whose init, test and update are
+ * all integer literals runs a trip count this pass can compute exactly, so the
+ * loop becomes that many copies of its body with the induction variable
+ * substituted as a literal. The loop is gone, and with it the per-iteration
+ * compare, the increment, and -- on every backend that wraps an unprovable
+ * loop in the LOOP_MAX counter -- the cap machinery too.
+ *
+ * Bounds must be INTEGER literals, not merely literal. A fractional counter
+ * accumulates differently in f32 (GL, wasm) than in the f64 this pass would
+ * simulate it in, so `for (let t = 0; t < 1; t += 0.1)` could unroll to a
+ * different trip count than the backend would have run. Integers are exact in
+ * every format involved, which makes the simulated sequence the emitted one.
+ *
+ * Bodies are cloned into a BlockStatement each, so a body that declares a
+ * local declares it once per iteration in its own scope, exactly as the loop
+ * did.
+ */
+function unrollBlock(context, block) {
+  block.body = unrollList(context, block.body);
+}
+
+function unrollList(context, list) {
+  const result = [];
+  for (let i = 0; i < list.length; i++) {
+    const replacement = unrollStatement(context, list[i]);
+    if (replacement === null) {
+      result.push(list[i]);
+      continue;
+    }
+    for (let j = 0; j < replacement.length; j++) result.push(replacement[j]);
+  }
+  return result;
+}
+
+/**
+ * Descends before unrolling, so an inner loop is unrolled ONCE and the outer
+ * loop then clones the already-unrolled result -- rather than cloning the
+ * inner loop and unrolling every copy.
+ * @returns {Array|null} the statements replacing `statement`, or null to keep it
+ */
+function unrollStatement(context, statement) {
+  switch (statement.type) {
+    case 'BlockStatement':
+      unrollBlock(context, statement);
+      return null;
+    case 'IfStatement':
+      statement.consequent = unrollBranch(context, statement.consequent);
+      if (statement.alternate) statement.alternate = unrollBranch(context, statement.alternate);
+      return null;
+    case 'SwitchStatement':
+      for (let i = 0; i < statement.cases.length; i++) {
+        statement.cases[i].consequent = unrollList(context, statement.cases[i].consequent);
+      }
+      return null;
+    case 'WhileStatement':
+    case 'DoWhileStatement':
+      statement.body = unrollBranch(context, statement.body);
+      return null;
+    case 'ForStatement':
+      statement.body = unrollBranch(context, statement.body);
+      return unrollLoop(context, statement);
+    default:
+      return null;
+  }
+}
+
+function unrollBranch(context, branch) {
+  if (!branch) return branch;
+  if (branch.type === 'BlockStatement') {
+    unrollBlock(context, branch);
+    return branch;
+  }
+  const replacement = unrollStatement(context, branch);
+  if (replacement === null) return branch;
+  return stampSynthetic({ type: 'BlockStatement', body: replacement }, branch);
+}
+
+/**
+ * @returns {Array|null} one block per iteration, or null when this loop is not
+ * provably a tiny literal loop
+ */
+function unrollLoop(context, loop) {
+  if (!(context.loopUnrollLimit > 0)) return null;
+  if (loop.type !== 'ForStatement') return null;
+  const induction = inductionVariable(context, loop);
+  if (!induction) return null;
+  const values = tripValues(loop, induction, context.loopUnrollLimit);
+  if (!values) return null;
+  const body = loop.body ?
+    (loop.body.type === 'BlockStatement' ? loop.body.body : [loop.body]) : [];
+  if (!bodyIsUnrollable(body, induction.name)) return null;
+
+  const result = [];
+  for (let i = 0; i < values.length; i++) {
+    result.push(stampSynthetic({
+      type: 'BlockStatement',
+      body: cloneNodes(context, body, induction.name, values[i]),
+    }, loop));
+  }
+  return result;
+}
+
+/**
+ * The counter a `for` header advances, when the header declares it itself.
+ * An init that ASSIGNS an existing variable is skipped: the loop leaves its
+ * final value behind for whatever follows, and unrolling would delete the
+ * variable's last write.
+ * @returns {{name: String, start: Number}|null}
+ */
+function inductionVariable(context, loop) {
+  const { init } = loop;
+  if (!init || init.type !== 'VariableDeclaration') return null;
+  if (init.declarations.length !== 1) return null;
+  const declaration = init.declarations[0];
+  if (!declaration.id || declaration.id.type !== 'Identifier') return null;
+  const start = integerLiteral(declaration.init);
+  if (start === null) return null;
+  // `let`/`const` are scoped to the loop, so deleting the loop deletes the
+  // binding with it. `var` is function-scoped and outlives the loop, so it
+  // only unrolls when nothing outside the loop names it.
+  if (init.kind === 'var' && nameUsedOutside(context, loop, declaration.id.name)) return null;
+  return { name: declaration.id.name, start };
+}
+
+const comparators = {
+  '<': (value, bound) => value < bound,
+  '<=': (value, bound) => value <= bound,
+  '>': (value, bound) => value > bound,
+  '>=': (value, bound) => value >= bound,
+  '!==': (value, bound) => value !== bound,
+  '!=': (value, bound) => value !== bound,
+};
+
+/**
+ * @returns {Array<Number>|null} the induction variable's value on each
+ * iteration, or null when the loop does not terminate within the limit
+ */
+function tripValues(loop, induction, limit) {
+  const { test, update } = loop;
+  if (!test || test.type !== 'BinaryExpression') return null;
+  if (!test.left || test.left.type !== 'Identifier' || test.left.name !== induction.name) return null;
+  const bound = integerLiteral(test.right);
+  if (bound === null) return null;
+  const compare = comparators[test.operator];
+  if (!compare) return null;
+  const step = inductionStep(update, induction.name);
+  if (step === null) return null;
+
+  const values = [];
+  let value = induction.start;
+  while (compare(value, bound)) {
+    if (values.length >= limit) return null;
+    values.push(value);
+    value += step;
+  }
+  return values;
+}
+
+/**
+ * @returns {Number|null} how much one iteration adds to the counter. Null for
+ * anything else -- including a zero step, which never terminates.
+ */
+function inductionStep(update, name) {
+  if (!update) return null;
+  if (update.type === 'UpdateExpression') {
+    if (!update.argument || update.argument.type !== 'Identifier' || update.argument.name !== name) return null;
+    return update.operator === '++' ? 1 : (update.operator === '--' ? -1 : null);
+  }
+  if (update.type !== 'AssignmentExpression') return null;
+  if (!update.left || update.left.type !== 'Identifier' || update.left.name !== name) return null;
+  switch (update.operator) {
+    case '+=': {
+      const step = integerLiteral(update.right);
+      return step === 0 ? null : step;
+    }
+    case '-=': {
+      const step = integerLiteral(update.right);
+      return step === null || step === 0 ? null : -step;
+    }
+    case '=': {
+      const { right } = update;
+      if (!right || right.type !== 'BinaryExpression') return null;
+      const leftIsCounter = right.left.type === 'Identifier' && right.left.name === name;
+      const rightIsCounter = right.right.type === 'Identifier' && right.right.name === name;
+      if (right.operator === '+') {
+        const step = leftIsCounter ? integerLiteral(right.right) :
+          (rightIsCounter ? integerLiteral(right.left) : null);
+        return step === 0 ? null : step;
+      }
+      if (right.operator === '-' && leftIsCounter) {
+        const step = integerLiteral(right.right);
+        return step === null || step === 0 ? null : -step;
+      }
+      return null;
+    }
+    default:
+      return null;
+  }
+}
+
+function integerLiteral(ast) {
+  const value = literalNumber(ast);
+  return value === null || !Number.isInteger(value) ? null : value;
+}
+
+/**
+ * @returns {Boolean} whether `name` appears anywhere in the function outside
+ * `loop` -- the question a function-scoped `var` counter raises.
+ */
+function nameUsedOutside(context, loop, name) {
+  let found = false;
+  const visit = node => {
+    if (found || !node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      for (let i = 0; i < node.length; i++) visit(node[i]);
+      return;
+    }
+    if (typeof node.type !== 'string' || node === loop) return;
+    if (node.type === 'Identifier' && node.name === name) {
+      found = true;
+      return;
+    }
+    for (const key in node) {
+      if (key === 'loc' || key === 'range' || key === 'parent') continue;
+      const child = node[key];
+      if (child && typeof child === 'object') visit(child);
+    }
+  };
+  visit(context.ast);
+  return found;
+}
+
+/**
+ * @returns {Boolean} whether the body can be replayed with the counter frozen
+ * to a literal. Every rejection here is a shape where a copy would not mean
+ * what the iteration meant.
+ */
+function bodyIsUnrollable(body, name) {
+  let ok = true;
+  const reject = () => {
+    ok = false;
+  };
+  const visit = (node, inBreakable, inContinuable) => {
+    if (!ok || !node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      for (let i = 0; i < node.length; i++) visit(node[i], inBreakable, inContinuable);
+      return;
+    }
+    if (typeof node.type !== 'string') return;
+    switch (node.type) {
+      case 'AssignmentExpression':
+        // a body that moves the counter decides its own trip count
+        if (node.left.type === 'Identifier' && node.left.name === name) return reject();
+        break;
+      case 'UpdateExpression':
+        if (node.argument.type === 'Identifier' && node.argument.name === name) return reject();
+        break;
+      case 'VariableDeclarator':
+        // an inner declaration SHADOWS the counter; substituting through it
+        // would rewrite reads of a different variable
+        if (node.id.type === 'Identifier' && node.id.name === name) return reject();
+        break;
+      case 'BreakStatement':
+        // a break out of THIS loop stops iterations the unrolled form would
+        // still run; one bound to an inner loop or switch is untouched
+        if (node.label || !inBreakable) return reject();
+        return;
+      case 'ContinueStatement':
+        if (node.label || !inContinuable) return reject();
+        return;
+      case 'LabeledStatement':
+        return reject();
+      case 'CallExpression':
+        // `Math.random()` is the one call whose VALUE depends on how many
+        // times it has already run: every backend lowers it to a generator
+        // carrying state between draws. The unrolled form draws exactly as
+        // often and in exactly the same order, so the sequence is preserved
+        // by construction -- but the GL lowering is
+        // `fract(sin(dot(...)) * 43758.5453)`, where a shader compiler
+        // reassociating one operand by a single ULP is a completely different
+        // number, and straight-line calls give it room a loop does not.
+        // Measured 4.5e-4 apart on ANGLE/Metal, so this shape skips.
+        if (isMathRandom(node)) return reject();
+        break;
+      case 'FunctionDeclaration':
+      case 'FunctionExpression':
+      case 'ArrowFunctionExpression':
+        // nested functions are registered by AST identity, so cloning one
+        // would register the same helper under the same name several times
+        return reject();
+      case 'ForStatement':
+      case 'WhileStatement':
+      case 'DoWhileStatement':
+        visit(node.init, true, true);
+        visit(node.test, true, true);
+        visit(node.update, true, true);
+        visit(node.body, true, true);
+        return;
+      case 'SwitchStatement':
+        visit(node.discriminant, inBreakable, inContinuable);
+        visit(node.cases, true, inContinuable);
+        return;
+      case 'MemberExpression':
+        visit(node.object, inBreakable, inContinuable);
+        if (node.computed) visit(node.property, inBreakable, inContinuable);
+        return;
+    }
+    for (const key in node) {
+      if (key === 'loc' || key === 'range' || key === 'parent') continue;
+      const child = node[key];
+      if (child && typeof child === 'object') visit(child, inBreakable, inContinuable);
+    }
+  };
+  visit(body, false, false);
+  return ok;
+}
+
+/**
+ * The node acorn would have parsed for this number, which for a negative one
+ * is a unary minus over a positive literal rather than a literal holding a
+ * negative value. The emitters print a literal's value verbatim, so the
+ * negative form turns `2 - i` into `2--2` -- a decrement, and a syntax error
+ * in both JavaScript and GLSL. Substituting what the source form parses to
+ * keeps the unrolled body indistinguishable from a hand-written one.
+ */
+function numberNode(value, source) {
+  const literal = stampSynthetic({
+    type: 'Literal',
+    value: Math.abs(value),
+    raw: `${ Math.abs(value) }`,
+  }, source);
+  if (value >= 0) return literal;
+  return stampSynthetic({
+    type: 'UnaryExpression',
+    operator: '-',
+    prefix: true,
+    argument: literal,
+  }, source);
+}
+
+function isMathRandom(ast) {
+  const { callee } = ast;
+  return Boolean(callee) && callee.type === 'MemberExpression' && !callee.computed &&
+    callee.object.type === 'Identifier' && callee.object.name === 'Math' &&
+    callee.property.name === 'random';
+}
+
+function cloneNodes(context, nodes, name, value) {
+  const result = new Array(nodes.length);
+  for (let i = 0; i < nodes.length; i++) result[i] = cloneNode(context, nodes[i], name, value);
+  return result;
+}
+
+/**
+ * A deep copy with the induction variable replaced by its value for this
+ * iteration. Every copied node is stamped a fresh position: astKey and the
+ * literal-type cache are keyed by start/end, so two iterations sharing a
+ * position would share a type decision made for one of them.
+ * @param {String|null} name - the identifier to substitute, or null for a
+ * verbatim copy (a non-computed member's property, which is a field name)
+ */
+function cloneNode(context, node, name, value) {
+  if (!node || typeof node !== 'object') return node;
+  if (Array.isArray(node)) return cloneNodes(context, node, name, value);
+  if (typeof node.type !== 'string') return node;
+  if (name !== null && node.type === 'Identifier' && node.name === name) {
+    return numberNode(value, node);
+  }
+  const copy = {};
+  const verbatimProperty = node.type === 'MemberExpression' && !node.computed;
+  for (const key in node) {
+    if (key === 'start' || key === 'end') continue;
+    if (key === 'loc' || key === 'range' || key === 'parent') {
+      copy[key] = node[key];
+      continue;
+    }
+    copy[key] = cloneNode(context, node[key], verbatimProperty && key === 'property' ? null : name, value);
+  }
+  return stampSynthetic(copy, node);
+}
+
+// -------------------------------------------------- T1: thread localization
+
+/**
+ * T1 -- coordinate localization, cpu only. Every other backend already holds
+ * the thread id in something local: wasm in mutable globals, GLSL and WGSL in
+ * locals seeded from a builtin. On cpu it is a property of a shared mutable
+ * object, re-read on every access -- but the generated cell loop that assigns
+ * it has the same value in its own counters, so the root kernel body can name
+ * those instead.
+ *
+ * Only the ROOT body is lexically inside that loop. Helpers and sub-kernels
+ * are emitted as sibling function declarations, where the counters are not in
+ * scope and `_this.thread` is the only way to ask.
+ *
+ * `this.constants.*` and `this.output.*` need no equivalent: the cpu backend
+ * already binds them to `constants_<name>` and `outputX`/`outputY`/`outputZ`,
+ * hoisted above the cell loop, and both are in scope in helpers too.
+ * @param {FunctionNode} functionNode
+ * @param {String} name - 'x', 'y' or 'z'
+ * @returns {String|null} the expression to emit, or null to keep the property read
+ */
+function threadLocalName(functionNode, name) {
+  if (functionNode.optimizerDisabled || !functionNode.isRootKernel) return null;
+  const { output } = functionNode;
+  if (!output || !output.length) return null;
+  switch (name) {
+    case 'x':
+      return 'x';
+    case 'y':
+      // a rank the output does not have has no counter; the loop preamble
+      // pins the coordinate to 0, which is what the literal says
+      return output.length > 1 ? 'y' : '0';
+    case 'z':
+      return output.length > 2 ? 'z' : '0';
+    default:
+      return null;
+  }
+}
+
 module.exports = {
-  optimize
+  optimize,
+  threadLocalName
 };

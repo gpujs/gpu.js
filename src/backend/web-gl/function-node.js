@@ -1678,7 +1678,13 @@ class WebGLFunctionNode extends FunctionNode {
       throw this.astErrorOutput('Invalid switch statement', ast);
     }
     const { discriminant, cases } = ast;
-    const type = this.getType(discriminant);
+    // a discriminant whose role was still open until it landed here -- a
+    // hand-written `switch (1)`, or a loop counter the unroller replaced with
+    // its value -- is decided by the case tests, which compare as integers.
+    // Without this the declaration below was skipped entirely and every
+    // comparison referred to a variable that was never declared.
+    const literalDiscriminant = this.getType(discriminant) === 'LiteralInteger';
+    const type = literalDiscriminant ? 'Integer' : this.getType(discriminant);
     const varName = `switchDiscriminant${this.astKey(ast, '_')}`;
     switch (type) {
       case 'Float':
@@ -1689,7 +1695,11 @@ class WebGLFunctionNode extends FunctionNode {
         break;
       case 'Integer':
         retArr.push(`int ${varName} = `);
-        this.astGeneric(discriminant, retArr);
+        if (literalDiscriminant) {
+          this.castLiteralToInteger(discriminant, retArr);
+        } else {
+          this.astGeneric(discriminant, retArr);
+        }
         retArr.push(';\n');
         break;
     }
@@ -2203,7 +2213,14 @@ class WebGLFunctionNode extends FunctionNode {
               retArr.push(')');
               continue;
             } else if (targetType === 'Integer') {
+              // the parameter's declared type IS the context. An Integer-typed
+              // expression made only of numbers -- `f(1 + 1)`, or a loop
+              // counter the unroller replaced with its value -- has nothing
+              // else to tell it which way to emit, and without being told it
+              // builds as float and misses the `int` overload.
+              this.pushState('building-integer');
               this.astGeneric(argument, retArr);
+              this.popState('building-integer');
               continue;
             }
             break;
@@ -2324,6 +2341,16 @@ class WebGLFunctionNode extends FunctionNode {
         break;
       case 'LiteralInteger':
         this.castLiteralToInteger(property, result);
+        break;
+      case 'Integer':
+        // an index is an integer context, and saying so is what an
+        // Integer-typed subscript made only of numbers needs to hear:
+        // `a[1 + 2]`, or `a[i + 2]` after the unroller replaced the counter
+        // with its value, otherwise builds as float and misses every sampler
+        // overload
+        this.pushState('building-integer');
+        this.astGeneric(property, result);
+        this.popState('building-integer');
         break;
       default:
         this.astGeneric(property, result);

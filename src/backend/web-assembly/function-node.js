@@ -1089,6 +1089,16 @@ class WebAssemblyFunctionNode extends FunctionNode {
         this.coerce(this.expression(discriminant), 'i32');
         this.em.localSet(dLocal);
         break;
+      case 'LiteralInteger':
+        // a number whose role was still open until it landed here -- a
+        // hand-written `switch (1)`, or a loop counter the unroller replaced
+        // with its value. Every case test is compared as an integer, so the
+        // discriminant is one.
+        dIsInt = true;
+        dLocal = this.em.addLocal('i32');
+        this.castLiteralToInteger(discriminant);
+        this.em.localSet(dLocal);
+        break;
       default:
         throw this.astErrorOutput(`Unhandled switch discriminant type "${ type }"`, ast);
     }
@@ -3372,6 +3382,12 @@ class WebAssemblyFunctionNode extends FunctionNode {
           this.coerce(this.expression(discriminant), 'i32');
           em.localSet(dLocal);
           break;
+        case 'LiteralInteger':
+          dIsInt = true;
+          dLocal = em.addLocal('i32');
+          this.castLiteralToInteger(discriminant);
+          em.localSet(dLocal);
+          break;
         default:
           throw this.astErrorOutput(`Unhandled switch discriminant type "${ type }"`, ast);
       }
@@ -3417,6 +3433,7 @@ class WebAssemblyFunctionNode extends FunctionNode {
         em.localSet(dLocal);
         break;
       case 'Integer':
+      case 'LiteralInteger':
         dIsInt = true;
         dLocal = em.addLocal('v128');
         this.vCoerce(this.vexpr(discriminant), 'vi32');
