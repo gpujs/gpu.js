@@ -5,7 +5,7 @@
  * GPU Accelerated JavaScript
  *
  * @version 2.23.0
- * @date Wed Aug 05 2026 06:42:12 GMT+0800 (Singapore Standard Time)
+ * @date Wed Aug 05 2026 10:06:18 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -5310,6 +5310,7 @@
         this.fixIntegerDivisionAccuracy = null;
         this._optimizerDisabled = false;
         this._inliningDisabled = false;
+        this.localizeThreadCoordinates = false;
         this.loopUnrollLimit = 8;
         this.randomSeed = null;
         this.built = false;
@@ -7381,6 +7382,7 @@
       return stampSynthetic(copy, node);
     }
     function threadLocalName(functionNode, name) {
+      if (!functionNode.localizeThreadCoordinates) return null;
       if (functionNode.optimizerDisabled || !functionNode.isRootKernel) return null;
       const {output: output} = functionNode;
       if (!output || !output.length) return null;
@@ -7409,7 +7411,7 @@
     module.exports = {
       FunctionBuilder: class FunctionBuilder {
         static fromKernel(kernel, FunctionNode, extraNodeOptions) {
-          const {kernelArguments: kernelArguments, kernelConstants: kernelConstants, argumentNames: argumentNames, argumentSizes: argumentSizes, argumentBitRatios: argumentBitRatios, constants: constants, constantBitRatios: constantBitRatios, debug: debug, loopMaxIterations: loopMaxIterations, nativeFunctions: nativeFunctions, output: output, optimizeFloatMemory: optimizeFloatMemory, precision: precision, plugins: plugins, source: source, subKernels: subKernels, functions: functions, leadingReturnStatement: leadingReturnStatement, followingReturnStatement: followingReturnStatement, dynamicArguments: dynamicArguments, dynamicOutput: dynamicOutput, loopUnrollLimit: loopUnrollLimit} = kernel;
+          const {kernelArguments: kernelArguments, kernelConstants: kernelConstants, argumentNames: argumentNames, argumentSizes: argumentSizes, argumentBitRatios: argumentBitRatios, constants: constants, constantBitRatios: constantBitRatios, debug: debug, loopMaxIterations: loopMaxIterations, nativeFunctions: nativeFunctions, output: output, optimizeFloatMemory: optimizeFloatMemory, precision: precision, plugins: plugins, source: source, subKernels: subKernels, functions: functions, leadingReturnStatement: leadingReturnStatement, followingReturnStatement: followingReturnStatement, dynamicArguments: dynamicArguments, dynamicOutput: dynamicOutput, loopUnrollLimit: loopUnrollLimit, localizeThreadCoordinates: localizeThreadCoordinates} = kernel;
           const optimizerDisabled = Boolean(kernel._optimizerDisabled);
           const inliningDisabled = Boolean(kernel._inliningDisabled);
           const argumentTypes = new Array(kernelArguments.length);
@@ -7483,6 +7485,7 @@
             dynamicOutput: dynamicOutput,
             optimizerDisabled: optimizerDisabled,
             loopUnrollLimit: loopUnrollLimit,
+            localizeThreadCoordinates: localizeThreadCoordinates,
             lookupInlineTarget: lookupInlineTarget
           }, extraNodeOptions || {});
           const rootNodeOptions = Object.assign({}, nodeOptions, {
@@ -7522,6 +7525,7 @@
             onNestedFunction: onNestedFunction,
             optimizerDisabled: optimizerDisabled,
             loopUnrollLimit: loopUnrollLimit,
+            localizeThreadCoordinates: localizeThreadCoordinates,
             lookupInlineTarget: lookupInlineTarget
           }));
           let subKernelNodes = null;
@@ -8111,6 +8115,7 @@
         this.loopUnrollLimit = 8;
         this.lookupInlineTarget = null;
         this.hasDeclaredTypes = false;
+        this.localizeThreadCoordinates = false;
         if (settings) for (const p in settings) {
           if (!settings.hasOwnProperty(p)) continue;
           if (!this.hasOwnProperty(p)) continue;

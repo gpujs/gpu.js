@@ -139,6 +139,12 @@ class FunctionNode {
      * boundary, so such a helper must keep its call rather than inline.
      */
     this.hasDeclaredTypes = false;
+    /**
+     * T1 (thread-coordinate localization) is off by default: measured a net
+     * loss at scale on the cpu backend. Kept switchable for the emission
+     * tests and for a future implementation that binds the counters once.
+     */
+    this.localizeThreadCoordinates = false;
 
     if (settings) {
       for (const p in settings) {

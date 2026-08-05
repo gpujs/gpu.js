@@ -73,7 +73,7 @@ test('cpu: an invariant read leaves the loop body', () => {
   const optimized = cpuSource(HOT_LOOP);
   const disabled = cpuSource(HOT_LOOP, { _optimizerDisabled: true });
 
-  assert.ok(/const user_optHoist0\s*=\s*user_a\[x\]/.test(beforeFirstLoop(optimized)),
+  assert.ok(/const user_optHoist0\s*=\s*user_a\[(?:x|_this\.thread\.x)\]/.test(beforeFirstLoop(optimized)),
     'optimized: the read is a const ahead of the loop');
   assert.notOk(/user_a\[/.test(afterFirstLoop(optimized)),
     'optimized: no array read is left inside the loop');

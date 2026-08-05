@@ -9,6 +9,27 @@ describe('features: optimizer unrolling and thread localization');
 // text the backend actually compiles: the cpu backend's generated JavaScript
 // and the GL backends' generated GLSL.
 
+// T1 ships OFF (a measured net loss at scale, see optimizer.threadLocalName),
+// but the transform stays verified for whoever revisits it: these rows turn
+// it on explicitly.
+const T1_ON = { localizeThreadCoordinates: true };
+function T1_TEST(name, body) {
+  test(name, assert => {
+    const originalSource = cpuSource;
+    const originalBuild = cpuBuild;
+    cpuSource = (kernelSource, settings, args) =>
+      originalSource(kernelSource, Object.assign({}, T1_ON, settings), args);
+    cpuBuild = (kernelSource, settings, args) =>
+      originalBuild(kernelSource, Object.assign({}, T1_ON, settings), args);
+    try {
+      return body(assert);
+    } finally {
+      cpuSource = originalSource;
+      cpuBuild = originalBuild;
+    }
+  });
+}
+
 const GL_MODE = GPU.isHeadlessGLSupported ? 'headlessgl' : (GPU.isWebGLSupported ? 'webgl' : null);
 
 /**
@@ -18,7 +39,7 @@ const GL_MODE = GPU.isHeadlessGLSupported ? 'headlessgl' : (GPU.isWebGLSupported
  * second half, a bail that broke badly enough to crash the pass would still
  * read as a clean skip.
  */
-function cpuBuild(kernelSource, settings, args) {
+let cpuBuild = function (kernelSource, settings, args) {
   const gpu = new GPU({ mode: 'cpu' });
   try {
     const kernel = gpu.createKernel(kernelSource, Object.assign({ output: [4] }, settings));
@@ -29,7 +50,7 @@ function cpuBuild(kernelSource, settings, args) {
   }
 }
 
-function cpuSource(kernelSource, settings, args) {
+let cpuSource = function (kernelSource, settings, args) {
   return cpuBuild(kernelSource, settings, args).source;
 }
 
@@ -358,7 +379,7 @@ test('cpu: a negative counter substitutes as a signed literal, parenthesized', (
 // A counter named for a coordinate is the shape that catches a substitution
 // walking into a non-computed member's property: `this.thread.x` names `x`
 // there as a FIELD, and rewriting it produces `this.thread.0`.
-test('cpu: a counter named x leaves this.thread.x alone', () => {
+T1_TEST('cpu: a counter named x leaves this.thread.x alone', () => {
   const built = cpuBuild(function (a) {
     let s = 0;
     for (let x = 0; x < 3; x++) {
@@ -378,7 +399,7 @@ const THREAD_READER = function (a) {
   return a[this.thread.x] + this.thread.y + this.thread.z;
 };
 
-test('cpu: thread coordinates become the cell loop\'s own locals', () => {
+T1_TEST('cpu: thread coordinates become the cell loop\'s own locals', () => {
   const optimized = cpuSource(THREAD_READER);
   const disabled = cpuSource(THREAD_READER, { _optimizerDisabled: true });
 
@@ -396,7 +417,7 @@ function afterCellLoop(source) {
   return at === -1 ? source : source.slice(at + 'this.thread.x = x;'.length);
 }
 
-test('cpu: a rank the output does not have localizes to 0', () => {
+T1_TEST('cpu: a rank the output does not have localizes to 0', () => {
   const oneD = cpuSource(THREAD_READER);
   assert.ok(/\+0\)\+0\)/.test(oneD.replace(/\s/g, '')),
     `1D: y and z are literal 0 (${ afterCellLoop(oneD).trim().split('\n')[0] })`);
@@ -408,7 +429,7 @@ test('cpu: a rank the output does not have localizes to 0', () => {
   assert.ok(/\+z\)/.test(body.replace(/\s/g, '')), '3D: so is z');
 });
 
-test('cpu: a helper keeps the property read, which is all it can reach', () => {
+T1_TEST('cpu: a helper keeps the property read, which is all it can reach', () => {
   // the call sits in a ternary branch, which is the one position T2 will not
   // hoist a call out of -- so the helper survives as a function, which is the
   // only way to ask what a helper's coordinate read emits as

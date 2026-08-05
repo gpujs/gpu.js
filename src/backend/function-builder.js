@@ -38,6 +38,7 @@ class FunctionBuilder {
       dynamicArguments,
       dynamicOutput,
       loopUnrollLimit,
+      localizeThreadCoordinates,
     } = kernel;
 
     // the internal hook is read once here and handed to every function node,
@@ -147,6 +148,7 @@ class FunctionBuilder {
       dynamicOutput,
       optimizerDisabled,
       loopUnrollLimit,
+      localizeThreadCoordinates,
       lookupInlineTarget,
     }, extraNodeOptions || {});
 
@@ -198,6 +200,7 @@ class FunctionBuilder {
         onNestedFunction,
         optimizerDisabled,
         loopUnrollLimit,
+        localizeThreadCoordinates,
         lookupInlineTarget,
       }));
     }

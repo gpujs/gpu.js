@@ -260,6 +260,11 @@ class Kernel {
      * @type {Boolean}
      */
     this._inliningDisabled = false;
+    /**
+     * T1, thread-coordinate localization -- off by default, a measured net
+     * loss at scale on this backend. See optimizer.threadLocalName.
+     */
+    this.localizeThreadCoordinates = false;
 
     /**
      * Trip-count threshold above which a loop with literal bounds is left as

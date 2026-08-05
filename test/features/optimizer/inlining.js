@@ -112,7 +112,7 @@ test('cpu: an atom argument is written in place rather than bound', () => {
     }],
   });
   assert.notOk(/optIn\d+_k/.test(source), 'no binding for a coordinate argument');
-  assert.ok(/\(x\*2\)\+\(x\*3\)/.test(source.replace(/\s/g, '')), 'the coordinate is read in place');
+  assert.ok(/\((?:x|_this\.thread\.x)\*2\)\+\((?:x|_this\.thread\.x)\*3\)/.test(source.replace(/\s/g, '')), 'the coordinate is read in place');
 });
 
 test('cpu: a helper local is renamed out of the way of a kernel local', () => {
@@ -126,7 +126,7 @@ test('cpu: a helper local is renamed out of the way of a kernel local', () => {
     }],
   });
   assert.ok(/const user_optIn\d+_t=/.test(source), 'the helper local took a fresh name');
-  assert.ok(/constuser_t=user_a\[x\]/.test(source.replace(/\s/g, '')), "the kernel's own `t` kept its name");
+  assert.ok(/constuser_t=user_a\[(?:x|_this\.thread\.x)\]/.test(source.replace(/\s/g, '')), "the kernel's own `t` kept its name");
 });
 
 test('cpu: a reassigned parameter binds mutably', () => {
@@ -303,7 +303,7 @@ test('cpu bail: a helper that declares a function keeps its call', () => {
     }],
   });
   assert.ok(/function wrapper\(/.test(source), 'the declaring helper survives');
-  assert.ok(/wrapper\(user_a\[x\]\)/.test(source.replace(/\s/g, '')), 'and is still called');
+  assert.ok(/wrapper\(user_a\[(?:x|_this\.thread\.x)\]\)/.test(source.replace(/\s/g, '')), 'and is still called');
   assert.notOk(/twice\(/.test(source), 'the function it declares inlined into it');
 });
 

@@ -2206,6 +2206,16 @@ function cloneNode(context, node, name, value) {
  * @returns {String|null} the expression to emit, or null to keep the property read
  */
 function threadLocalName(functionNode, name) {
+  // OFF by default, and measured rather than reasoned: replacing the property
+  // read with the cell loop's own counter is neutral on small outputs but a
+  // real loss at scale -- 0.84x on a 3072x256 kernel with a 3072-trip inner
+  // loop (2048ms -> 2448ms), and worse in a full benchmark run. `_this.thread.x`
+  // is a monomorphic load on an object whose shape never changes, which V8
+  // hoists out of an inner loop; a `let` counter from an enclosing loop it
+  // must re-read per iteration. The transform stays here, behind a flag,
+  // because a better emission (binding the counters once per cell, above the
+  // body) would likely win -- but it has to be measured before it ships on.
+  if (!functionNode.localizeThreadCoordinates) return null;
   if (functionNode.optimizerDisabled || !functionNode.isRootKernel) return null;
   const { output } = functionNode;
   if (!output || !output.length) return null;
