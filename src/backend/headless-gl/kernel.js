@@ -1,4 +1,9 @@
-const getContext = require('gl');
+let getContext = null;
+try {
+  // gl is an optional dependency; when its native build failed to install,
+  // isSupported stays false and the headless-gl backend is skipped.
+  getContext = require('gl');
+} catch (e) {}
 const { WebGLKernel } = require('../web-gl/kernel');
 const { glKernelString } = require('../gl/kernel-string');
 

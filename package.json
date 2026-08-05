@@ -1,6 +1,6 @@
 {
   "name": "gpu.js",
-  "version": "2.23.0",
+  "version": "2.24.0",
   "description": "GPU Accelerated JavaScript",
   "engines": {
     "node": ">=8.0.0"
@@ -19,9 +19,11 @@
   },
   "dependencies": {
     "acorn": "8.14.0",
-    "gl": "8.1.6",
     "gpu-mock.js": "^1.4.1",
     "webgpu": "0.2.9"
+  },
+  "optionalDependencies": {
+    "gl": "8.1.6"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.0",

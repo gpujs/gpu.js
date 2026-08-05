@@ -4,8 +4,8 @@
  *
  * GPU Accelerated JavaScript
  *
- * @version 2.23.0
- * @date Mon Aug 03 2026 18:12:01 GMT+0800 (Singapore Standard Time)
+ * @version 2.24.0
+ * @date Wed Aug 05 2026 23:37:10 GMT+0800 (Singapore Standard Time)
  *
  * @license MIT
  * The MIT License
@@ -14446,7 +14446,10 @@
     };
   });
   var require_kernel$3 = __commonJSMin((exports, module) => {
-    const getContext = require_empty_module();
+    let getContext = null;
+    try {
+      getContext = require_empty_module();
+    } catch (e) {}
     const {WebGLKernel: WebGLKernel} = require_kernel$4();
     const {glKernelString: glKernelString} = require_kernel_string();
     let isSupported = null;
