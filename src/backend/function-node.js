@@ -1,6 +1,7 @@
 const acorn = require('acorn');
 const { utils } = require('../utils');
 const { FunctionTracer } = require('./function-tracer');
+const { optimize } = require('./optimizer');
 
 const mathProperties = [
   'E',
@@ -129,6 +130,21 @@ class FunctionNode {
     this.dynamicArguments = null;
     this.strictTypingChecking = false;
     this.fixIntegerDivisionAccuracy = null;
+    this.optimizerDisabled = false;
+    this.loopUnrollLimit = 8;
+    this.lookupInlineTarget = null;
+    /**
+     * Types the USER declared through addFunction (distinct from types a
+     * build inferred). The emitter applies them as coercions at the call
+     * boundary, so such a helper must keep its call rather than inline.
+     */
+    this.hasDeclaredTypes = false;
+    /**
+     * T1 (thread-coordinate localization) is off by default: measured a net
+     * loss at scale on the cpu backend. Kept switchable for the emission
+     * tests and for a future implementation that binds the counters once.
+     */
+    this.localizeThreadCoordinates = false;
 
     if (settings) {
       for (const p in settings) {
@@ -141,6 +157,7 @@ class FunctionNode {
     this.literalTypes = {};
 
     this.validate();
+    this._rawAST = null;
     this._string = null;
     this._internalVariableNames = {};
   }
@@ -266,14 +283,46 @@ class FunctionNode {
     return false;
   }
 
-  getJsAST(inParser) {
-    if (this.ast) {
-      return this.ast;
+  /**
+   * Whether an out-of-range element read can FAULT on this backend instead of
+   * yielding some value. The cpu backend emits plain JavaScript, where
+   * `a[y][x]` with `y` past the end throws a TypeError; every other backend
+   * reads a clamped texture or a bounds-checked buffer and cannot. The
+   * optimizer needs to know because moving a read to a place the un-optimized
+   * build never reaches is free where reads are total and a new crash where
+   * they are not.
+   * @returns {Boolean}
+   */
+  get readsCanFault() {
+    return false;
+  }
+
+  /**
+   * @desc Whether a SINGLE-subscript read can fault. On cpu `a[y]` past the
+   * end is `undefined` (only `a[y][x]` throws); on webasm every read is a
+   * raw load and one level is enough.
+   * @returns {Boolean}
+   */
+  get readsFaultAtOneLevel() {
+    return false;
+  }
+
+  /**
+   * @desc The parsed, de-minified AST -- everything getJsAST does BEFORE the
+   * optimizer and the tracer. T2's call-graph plan reads helpers through this
+   * rather than through getJsAST: optimizing a helper early would run its
+   * pass out of order, and tracing it early would resolve its argument types
+   * from a caller the un-optimized build resolves them from second.
+   * @param {Object} [inParser]
+   * @returns {Object} The function AST Object, cached under this._rawAST
+   */
+  getRawAST(inParser) {
+    if (this._rawAST) {
+      return this._rawAST;
     }
     if (typeof this.source === 'object') {
       normalizeMinifiedStatements(this.source, this.requiresSequenceFreeForInit);
-      this.traceFunctionAST(this.source);
-      return this.ast = this.source;
+      return this._rawAST = this.source;
     }
 
     inParser = inParser || acorn;
@@ -290,14 +339,46 @@ class FunctionNode {
     // minifiers fold statements into expressions; unfold them before the
     // tracer records anything, so every backend sees plain statements
     normalizeMinifiedStatements(functionAST, this.requiresSequenceFreeForInit);
-    this.traceFunctionAST(functionAST);
+    return this._rawAST = functionAST;
+  }
 
-    if (!ast) {
-      throw new Error('Failed to parse JS code');
+  getJsAST(inParser) {
+    if (this.ast) {
+      return this.ast;
     }
-
+    const functionAST = this.getRawAST(inParser);
+    // tagged so buildWithOptimizer retries only OUR failures: an
+    // unsupported-construct error from the emitter must reach the user
+    // unchanged, not be blamed on the optimizer and compiled twice
+    try {
+      this.optimizeAST(functionAST);
+    } catch (e) {
+      if (e && typeof e === 'object') e.isOptimizerFailure = true;
+      throw e;
+    }
+    this.traceFunctionAST(functionAST);
     return this.ast = functionAST;
   }
+
+  /**
+   * @desc The optimizer's single invocation point, shared by every emitting
+   * backend. It runs AFTER de-minification -- the pass must never see a
+   * comma-folded expression -- and BEFORE the tracer, so the declarations it
+   * introduces are the ones type resolution registers, and before every
+   * per-backend normalization (webgl's linearization and do-while rotation,
+   * webasm's variance analysis and SIMD emission), which must see final
+   * shapes.
+   * @param {Object} ast - the parsed function node
+   * @returns {Object} the same ast
+   */
+  optimizeAST(ast) {
+    if (this.optimizerDisabled) return ast;
+    return optimize(this, ast, {
+      loopUnrollLimit: this.loopUnrollLimit,
+      lookupInlineTarget: this.lookupInlineTarget,
+    });
+  }
+
 
   /**
    * @desc Argument names the function body assigns to. Backends whose
@@ -1233,8 +1314,15 @@ class FunctionNode {
     }
 
     if (uNode.prefix) {
+      // a leading sign needs parentheses of its own: the binary emitter puts
+      // no space around its operator, so `2 - -2` came out `2--2`, which is a
+      // syntax error in JavaScript and an l-value error in GLSL. `!` and `~`
+      // cannot collide with an adjacent operator and stay bare.
+      const collides = uNode.operator === '-' || uNode.operator === '+';
+      if (collides) retArr.push('(');
       retArr.push(uNode.operator);
       this.astGeneric(uNode.argument, retArr);
+      if (collides) retArr.push(')');
     } else {
       this.astGeneric(uNode.argument, retArr);
       retArr.push(uNode.operator);

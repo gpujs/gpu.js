@@ -635,7 +635,7 @@ class Pipeline {
       // (texture in the ping-pong seat, plain array from a pipeline arg)
       dynamicArguments: true,
     }, overrides || {});
-    const optional = ['constants', 'constantTypes', 'precision', 'loopMaxIterations', 'strictIntegers', 'fixIntegerDivisionAccuracy', 'optimizeFloatMemory', 'tactic', 'functions', 'nativeFunctions', 'injectedNative', 'debug', 'randomSeed', 'returnType'];
+    const optional = ['constants', 'constantTypes', 'precision', 'loopMaxIterations', 'strictIntegers', 'fixIntegerDivisionAccuracy', 'optimizeFloatMemory', 'tactic', 'functions', 'nativeFunctions', 'injectedNative', 'debug', 'randomSeed', 'returnType', 'loopUnrollLimit', '_optimizerDisabled', '_inliningDisabled'];
     // types the USER declared pin the clone exactly as they pin the kernel;
     // types inferred by a build must not -- the clone re-infers per plan
     // seat (texture in the ping-pong seat, plain array from a pipeline arg)

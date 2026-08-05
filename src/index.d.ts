@@ -177,6 +177,7 @@ export class Kernel {
   debug: boolean;
   graphical: boolean;
   loopMaxIterations: number;
+  loopUnrollLimit: number;
   constants: IConstants;
   canvas: any;
   context: WebGLRenderingContext | any;
@@ -214,6 +215,7 @@ export class Kernel {
   setDebug(flag: boolean): this;
   setGraphical(flag: boolean): this;
   setLoopMaxIterations(flag: number): this;
+  setLoopUnrollLimit(flag: number): this;
   setConstants(flag: IConstants): this;
   setConstants<T>(flag: T & IConstants): this;
   setConstantTypes(flag: IKernelValueTypes): this;
@@ -371,6 +373,8 @@ export interface IKernelSettings {
   nativeFunctions?: IGPUNativeFunction[],
   strictIntegers?: boolean;
   randomSeed?: number;
+  /** largest trip count a loop with literal bounds is unrolled at; 0 leaves every loop as written. Default 8 */
+  loopUnrollLimit?: number;
 }
 
 export interface IDirectKernelSettings extends IKernelSettings {
@@ -597,6 +601,7 @@ export interface IFunctionSettings {
 
   output?: number[];
   loopMaxIterations?: number;
+  loopUnrollLimit?: number;
   returnType?: string;
   isRootKernel?: boolean;
   isSubKernel?: boolean;

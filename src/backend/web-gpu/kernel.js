@@ -268,9 +268,11 @@ class WebGPUKernel extends Kernel {
     while (threadDim.length < 3) {
       threadDim.push(1);
     }
-    this.translateSource();
-    this.paramsLayout = this.computeParamsLayout();
-    this.compiledSource = this.assembleWGSL();
+    this.buildWithOptimizer(() => {
+      this.translateSource();
+      this.paramsLayout = this.computeParamsLayout();
+      this.compiledSource = this.assembleWGSL();
+    });
     if (this.debug) {
       console.log('WGSL Shader Output:');
       console.log(this.compiledSource);

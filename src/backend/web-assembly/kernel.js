@@ -269,12 +269,23 @@ class WebAssemblyKernel extends Kernel {
     while (threadDim.length < 3) {
       threadDim.push(1);
     }
-    if (!this.translateSource()) {
+    // the bytecode is emitted by _instantiate, not by translateSource, so the
+    // optimizer guard has to span both -- a rebuild with optimizations off
+    // has to redo the analysis pass that produced the function nodes
+    let unsupportedReturnType = false;
+    this.buildWithOptimizer(() => {
+      if (!this.translateSource()) {
+        unsupportedReturnType = true;
+        return;
+      }
+      unsupportedReturnType = false;
+      this.buildSignature(arguments);
+      this._instantiate(this._entryKey(arguments), arguments);
+    });
+    if (unsupportedReturnType) {
       return this.requestFallback(arguments,
         `return type ${ this.returnType } is not supported on the webasm backend`);
     }
-    this.buildSignature(arguments);
-    this._instantiate(this._entryKey(arguments), arguments);
     this.built = true;
   }
 

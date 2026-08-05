@@ -1,4 +1,5 @@
 const { FunctionNode } = require('../function-node');
+const { threadLocalName } = require('../optimizer');
 
 /**
  * @desc [INTERNAL] Represents a single function, inside JS
@@ -6,6 +7,14 @@ const { FunctionNode } = require('../function-node');
  * <p>This handles all the raw state, converted state, etc. Of a single function.</p>
  */
 class CPUFunctionNode extends FunctionNode {
+  /**
+   * The emitted body is plain JavaScript over real arrays, so `a[y][x]` past
+   * the end of `a` throws rather than reading a clamped texel.
+   */
+  get readsCanFault() {
+    return true;
+  }
+
   /**
    * @desc Parses the abstract syntax tree for to its *named function*
    * @param {Object} ast - the AST object to parse
@@ -484,9 +493,14 @@ class CPUFunctionNode extends FunctionNode {
       origin
     } = this.getMemberExpressionDetails(mNode);
     switch (signature) {
-      case 'this.thread.value':
-        retArr.push(`_this.thread.${ name }`);
+      case 'this.thread.value': {
+        // T1: inside the generated cell loop the coordinate IS the loop's own
+        // counter, so the root body names it instead of re-reading a property
+        // off the shared thread object
+        const local = threadLocalName(this, name);
+        retArr.push(local === null ? `_this.thread.${ name }` : local);
         return retArr;
+      }
       case 'this.output.value':
         switch (name) {
           case 'x':

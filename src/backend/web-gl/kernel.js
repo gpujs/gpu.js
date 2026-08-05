@@ -206,6 +206,27 @@ class WebGLKernel extends GLKernel {
   }
 
   /**
+   * @desc The text a plugin's `functionMatch` is tested against. A plugin
+   * substitutes a GLSL implementation for a JavaScript call (`Math.random()`
+   * for `nrand`), so it has to be selected by what the whole PROGRAM says,
+   * not just the kernel: a helper added with addFunction is compiled into the
+   * same shader, and matching only the kernel left its `Math.random()` calling
+   * a `random()` that no shader ever declared.
+   * @return {String|null} null when the source is a rehydrated AST rather than
+   * text, where pluginNames is the selector instead
+   */
+  pluginMatchSource() {
+    if (typeof this.source !== 'string') return null;
+    if (!this.functions || this.functions.length < 1) return this.source;
+    const sources = [this.source];
+    for (let i = 0; i < this.functions.length; i++) {
+      const source = this.functions[i] ? this.functions[i].source : null;
+      if (typeof source === 'string') sources.push(source);
+    }
+    return sources.join('\n');
+  }
+
+  /**
    *
    * @param {IDirectKernelSettings} settings
    * @return {string[]}
@@ -213,7 +234,7 @@ class WebGLKernel extends GLKernel {
   initPlugins(settings) {
     // default plugins
     const pluginsToUse = [];
-    const { source } = this;
+    const source = this.pluginMatchSource();
     if (typeof source === 'string') {
       for (let i = 0; i < plugins.length; i++) {
         const plugin = plugins[i];
@@ -221,7 +242,7 @@ class WebGLKernel extends GLKernel {
           pluginsToUse.push(plugin);
         }
       }
-    } else if (typeof source === 'object') {
+    } else if (typeof this.source === 'object') {
       // `source` is from object, json
       if (settings.pluginNames) { //TODO: in context of JSON support, pluginNames may not exist here
         for (let i = 0; i < plugins.length; i++) {
@@ -507,7 +528,7 @@ class WebGLKernel extends GLKernel {
     this.setupArguments(arguments);
     if (this.fallbackRequested) return;
     this.updateMaxTexSize();
-    this.translateSource();
+    this.buildWithOptimizer(() => this.translateSource());
     const failureResult = this.pickRenderStrategy(arguments);
     if (failureResult) {
       return failureResult;
@@ -1059,7 +1080,9 @@ class WebGLKernel extends GLKernel {
 
   _getPluginsString() {
     if (!this.plugins) return '\n';
-    return this.plugins.map(plugin => plugin.source && this.source.match(plugin.functionMatch) ? plugin.source : '').join('\n');
+    const source = this.pluginMatchSource();
+    if (typeof source !== 'string') return '\n';
+    return this.plugins.map(plugin => plugin.source && source.match(plugin.functionMatch) ? plugin.source : '').join('\n');
   }
 
   /**

@@ -288,7 +288,7 @@ class WebGLFunctionNode extends FunctionNode {
     // truncates, and `this.thread.x / 64` comes out 0. Only the accuracy
     // wrapper is conditional; the casting is not.
     if (ast.operator === '/') {
-      const wrap = this.fixIntegerDivisionAccuracy;
+      const wrap = this.fixIntegerDivisionAccuracy && !this.divisionIsProvablyFractional(ast);
       retArr.push(wrap ? 'divWithIntCheck(' : '(');
       this.pushState('building-float');
       switch (this.getType(ast.left)) {
@@ -465,6 +465,22 @@ class WebGLFunctionNode extends FunctionNode {
     retArr.push(')');
 
     return retArr;
+  }
+
+  /**
+   * @desc Whether `divWithIntCheck` would provably take its fallback path, so
+   * the site can emit the plain operator instead of the emitted helper. The
+   * helper only does anything when BOTH operands are whole numbers -- it
+   * recovers the exact quotient of an integer division on hardware whose
+   * integer divide is inaccurate -- and returns `x / y` otherwise. A literal
+   * operand with a fraction in it settles that statically, so the call, the
+   * two floor comparisons and the branch all come out, on exactly the devices
+   * that turn the fix on.
+   * @param {Object} ast - a BinaryExpression with operator '/'
+   * @returns {Boolean}
+   */
+  divisionIsProvablyFractional(ast) {
+    return isFractionalLiteral(ast.left) || isFractionalLiteral(ast.right);
   }
 
   checkAndUpconvertOperator(ast, retArr) {
@@ -1678,7 +1694,13 @@ class WebGLFunctionNode extends FunctionNode {
       throw this.astErrorOutput('Invalid switch statement', ast);
     }
     const { discriminant, cases } = ast;
-    const type = this.getType(discriminant);
+    // a discriminant whose role was still open until it landed here -- a
+    // hand-written `switch (1)`, or a loop counter the unroller replaced with
+    // its value -- is decided by the case tests, which compare as integers.
+    // Without this the declaration below was skipped entirely and every
+    // comparison referred to a variable that was never declared.
+    const literalDiscriminant = this.getType(discriminant) === 'LiteralInteger';
+    const type = literalDiscriminant ? 'Integer' : this.getType(discriminant);
     const varName = `switchDiscriminant${this.astKey(ast, '_')}`;
     switch (type) {
       case 'Float':
@@ -1689,7 +1711,11 @@ class WebGLFunctionNode extends FunctionNode {
         break;
       case 'Integer':
         retArr.push(`int ${varName} = `);
-        this.astGeneric(discriminant, retArr);
+        if (literalDiscriminant) {
+          this.castLiteralToInteger(discriminant, retArr);
+        } else {
+          this.astGeneric(discriminant, retArr);
+        }
         retArr.push(';\n');
         break;
     }
@@ -2203,7 +2229,14 @@ class WebGLFunctionNode extends FunctionNode {
               retArr.push(')');
               continue;
             } else if (targetType === 'Integer') {
+              // the parameter's declared type IS the context. An Integer-typed
+              // expression made only of numbers -- `f(1 + 1)`, or a loop
+              // counter the unroller replaced with its value -- has nothing
+              // else to tell it which way to emit, and without being told it
+              // builds as float and misses the `int` overload.
+              this.pushState('building-integer');
               this.astGeneric(argument, retArr);
+              this.popState('building-integer');
               continue;
             }
             break;
@@ -2324,6 +2357,16 @@ class WebGLFunctionNode extends FunctionNode {
         break;
       case 'LiteralInteger':
         this.castLiteralToInteger(property, result);
+        break;
+      case 'Integer':
+        // an index is an integer context, and saying so is what an
+        // Integer-typed subscript made only of numbers needs to hear:
+        // `a[1 + 2]`, or `a[i + 2]` after the unroller replaced the counter
+        // with its value, otherwise builds as float and misses every sampler
+        // overload
+        this.pushState('building-integer');
+        this.astGeneric(property, result);
+        this.popState('building-integer');
         break;
       default:
         this.astGeneric(property, result);
@@ -2524,6 +2567,20 @@ const operatorMap = {
   '===': '==',
   '!==': '!='
 };
+
+/**
+ * @param {Object} ast
+ * @returns {Boolean} whether an expression is a numeric literal that is not a
+ * whole number -- including a signed one, which parses as a unary minus over a
+ * positive literal
+ */
+function isFractionalLiteral(ast) {
+  if (!ast) return false;
+  if (ast.type === 'UnaryExpression' && (ast.operator === '-' || ast.operator === '+')) {
+    return isFractionalLiteral(ast.argument);
+  }
+  return ast.type === 'Literal' && typeof ast.value === 'number' && !Number.isInteger(ast.value);
+}
 
 module.exports = {
   WebGLFunctionNode

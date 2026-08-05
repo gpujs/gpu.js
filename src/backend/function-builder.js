@@ -1,3 +1,5 @@
+const { buildInlinePlan } = require('./optimizer');
+
 /**
  * @desc This handles all the raw state, converted state, etc. of a single function.
  * [INTERNAL] A collection of functionNodes.
@@ -35,7 +37,15 @@ class FunctionBuilder {
       followingReturnStatement,
       dynamicArguments,
       dynamicOutput,
+      loopUnrollLimit,
+      localizeThreadCoordinates,
     } = kernel;
+
+    // the internal hook is read once here and handed to every function node,
+    // so a kernel that rebuilds with optimizations off gets a builder whose
+    // whole call graph agrees (the `_fusionDisabled` precedent)
+    const optimizerDisabled = Boolean(kernel._optimizerDisabled);
+    const inliningDisabled = Boolean(kernel._inliningDisabled);
 
     const argumentTypes = new Array(kernelArguments.length);
     const constantTypes = {};
@@ -85,6 +95,10 @@ class FunctionBuilder {
       functionBuilder.trackFunctionCall(functionName, calleeFunctionName, args);
     };
 
+    const lookupInlineTarget = inliningDisabled ? null : (functionName) => {
+      return functionBuilder.lookupInlineTarget(functionName);
+    };
+
     const onNestedFunction = (ast, source) => {
       const argumentNames = [];
       for (let i = 0; i < ast.params.length; i++) {
@@ -132,6 +146,10 @@ class FunctionBuilder {
       plugins,
       dynamicArguments,
       dynamicOutput,
+      optimizerDisabled,
+      loopUnrollLimit,
+      localizeThreadCoordinates,
+      lookupInlineTarget,
     }, extraNodeOptions || {});
 
     const rootNodeOptions = Object.assign({}, nodeOptions, {
@@ -157,6 +175,12 @@ class FunctionBuilder {
         name: fn.name || undefined,
         returnType: fn.returnType,
         argumentTypes: fn.argumentTypes,
+        // types the USER declared through addFunction, distinct from types a
+        // build inferred: the emitter applies them as coercions at the call
+        // boundary, which inlining would delete (#1 of the build review)
+        hasDeclaredTypes: Boolean(fn.returnType) || (Array.isArray(fn.argumentTypes) ?
+          fn.argumentTypes.some(type => Boolean(type)) :
+          Boolean(fn.argumentTypes && Object.keys(fn.argumentTypes).length > 0)),
         output,
         plugins,
         constants,
@@ -174,6 +198,10 @@ class FunctionBuilder {
         triggerImplyArgumentBitRatio,
         onFunctionCall,
         onNestedFunction,
+        optimizerDisabled,
+        loopUnrollLimit,
+        localizeThreadCoordinates,
+        lookupInlineTarget,
       }));
     }
 
@@ -216,6 +244,7 @@ class FunctionBuilder {
     this.lookupChain = [];
     this.functionNodeDependencies = {};
     this.functionCalls = {};
+    this._inlinePlan = null;
 
     if (this.rootNode) {
       this.functionMap['kernel'] = this.rootNode;
@@ -239,6 +268,24 @@ class FunctionBuilder {
         this.nativeFunctionNames.push(nativeFunction.name);
       }
     }
+  }
+
+  /**
+   * @desc T2's view of the call graph. The whole graph is decided ONCE, before
+   * any function node is optimized, because inlining is all-or-nothing per
+   * helper: a helper left with some call sites and not others has its
+   * parameter types fixed by whichever site the emitter reaches first, and
+   * dropping a site can change which one that is. Deciding globally keeps the
+   * optimized build's surviving calls identical to the un-optimized build's.
+   * @param {String} functionName
+   * @returns {Object|null} the plan entry, or null when this name must keep
+   * its call sites
+   */
+  lookupInlineTarget(functionName) {
+    if (!this._inlinePlan) {
+      this._inlinePlan = buildInlinePlan(this);
+    }
+    return this._inlinePlan.get(functionName) || null;
   }
 
   /**

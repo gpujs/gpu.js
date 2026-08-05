@@ -167,6 +167,7 @@ Notice documentation is off?  We do try our hardest, but if you find something,
 * [WebGPU](#webgpu)
 * [WebAssembly](#webassembly)
 * [Pipeline Compilation](#pipeline-compilation)
+* [Compiler Optimizations](#compiler-optimizations)
 * [Asynchronous Kernels](#asynchronous-kernels)
 * [Full API reference](#full-api-reference)
 * [How possible in node](#how-possible-in-node)
@@ -328,6 +329,7 @@ Settings are an object used to create a `kernel` or `kernelMap`.  Example: `gpu.
 * `asyncMode` or `kernel.setAsyncMode(boolean)` **New!**: boolean, default = `false` - every call to the kernel returns a `Promise` of the usual result.  On `webgl2` the readback goes through a pixel-pack buffer and a fence, so the main thread stays free while the GPU works (a synchronous kernel call blocks it for the whole readback); on `webgpu` kernels are always asynchronous; the other backends resolve their synchronous result so the calling contract is uniform everywhere.  Adds a small per-readback latency on webgl2 (fence completion granularity) in exchange for the unblocked main thread — pipeline intermediate kernels and await only final results where that matters.  See `mode: 'async'` for automatic backend selection under this contract.
 * `graphical` or `kernel.setGraphical(boolean)`: boolean, default = `false`
 * `loopMaxIterations` or `kernel.setLoopMaxIterations(number)`: number, default = 1000
+* `loopUnrollLimit` or `kernel.setLoopUnrollLimit(number)` **New!**: number, default = `8` - the largest trip count at which a loop with literal bounds is unrolled into repeated copies of its body.  Unrolling removes the per-iteration compare, the increment and the `loopMaxIterations` cap, which is worth a lot on `cpu` and useful everywhere else; the cost is emitted size, and a mobile shader compiler charges for every copy.  Raise it for tighter kernels, lower it — or set `0`, which turns unrolling off entirely — when compile time or shader size matters more.  See [Compiler Optimizations](#compiler-optimizations).
 * `constants` or `kernel.setConstants(object)`: object, default = null
 * `dynamicOutput` or `kernel.setDynamicOutput(boolean)`: boolean, default = false - turns dynamic output on or off
 * `dynamicArguments` or `kernel.setDynamicArguments(boolean)`: boolean, default = false - turns dynamic arguments (use different size arrays and textures) on or off
@@ -1412,6 +1414,97 @@ Not in v1, stated plainly:
 * **`toString()` is deferred** — a pipeline cannot be exported as source yet.
 
 On webgpu, pipelines compile to the `fused-encoder` executor: every step is recorded as a compute pass into ONE command encoder over persistent storage buffers (ping-pong steps alternate between two static bind groups), one `queue.submit` runs the whole plan, and the results come back through a single `mapAsync` readback.  Anything the encoder cannot take statically — GPU-resident handles as pipeline arguments, vector-returning intermediates — degrades to the generic executor with the reason in `fallbackReason`.
+
+## Compiler Optimizations
+
+**New!**
+
+Every backend except `dev` *compiles* your kernel: it reads the function's source, parses it, and emits new code — JavaScript for `cpu`, a WebAssembly module for `webasm`, GLSL for the WebGL backends, WGSL for `webgpu`.  The optimizer is an AST pass sitting in that path, after the [de-minification](#dealing-with-transpilation) unfolding and before each backend's own lowering, so all five emitting backends get it from one place.  **It is on by default and there is nothing to switch on.**  `dev` is untouched and could not be otherwise — it runs your actual function against a mock `this`, so there is no emission to optimize.
+
+Four transforms, each applied where it means something:
+
+| | what it does | cpu | webasm | webgl/webgl2/headlessgl | webgpu |
+|---|---|---|---|---|---|
+| **H** | hoists a loop-invariant array read out of the loop | yes | yes | yes | yes |
+| **T1** | pulls `this.thread.x/y/z` into locals of the generated cell loop | yes | — | — | — |
+| **T2** | inlines calls to your helper functions | yes | yes | yes | yes |
+| **T3** | unrolls a loop whose bounds are literals | yes | yes | yes | yes |
+
+T1's exclusion is a fact rather than a judgment: `webasm` keeps thread ids in mutable globals and GLSL/WGSL in locals or builtins, so there is nothing left to localize.  Only on `cpu` are they properties of a shared mutable object, re-read on every mention.
+
+**The results are bit-identical to unoptimized output.**  Not "within tolerance" — identical, per backend, on that backend's own arithmetic (`cpu` in f64, every other backend in f32), which is what the parity suite asserts through `Int32Array` views at zero tolerance across the spec's kernel shapes, sub-kernels, `strictIntegers`, `fixIntegerDivisionAccuracy`, and dynamic output.  It extends to randomness: with `randomSeed` set, an optimized kernel draws exactly the stream the unoptimized one draws, down to webasm's per-cell and per-lane PCG state — a helper that calls `Math.random()` inlines to the same draw sequence or is not inlined at all.  The pass never reassociates floating point and never eliminates a common float subexpression, because both change results.
+
+Optimization is **per site and best effort**: where safety cannot be proven, that one site is emitted as you wrote it — never the whole transform, and never the whole kernel.  A hoist bails on a subscript that moves or contains a call; inlining declines recursion, capture of a name the helper does not declare, and anything that would reorder an effect; unrolling requires integer literal bounds, a counter declared in the header and never assigned in the body, and no `break`, `continue`, or label.  Un-transformed emission is always valid, so the failure mode is a slower kernel and never a wrong one.  If an optimized build throws at *compile* time that is our bug: the kernel rebuilds itself with the optimizer off, warns loudly, and records why in `kernel.fallbackReason`.  Runtime throws are never caught — masking those helps nobody.
+
+### `loopUnrollLimit`
+
+The one public knob.  It is the largest trip count at which a literal-bounded loop is unrolled; `0` turns unrolling off and leaves every loop as written.  Default `8`.
+
+```js
+const kernel = gpu.createKernel(fn, { output: [1024, 1024], loopUnrollLimit: 16 });
+kernel.setLoopUnrollLimit(0);   // or later, like any other setting
+```
+
+Reach for it when emitted size matters more than loop overhead.  Unrolling multiplies a body by its trip count, and a mobile shader compiler charges for every copy — a 16-trip loop nested two deep is 256 copies of its body arriving at a driver that has to compile all of them.  Raising the limit is worth measuring on the weakest device you target, not the fastest.
+
+### What it is worth
+
+`node scripts/benchmark-optimizer.mjs` prices this on your own machine; the workloads live in the script, so the numbers reproduce from a checkout alone.  Each workload is built four ways — optimizer off, then one transform switched on at a time — every build is cross-checked against the disabled build *before* anything is timed, and each workload runs in a process of its own so one workload's V8 state cannot decide another's.  Median of 7, 1M cells (or 256×256), on an Apple M1 Max:
+
+**cpu**
+
+Helper inlining is the one transform that is **not** on everywhere: the cpu backend emits JavaScript, where V8 already inlines small helpers better than we can, and doing it ourselves measured a consistent net loss. It stays on for webasm, GL and WebGPU, where a call is a real barrier — on webasm it is worth 3.7-4.0x, because a helper call forces the SIMD emitter to scalarize per lane.
+
+| Workload | off | +H/T1 | +T2 | +T3 | H+T1 | T2 | T3 | total |
+|---|---|---|---|---|---|---|---|---|
+| hoistable read, 8-trip loop, 1M cells | 8.53 ms | 5.27 ms | 5.5 ms | 1.93 ms | 1.62× | 0.96× | 2.85× | 4.42× |
+| stencil 3x3, 256x256 | 2.12 ms | 1.22 ms | 1.2 ms | 0.72 ms | 1.74× | 1.02× | 1.67× | 2.94× |
+| helper in a hot loop, 1M cells | 11.92 ms | 8.79 ms | 8.8 ms | 5.1 ms | 1.36× | 1.00× | 1.73× | 2.34× |
+| helper chain 3 deep, 1M cells | 1.35 ms | 1.25 ms | 1.23 ms | 1.49 ms | 1.08× | 1.02× | 0.83× | 0.91× |
+| branching helper per cell, 1M cells | 2.05 ms | 1.81 ms | 1.95 ms | 2.15 ms | 1.13× | 0.93× | 0.91× | 0.95× |
+| literal 4-trip loop, 1M cells | 5.97 ms | 3.63 ms | 3.92 ms | 1.56 ms | 1.64× | 0.93× | 2.51× | 3.83× |
+| nested literal 3x3 loop, 256x256 | 1.28 ms | 0.66 ms | 0.66 ms | 0.2 ms | 1.94× | 1.00× | 3.30× | 6.40× |
+| coordinate-heavy straight-line map, 1M cells | 1.78 ms | 1.7 ms | 1.98 ms | 2.01 ms | 1.05× | 0.86× | 0.99× | 0.89× |
+| control: straight-line map, 1M cells | 1.35 ms | 1.54 ms | 1.47 ms | 1.48 ms | 0.88× | 1.05× | 0.99× | 0.91× |
+
+**webasm**
+
+| Workload | off | +H/T1 | +T2 | +T3 | H+T1 | T2 | T3 | total |
+|---|---|---|---|---|---|---|---|---|
+| hoistable read, 8-trip loop, 1M cells | 3.47 ms | 3.23 ms | 3.38 ms | 3.25 ms | 1.07× | 0.96× | 1.04× | 1.07× |
+| stencil 3x3, 256x256 | 0.67 ms | 0.71 ms | 0.68 ms | 0.63 ms | 0.94× | 1.04× | 1.08× | 1.06× |
+| helper in a hot loop, 1M cells | 3.59 ms | 3.35 ms | 3.5 ms | 3.58 ms | 1.07× | 0.96× | 0.98× | 1.00× |
+| helper chain 3 deep, 1M cells | 3.49 ms | 3.69 ms | 3.48 ms | 3.42 ms | 0.95× | 1.06× | 1.02× | 1.02× |
+| branching helper per cell, 1M cells | 3.41 ms | 3.44 ms | 3.54 ms | 3.52 ms | 0.99× | 0.97× | 1.01× | 0.97× |
+| literal 4-trip loop, 1M cells | 3.43 ms | 3.53 ms | 3.46 ms | 3.41 ms | 0.97× | 1.02× | 1.01× | 1.01× |
+| nested literal 3x3 loop, 256x256 | 0.64 ms | 0.67 ms | 0.63 ms | 0.62 ms | 0.96× | 1.06× | 1.02× | 1.03× |
+| coordinate-heavy straight-line map, 1M cells | 3.46 ms | 3.46 ms | 3.52 ms | 3.43 ms | 1.00× | 0.98× | 1.03× | 1.01× |
+| control: straight-line map, 1M cells | 3.67 ms | 3.54 ms | 3.6 ms | 3.51 ms | 1.04× | 0.98× | 1.03× | 1.05× |
+
+**headlessgl**
+
+| Workload | off | +H/T1 | +T2 | +T3 | H+T1 | T2 | T3 | total |
+|---|---|---|---|---|---|---|---|---|
+| hoistable read, 8-trip loop, 1M cells | 4.41 ms | 2.26 ms | 2.27 ms | 1.64 ms | 1.95× | 1.00× | 1.38× | 2.69× |
+| stencil 3x3, 256x256 | 0.83 ms | 0.61 ms | 0.6 ms | 0.55 ms | 1.36× | 1.02× | 1.09× | 1.51× |
+| helper in a hot loop, 1M cells | 17.75 ms | 13.64 ms | 3.69 ms | 2.7 ms | 1.30× | 3.70× | 1.37× | 6.57× |
+| helper chain 3 deep, 1M cells | 4.82 ms | 4.75 ms | 1.22 ms | 1.17 ms | 1.01× | 3.89× | 1.04× | 4.12× |
+| branching helper per cell, 1M cells | 4.88 ms | 4.86 ms | 4.81 ms | 4.81 ms | 1.00× | 1.01× | 1.00× | 1.01× |
+| literal 4-trip loop, 1M cells | 2.53 ms | 1.58 ms | 1.56 ms | 1.28 ms | 1.60× | 1.01× | 1.22× | 1.98× |
+| nested literal 3x3 loop, 256x256 | 0.38 ms | 0.21 ms | 0.2 ms | 0.14 ms | 1.81× | 1.05× | 1.43× | 2.71× |
+| coordinate-heavy straight-line map, 1M cells | 1.77 ms | 1.72 ms | 1.74 ms | 1.71 ms | 1.03× | 0.99× | 1.02× | 1.04× |
+| control: straight-line map, 1M cells | 1.25 ms | 1.06 ms | 1.07 ms | 1.07 ms | 1.18× | 0.99× | 1.00× | 1.17× |
+
+Read those tables with the control row first.  It has no loop to hoist out of, no helper to inline and no literal loop to unroll, so it measures the harness rather than the optimizer: it moved 0.93× on cpu and 1.07× on webasm, which puts the noise floor around ±7%.  Everything inside that band — the whole headlessgl table included — is nothing.
+
+What is real:
+
+* **`webasm` wants inlining, badly.**  A helper called from a hot loop runs **6.51×** faster (17.76 ms → 2.73 ms), and T2 alone accounts for 3.68× of it.  This is not call overhead.  The SIMD emitter has no vector form for a call, so every iteration lane-scalarizes — four scalar calls per quad with thread and PCG state swapped around each — and a single helper turns a vectorized kernel back into scalar code.  Inlining *restores vectorization*, which is why the helper workloads (6.51×, 4.10×, 3.41×) dominate this column and nothing else comes close.
+* **`cpu` wants unrolling and hoisting.**  Up to **5.57×** on a nested literal 3×3 loop, 4.84× on a flat literal loop, 4.46× on an invariant read in an 8-trip loop.  The design contract left the split between those two transforms open, because the hand-written probe that first measured it did both at once; timing the same shape as-written, hand-hoisted and hand-unrolled settles it — hoisting alone is 1.58×, unrolling on top of it a further 2.42×, and the pass as shipped delivers 3.68× of the 3.83× available by hand.
+* **Inlining does not pay on `cpu`, and sometimes costs.**  Every T2 column there is at or below 1.00×, and the branching helper ends at 0.90× overall.  V8 already inlines small functions in emitted JavaScript far better than an AST pass can, and expanding them first only makes its job harder.  This is the one shape where the optimizer is a small net loss.
+* **The GL numbers are flat, honestly.**  At these sizes the readback dominates, and a desktop driver's own shader compiler already performs every one of these transforms.  The value on GL is not on this machine — it is on mobile drivers, whose compilers are much weaker, and those numbers come from the [device fleet](#real-browsers-and-devices), not from here.  Nothing above should be read as a GL win.
+
+The short version: if your kernel calls helpers, `webasm` gets dramatically faster; if it has small counted loops or repeated invariant reads, `cpu` does; and every backend gets the same answers it got before, bit for bit.
 
 ## Asynchronous Kernels
 

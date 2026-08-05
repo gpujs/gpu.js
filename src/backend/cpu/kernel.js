@@ -49,6 +49,16 @@ class CPUKernel extends Kernel {
 
   constructor(source, settings) {
     super(source, settings);
+    // set BEFORE mergeSettings so an explicit setting still wins.
+    // Helper inlining (T2) is OFF here, and only here. The emitted body is
+    // JavaScript, so V8 already inlines small helpers -- doing it ourselves
+    // measured a consistent net loss across the benchmark suite (0.78-1.02x,
+    // mean ~0.93) while it is worth 3.7-4.0x on webasm, where a helper call
+    // forces the SIMD emitter to scalarize per lane. The other transforms
+    // (hoisting, unrolling, coordinate localization) stay on and carry the
+    // cpu gains. Tests that exercise the inliner's mechanics through cpu
+    // emission set this back to false.
+    this._inliningDisabled = true;
     this.mergeSettings(source.settings || settings);
 
     this._imageData = null;
@@ -149,7 +159,7 @@ class CPUKernel extends Kernel {
     this.setupConstants();
     this.setupArguments(arguments);
     this.validateSettings(arguments);
-    this.translateSource();
+    this.buildWithOptimizer(() => this.translateSource());
 
     if (this.graphical) {
       const {

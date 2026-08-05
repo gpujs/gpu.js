@@ -182,6 +182,21 @@ function scalarWasmType(type) {
 }
 
 class WebAssemblyFunctionNode extends FunctionNode {
+  /**
+   * Array reads compile to raw `load`s from linear memory: an out-of-range
+   * address traps rather than yielding a clamped texel, so a read moved to
+   * a place the un-optimized build never reaches is a new crash. Unlike cpu
+   * even a ONE-level read faults here, which is why canFault's
+   * two-subscript shortcut does not apply (see optimizer.readsFaultAtOneLevel).
+   */
+  get readsCanFault() {
+    return true;
+  }
+
+  get readsFaultAtOneLevel() {
+    return true;
+  }
+
   constructor(source, settings) {
     super(source, settings);
     this.assembler = null;
@@ -1087,6 +1102,16 @@ class WebAssemblyFunctionNode extends FunctionNode {
         dIsInt = true;
         dLocal = this.em.addLocal('i32');
         this.coerce(this.expression(discriminant), 'i32');
+        this.em.localSet(dLocal);
+        break;
+      case 'LiteralInteger':
+        // a number whose role was still open until it landed here -- a
+        // hand-written `switch (1)`, or a loop counter the unroller replaced
+        // with its value. Every case test is compared as an integer, so the
+        // discriminant is one.
+        dIsInt = true;
+        dLocal = this.em.addLocal('i32');
+        this.castLiteralToInteger(discriminant);
         this.em.localSet(dLocal);
         break;
       default:
@@ -3372,6 +3397,12 @@ class WebAssemblyFunctionNode extends FunctionNode {
           this.coerce(this.expression(discriminant), 'i32');
           em.localSet(dLocal);
           break;
+        case 'LiteralInteger':
+          dIsInt = true;
+          dLocal = em.addLocal('i32');
+          this.castLiteralToInteger(discriminant);
+          em.localSet(dLocal);
+          break;
         default:
           throw this.astErrorOutput(`Unhandled switch discriminant type "${ type }"`, ast);
       }
@@ -3417,6 +3448,7 @@ class WebAssemblyFunctionNode extends FunctionNode {
         em.localSet(dLocal);
         break;
       case 'Integer':
+      case 'LiteralInteger':
         dIsInt = true;
         dLocal = em.addLocal('v128');
         this.vCoerce(this.vexpr(discriminant), 'vi32');
